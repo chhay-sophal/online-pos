@@ -2,7 +2,22 @@ import express from 'express';
 import cors from 'cors';
 import pg from 'pg';
 import dotenv from 'dotenv';
-import { bakongKhqr, khqrData } from 'bakong-khqr';
+// import {KHQR, khqrData, IndividualInfo, MerchantInfo, SourceInfo} from 'bakong-khqr';
+// import BakongKHQR from 'bakong-khqr';
+// const {
+// BakongKHQR,
+// khqrData,
+// IndividualInfo,
+// MerchantInfo,
+// } = require("bakong-khqr");
+
+// const bakongKhqr = new KHQR();
+
+import pkg from 'bakong-khqr';
+// const { BakongKHQR } = pkg; // Extract the core class safely
+
+// Create your class instance
+// const khqrInstance = new BakongKHQR();
 
 dotenv.config();
 
@@ -43,23 +58,62 @@ app.get('/api/products/barcode/:barcode', async (req, res) => {
   }
 });
 
-// 2. INITIALIZE IN-STORE KHQR: Create pending transaction string for customer screen
+// 2. GENERATE OFFICIAL INDIVIDUAL KHQR (Tag 29 compliant using exact Class instantiation)
 app.post('/api/payments/khqr', async (req, res) => {
-  const { order_total_usd, currency } = req.body; // currency can be 'USD' or 'KHR'
+  const { order_total_usd } = req.body;
   
   try {
-    // In a real system, you would call the Bakong SDK / Bank API here to generate the real string.
-    // For this prototype, we simulate a valid KHQR string format.
-    const mockQrString = `0002010102122930001600000000000000005204599953038405405${order_total_usd}5802KH5913BABY_MART_POS`;
-    const mockMd5Hash = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    const amount = parseFloat(order_total_usd);
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: 'Invalid total amount for QR creation' });
+    }
 
+    // Extract the classes and currency constants safely from the CommonJS default package export
+    const { BakongKHQR, khqrData, IndividualInfo } = pkg;
+
+    const nowInMs = Date.now();
+    const fiveMinutesInMs = 5 * 60 * 1000;
+
+    const optionalData = {
+        currency: khqrData.currency.usd, 
+        amount: amount,
+        expirationTimestamp: nowInMs + fiveMinutesInMs
+    };
+
+    /// Instantiate the configuration class exactly as the docs specify
+    const individualInfo = new IndividualInfo(
+      process.env.BAKONG_ACCOUNT_ID || '',
+      process.env.BAKONG_MERCHANT_NAME || 'Baby Mart',
+      process.env.BAKONG_MERCHANT_CITY || 'Phnom Penh',
+      optionalData
+    );
+
+    // Initialize the generator engine and pass the typed class structure instance
+    const khqrEngine = new BakongKHQR();
+    const khqrResponse = khqrEngine.generateIndividual(individualInfo);
+
+    // If it still fails, log out the full request payload alongside the error so we can see the class state
+    if (!khqrResponse || khqrResponse.status?.code !== 0) {
+      console.error("Bakong SDK Full Response Error:", khqrResponse);
+      console.error("Sent Payload Was:", {
+        account: process.env.BAKONG_ACCOUNT_ID,
+        optionalData
+      });
+      return res.status(500).json({ 
+        error: "Bakong SDK rejection", 
+        details: khqrResponse?.status?.message || "Internal library error"
+      });
+    }
+
+    // Pass the valid dynamic transaction strings to the frontend React layout
     res.json({
-      qr_string: mockQrString,
-      md5_hash: mockMd5Hash,
-      amount: order_total_usd,
-      currency: currency || 'USD'
+      qr_string: khqrResponse.data.qr,
+      md5_hash: khqrResponse.data.md5,
+      amount: amount,
+      currency: 'USD'
     });
   } catch (err) {
+    console.error("Catch Block Exception Error:", err);
     res.status(500).json({ error: err.message });
   }
 });

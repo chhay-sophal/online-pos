@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { QRCodeCanvas } from 'qrcode.react';
 
 export default function App() {
   const [cart, setCart] = useState([]);
@@ -7,6 +8,7 @@ export default function App() {
   const [amountPaidUsd, setAmountPaidUsd] = useState('');
   const [amountPaidKhr, setAmountPaidKhr] = useState('');
   const [checkoutResult, setCheckoutResult] = useState(null);
+  const [activeKhqr, setActiveKhqr] = useState(null);
   
   const barcodeRef = useRef(null);
   const BACKEND_URL = 'http://localhost:5050';
@@ -56,6 +58,23 @@ export default function App() {
         .filter((item) => item.quantity > 0)
     );
     setCheckoutResult(null);
+  };
+
+  const fetchKHQRString = async (currentTotal) => {
+    if (currentTotal <= 0) return;
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/payments/khqr`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_total_usd: currentTotal }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setActiveKhqr(data);
+      }
+    } catch (err) {
+      console.error("Failed to generate authentic KHQR", err);
+    }
   };
 
   const removeItem = (id) => {
@@ -216,7 +235,7 @@ export default function App() {
                   💵 Cash Currency
                 </button>
                 <button 
-                  onClick={() => { setPaymentMethod('KHQR'); setCheckoutResult(null); }}
+                  onClick={() => { setPaymentMethod('KHQR'); setCheckoutResult(null); fetchKHQRString(totalUsd); }}
                   className={`py-3 px-4 rounded-xl border font-bold text-sm tracking-tight transition-all flex items-center justify-center gap-2 shadow-2xs ${paymentMethod === 'KHQR' ? 'bg-rose-500 border-rose-500 text-white ring-2 ring-rose-100' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   📱 KHQR Digital
@@ -243,12 +262,25 @@ export default function App() {
                 </div>
               </div>
             ) : (
-              <div className="bg-rose-50/50 border border-rose-200 text-rose-900 p-4 rounded-xl flex gap-3 items-start">
-                <span className="text-xl mt-0.5">ℹ️</span>
-                <div>
-                  <p className="font-bold text-sm text-rose-900">Dynamic KHQR Generation</p>
-                  <p className="text-xs text-rose-700/90 mt-0.5 leading-relaxed">System compiles transaction details. Prompt client device to process terminal scan via local banking options.</p>
-                </div>
+              <div className="space-y-4 bg-rose-50/40 border border-rose-100 p-5 rounded-2xl flex flex-col items-center shadow-2xs">
+                {activeKhqr ? (
+                  <>
+                    <div className="bg-white p-3 rounded-xl shadow-xs border border-rose-100">
+                      <QRCodeCanvas 
+                        value={activeKhqr.qr_string} 
+                        size={180}
+                        level={"M"}
+                        includeMargin={true}
+                      />
+                    </div>
+                    <div className="text-center">
+                      <p className="font-bold text-sm text-slate-800">Scan to Pay via KHQR</p>
+                      <p className="text-xs text-rose-500 font-semibold font-mono mt-0.5 tracking-tight">Ref: {activeKhqr.md5_hash.substring(0, 8).toUpperCase()}</p>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-xs text-slate-400 font-medium animate-pulse">Assembling secure banking packet...</p>
+                )}
               </div>
             )}
           </div>
