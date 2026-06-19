@@ -118,6 +118,71 @@ app.post('/api/payments/khqr', async (req, res) => {
   }
 });
 
+import axios from 'axios';
+
+// 2b. PRODUCTION CHECK LOOP: Query the Central Bank of Cambodia directly (with Detailed Debug Console logs)
+app.get('/api/payments/check-status/:md5_hash', async (req, res) => {
+  const { md5_hash } = req.params;
+
+  console.log('\n--- 📡 [BAKONG INTEGRATION DEBUG CONSOLE] ---');
+  console.log(`⏰ Timestamp: ${new Date().toLocaleTimeString()}`);
+  console.log(`🔍 Checking MD5 Reference Hash: "${md5_hash}"`);
+  console.log(`🔑 Token Detected: ${process.env.BAKONG_API_TOKEN ? '✅ Present (Masked)' : '❌ MISSING FROM .ENV'}`);
+
+  try {
+    const targetUrl = 'https://api-bakong.nbc.gov.kh/v1/check_transaction_by_md5';
+    
+    console.log(`📤 Sending POST request to central bank gateway...`);
+    const response = await axios.post(
+      targetUrl,
+      { md5: md5_hash },
+      {
+        headers: {
+          'Authorization': process.env.BAKONG_API_TOKEN,
+          'Content-Type': 'application/json'
+        },
+        timeout: 4000 // 4 seconds network fallback protection timeout
+      }
+    );
+
+    console.log(`📥 Raw Network Response Received (Status ${response.status}):`);
+    console.dir(response.data, { depth: null }); // Prints the nested object tree in full detail
+
+    // Evaluate standard Bakong API transaction schema
+    if (response.data && response.data.responseCode === 0) {
+      console.log('💚 [MATCH DETECTED]: Transaction status is SUCCESS. Funds settled.');
+      console.log('--------------------------------------------------\n');
+      return res.json({ 
+        status: 'PAID', 
+        md5_hash, 
+        details: response.data.data || null 
+      });
+    }
+
+    console.log(`🟡 [PENDING]: Code ${response.data?.responseCode} - Transaction not settled or incomplete.`);
+    console.log('--------------------------------------------------\n');
+    res.json({ status: 'PENDING', md5_hash });
+
+  } catch (err) {
+    // If the transaction simply isn't found in the national ledger yet, Bakong returns a 404 or 400 error packet
+    if (err.response) {
+      console.log(`⚠️ [GATEWAY REJECTION]: Network returned error status ${err.response.status}`);
+      console.log('Response Payload Details:', err.response.data);
+      
+      if (err.response.data?.responseCode === 1) {
+        console.log('ℹ️ [INFO]: Code 1 means the transaction ledger entry does not exist yet (User hasn\'t authorized it yet).');
+        console.log('--------------------------------------------------\n');
+        return res.json({ status: 'PENDING', md5_hash });
+      }
+    } else {
+      console.error("🚨 [CRITICAL ERROR]: Failed to execute outgoing HTTP call:", err.message);
+    }
+    
+    console.log('--------------------------------------------------\n');
+    res.status(500).json({ error: "Unable to reach Bakong network", message: err.message });
+  }
+});
+
 // 3. IN-STORE CHECKOUT (Process transaction instantly at counter)
 app.post('/api/orders/checkout', async (req, res) => {
   const { 
