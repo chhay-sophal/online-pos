@@ -586,10 +586,10 @@ export default function App() {
             )}
             
             {paymentMethod === 'CASH' && (
-              <button 
+              <button
                 onClick={handleCheckout}
-                disabled={cart.length === 0}
-                className={`w-full h-12 rounded-xl font-bold transition-all text-sm font-display shadow-xs ${cart.length === 0 ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-indigo-600 text-white cursor-pointer hover:bg-indigo-700 active:scale-[0.99]'}`}
+                disabled={cart.length === 0 || totalTenderedInUsd < totalUsd}
+                className={`w-full h-12 rounded-xl font-bold transition-all text-sm font-display shadow-xs ${cart.length === 0 || totalTenderedInUsd < totalUsd ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-indigo-600 text-white cursor-pointer hover:bg-indigo-700 active:scale-[0.99]'}`}
               >
                 {t[locale].finalizeOrder}
               </button>
