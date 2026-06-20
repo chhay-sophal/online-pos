@@ -305,7 +305,7 @@ export default function StockManager({
                 : "bg-slate-100 text-slate-500 hover:bg-slate-200"
             }`}
           >
-            ⚠ Low Stock
+            ⚠ {labels.lowStock || "Low Stock"}
           </button>
           <span className="ml-auto text-[11px] text-slate-400 font-mono">
             {displayed.length} products

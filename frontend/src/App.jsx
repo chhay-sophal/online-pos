@@ -340,7 +340,7 @@ export default function App() {
       {/* Structural Header Grid */}
       <header className="bg-white border-b border-slate-200 px-6 py-3.5 flex justify-between items-center shadow-xs flex-shrink-0">
         <div className="flex items-center gap-3.5">
-          <div className="bg-indigo-600 text-white w-10 h-10 rounded-xl font-bold text-lg flex items-center justify-center shadow-sm shadow-indigo-100">👶</div>
+          <div className="w-10 h-10 flex items-center justify-center text-4xl">🏬</div>
           <div>
             <h1 className="text-base font-bold text-slate-900 tracking-tight font-display">{t[locale].shopName}</h1>
             <p className="text-[11px] font-bold text-indigo-600 tracking-wider uppercase">{t[locale].register}</p>
@@ -350,7 +350,7 @@ export default function App() {
             onClick={() => setView('STOCK')}
             className="px-3.5 py-1.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-all flex items-center gap-1.5"
           >
-            {t[locale].manageInventory}
+            📦 {t[locale].manageInventory}
           </button>
           <button
             onClick={() => setView('HISTORY')}
@@ -362,7 +362,7 @@ export default function App() {
             onClick={() => setView('SETTINGS')}
             className="px-3.5 py-1.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-all flex items-center gap-1.5"
           >
-            {t[locale].settings}
+            ⚙️ {t[locale].settings}
           </button>
         </div>
         <div className="bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600">

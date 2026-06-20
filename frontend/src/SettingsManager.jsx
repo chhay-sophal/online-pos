@@ -87,9 +87,9 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
       <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center gap-4 shadow-xs flex-shrink-0 z-10">
         <button 
           onClick={onBackToRegister}
-          className="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-semibold transition-colors text-slate-600 font-display cursor-pointer"
+          className="px-3.5 py-1.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-all flex items-center gap-1.5 cursor-pointer"
         >
-          ⬅ {currentTranslations.register || 'Register'}
+          ← {currentTranslations.register || 'Register'}
         </button>
         <div>
           <h1 className="text-xl font-bold text-slate-900 tracking-tight font-display">
