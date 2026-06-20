@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import StockManager from './StockManager';
 import SettingsManager from './SettingsManager';
+import SalesHistory from './SalesHistory';
 import Invoice from './Invoice';
 import { translations as t } from './locales';
 
@@ -297,11 +298,22 @@ export default function App() {
 
   if (view === 'STOCK') {
     return (
-      <StockManager 
-        onBackToRegister={() => setView('REGISTER')} 
-        currentLocale={locale} 
+      <StockManager
+        onBackToRegister={() => setView('REGISTER')}
+        currentLocale={locale}
         mainCurrency={mainCurrency}
         dynamicRate={dynamicRate}
+      />
+    );
+  }
+
+  if (view === 'HISTORY') {
+    return (
+      <SalesHistory
+        onBackToRegister={() => setView('REGISTER')}
+        currentLocale={locale}
+        dynamicRate={dynamicRate}
+        mainCurrency={mainCurrency}
       />
     );
   }
@@ -331,13 +343,19 @@ export default function App() {
             <p className="text-[11px] font-bold text-indigo-600 tracking-wider uppercase">{t[locale].register}</p>
           </div>
           <div className="h-6 w-px bg-slate-200 ml-2"></div>
-          <button 
+          <button
             onClick={() => setView('STOCK')}
             className="px-3.5 py-1.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-all flex items-center gap-1.5"
           >
             {t[locale].manageInventory}
           </button>
-          <button 
+          <button
+            onClick={() => setView('HISTORY')}
+            className="px-3.5 py-1.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-all flex items-center gap-1.5"
+          >
+            🗂️ {t[locale].salesHistory.title}
+          </button>
+          <button
             onClick={() => setView('SETTINGS')}
             className="px-3.5 py-1.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-all flex items-center gap-1.5"
           >

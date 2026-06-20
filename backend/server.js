@@ -273,6 +273,56 @@ app.post('/api/orders/checkout', async (req, res) => {
 });
 
 
+// --- SALES HISTORY ENDPOINT ---
+
+app.get('/api/orders', async (req, res) => {
+  const { date_from, date_to, payment_method } = req.query;
+
+  const conditions = [];
+  const params = [];
+
+  if (date_from) { conditions.push(`o.created_at >= $${params.push(date_from)}`); }
+  if (date_to)   { conditions.push(`o.created_at <  $${params.push(date_to)}`); }
+  if (payment_method && payment_method !== 'ALL') {
+    conditions.push(`o.payment_method = $${params.push(payment_method)}`);
+  }
+
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+  try {
+    const result = await pool.query(`
+      SELECT
+        o.id,
+        o.total_amount_usd,
+        o.payment_method,
+        o.amount_paid_usd,
+        o.amount_paid_khr,
+        o.change_given_khr,
+        o.status,
+        o.created_at,
+        json_agg(
+          json_build_object(
+            'product_name', p.name,
+            'quantity',     oi.quantity,
+            'price_usd',    oi.price_at_sale_usd
+          ) ORDER BY oi.id
+        ) AS items
+      FROM orders o
+      LEFT JOIN order_items oi ON oi.order_id = o.id
+      LEFT JOIN products     p  ON p.id = oi.product_id
+      ${where}
+      GROUP BY o.id
+      ORDER BY o.created_at DESC
+      LIMIT 200
+    `, params);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching sales history:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 // --- STOCK MANAGEMENT ENDPOINTS ---
 
 // Fetch all products for the inventory sheet

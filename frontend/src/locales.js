@@ -37,6 +37,34 @@ export const translations = {
     mainCurrencyUsd: 'ដុល្លារអាមេរិក (USD)',
     mainCurrencyKhr: 'ប្រាក់រៀល (KHR)',
 
+    // SALES HISTORY LABELS
+    salesHistory: {
+      title: 'ប្រវត្តិការលក់',
+      subtitle: 'កំណត់ត្រាប្រតិបត្តិការ',
+      backBtn: 'បញ្ជរលក់ទំនិញ',
+      today: 'ថ្ងៃនេះ',
+      week: '7 ថ្ងៃ',
+      month: '30 ថ្ងៃ',
+      all: 'ទាំងអស់',
+      totalRevenue: 'ចំណូលសរុប',
+      totalOrders: 'ចំនួនការលក់',
+      cashSales: 'ប្រាក់សុទ្ធ',
+      khqrSales: 'KHQR',
+      orderId: 'លេខ',
+      dateTime: 'កាលបរិច្ឆេទ',
+      itemCount: 'ទំនិញ',
+      total: 'សរុប',
+      payment: 'ការទូទាត់',
+      cash: 'ប្រាក់សុទ្ធ',
+      khqr: 'KHQR',
+      change: 'ប្រាក់អាប់',
+      qty: 'ចំនួន',
+      unitPrice: 'តម្លៃ/ចំណែក',
+      subtotal: 'សរុបរង',
+      noOrders: 'គ្មានប្រតិបត្តិការក្នុងអំឡុងពេលដែលបានជ្រើស',
+      loading: 'កំពុងដំណើរការ...',
+    },
+
     // INVOICE LABELS
     invoice: {
       receiptTitle: 'វិក្កយបត្រលក់ទំនិញ',
@@ -150,6 +178,34 @@ export const translations = {
     currencySetting: 'Main Currency Base',
     mainCurrencyUsd: 'US Dollar (USD)',
     mainCurrencyKhr: 'Khmer Riel (KHR)',
+
+    // SALES HISTORY LABELS
+    salesHistory: {
+      title: 'Sales History',
+      subtitle: 'Transaction Records',
+      backBtn: 'Register Terminal',
+      today: 'Today',
+      week: '7 Days',
+      month: '30 Days',
+      all: 'All Time',
+      totalRevenue: 'Total Revenue',
+      totalOrders: 'Total Orders',
+      cashSales: 'Cash',
+      khqrSales: 'KHQR',
+      orderId: 'No.',
+      dateTime: 'Date & Time',
+      itemCount: 'Items',
+      total: 'Total',
+      payment: 'Payment',
+      cash: 'Cash',
+      khqr: 'KHQR',
+      change: 'Change Given',
+      qty: 'Qty',
+      unitPrice: 'Unit Price',
+      subtotal: 'Subtotal',
+      noOrders: 'No transactions found for this period',
+      loading: 'Loading...',
+    },
 
     // INVOICE LABELS
     invoice: {
