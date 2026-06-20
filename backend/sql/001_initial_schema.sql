@@ -16,7 +16,7 @@ BEGIN;
 -- ENUM TYPES
 -- =============================================================================
 
-CREATE TYPE payment_type AS ENUM ('CASH', 'KHQR');
+CREATE TYPE payment_type AS ENUM ('CASH', 'KHQR', 'STATIC_QR');
 CREATE TYPE order_status  AS ENUM ('COMPLETED', 'CANCELLED');
 CREATE TYPE khqr_status   AS ENUM ('PENDING', 'SUCCESS', 'FAILED', 'EXPIRED');
 
@@ -52,6 +52,7 @@ CREATE TABLE orders (
     amount_paid_usd  DECIMAL(10, 2) NOT NULL DEFAULT 0.00 CHECK (amount_paid_usd  >= 0),
     amount_paid_khr  DECIMAL(10, 2) NOT NULL DEFAULT 0.00 CHECK (amount_paid_khr  >= 0),
     change_given_khr DECIMAL(10, 2) NOT NULL DEFAULT 0.00 CHECK (change_given_khr >= 0),
+    bank_name        VARCHAR(100),
     status           order_status   NOT NULL DEFAULT 'COMPLETED',
     created_at       TIMESTAMPTZ    NOT NULL DEFAULT NOW()
 );

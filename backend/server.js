@@ -198,6 +198,7 @@ app.post('/api/orders/checkout', async (req, res) => {
     customer_id,
     items,
     payment_method,
+    bank_name,
     total_amount,
     amount_paid_usd,
     amount_paid_khr,
@@ -218,9 +219,9 @@ app.post('/api/orders/checkout', async (req, res) => {
     // 2. Record the Order
     const orderResult = await client.query(
       `INSERT INTO orders
-        (customer_id, total_amount, currency, payment_method, amount_paid_usd, amount_paid_khr, change_given_khr, status)
-       VALUES ($1, $2, 'USD', $3, $4, $5, $6, 'COMPLETED') RETURNING id`,
-      [customer_id || null, total_amount, payment_method, amount_paid_usd, amount_paid_khr, changeGivenKhr]
+        (customer_id, total_amount, currency, payment_method, bank_name, amount_paid_usd, amount_paid_khr, change_given_khr, status)
+       VALUES ($1, $2, 'USD', $3, $4, $5, $6, $7, 'COMPLETED') RETURNING id`,
+      [customer_id || null, total_amount, payment_method, bank_name || null, amount_paid_usd, amount_paid_khr, changeGivenKhr]
     );
     const orderId = orderResult.rows[0].id;
 
@@ -296,6 +297,7 @@ app.get('/api/orders', async (req, res) => {
         o.total_amount,
         o.currency,
         o.payment_method,
+        o.bank_name,
         o.amount_paid_usd,
         o.amount_paid_khr,
         o.change_given_khr,

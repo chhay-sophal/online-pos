@@ -124,8 +124,9 @@ online-pos/
 ├── backend/
 │   ├── server.js          # Express API
 │   ├── sql/
-│   │   ├── 001_initial_schema.sql   # schema + default settings
-│   │   └── 002_seed_mock_data.sql   # demo data (dev only)
+│   │   ├── 001_initial_schema.sql   # schema + default settings (run on fresh install)
+│   │   ├── 002_seed_mock_data.sql   # demo data (dev only, do not run in production)
+│   │   └── 003_add_static_qr.sql   # migration: adds STATIC_QR payment type
 │   ├── .env.example
 │   └── Dockerfile
 ├── frontend/
@@ -144,15 +145,72 @@ online-pos/
 
 ---
 
+## Database
+
+### How initialisation works
+
+The PostgreSQL container runs SQL files from `/docker-entrypoint-initdb.d/` **only on the very first boot** (when the data volume is empty). After that, the scripts are never run again — your data is safe across restarts.
+
+`docker-compose.yml` mounts only `001_initial_schema.sql` for fresh installs. The seed data file (`002_seed_mock_data.sql`) is commented out by default and should only be used for development.
+
+### SQL files
+
+| File | Purpose | When to run |
+|---|---|---|
+| `001_initial_schema.sql` | Creates all tables, enums, indexes, and default settings | Automatically on first boot (via Docker) |
+| `002_seed_mock_data.sql` | Inserts 20 demo products and orders | Development only — never in production |
+| `003_add_static_qr.sql` | Adds `STATIC_QR` to the `payment_type` enum | Existing databases only (see Migrations below) |
+
+### Migrations
+
+Fresh installs get the latest schema automatically via `001_initial_schema.sql`. For an **existing running database**, apply migration files manually:
+
+```bash
+# Apply a migration to a running Docker database
+docker exec -i online-pos-postgres-1 psql -U pos -d posdb < backend/sql/003_add_static_qr.sql
+```
+
+For a local development database:
+
+```bash
+psql -U your_user -d your_db < backend/sql/003_add_static_qr.sql
+```
+
+### Connecting to the database directly
+
+```bash
+# Open a psql shell inside the Docker container
+docker exec -it online-pos-postgres-1 psql -U pos -d posdb
+```
+
+### Backup and restore
+
+**Backup:**
+
+```bash
+docker exec online-pos-postgres-1 pg_dump -U pos posdb > backup_$(date +%Y%m%d).sql
+```
+
+**Restore** (on a fresh container with an empty volume):
+
+```bash
+docker exec -i online-pos-postgres-1 psql -U pos -d posdb < backup_20240101.sql
+```
+
+> **Important:** Restore only works into an empty database. If the container has already initialised, run `docker compose down -v` first to wipe the volume, then `docker compose up -d` to recreate it, then restore.
+
+### Wiping all data
+
+```bash
+# Stops containers and deletes the postgres volume (irreversible)
+docker compose down -v
+```
+
+---
+
 ## First-time Setup After Deployment
 
 1. Open the app and go to **Settings**
 2. Set your **Bakong account ID**, merchant name, and city
 3. Adjust the **exchange rate** if needed (default: 1 USD = 4,100 KHR)
 4. Add your products via **Manage Inventory**
-
-## Database Backup
-
-```bash
-docker exec online-pos-postgres-1 pg_dump -U pos posdb > backup_$(date +%Y%m%d).sql
-```

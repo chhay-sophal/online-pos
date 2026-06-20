@@ -8,10 +8,7 @@ services:
       POSTGRES_DB: posdb
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      # Only the numbered init scripts run — migrate_single_currency.sql is excluded
       - ./backend/sql/001_initial_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
-      # Remove the line below before going to production (mock data only)
-      # - ./backend/sql/002_seed_mock_data.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U pos -d posdb"]
       interval: 5s
@@ -32,6 +29,13 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./backend
+          target: /app
+          ignore:
+            - node_modules/
 
   frontend:
     build: ./frontend
@@ -41,6 +45,12 @@ services:
       - "80:80"
     depends_on:
       - backend
+    develop:
+      watch:
+        - action: rebuild
+          path: ./frontend/src
+        - action: rebuild
+          path: ./frontend/index.html
 
 volumes:
   postgres_data:

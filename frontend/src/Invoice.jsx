@@ -3,7 +3,7 @@ import { jsPDF } from 'jspdf';
 import { translations as t } from './locales';
 
 export default function Invoice({ invoiceData, locale, onClose }) {
-  const { order_id, items, totalUsd, totalKhr, paymentMethod, amountPaidUsd, amountPaidKhr, changeDueKhr, timestamp } = invoiceData;
+  const { order_id, items, totalUsd, totalKhr, paymentMethod, bankName, amountPaidUsd, amountPaidKhr, changeDueKhr, timestamp } = invoiceData;
 
   const inv = t[locale].invoice;
   const [printing, setPrinting] = useState(false);
@@ -109,7 +109,7 @@ export default function Invoice({ invoiceData, locale, onClose }) {
 
   <hr class="dash">
 
-  <div class="row"><span class="muted">${inv.payment}</span><span><strong>${paymentMethod === 'CASH' ? inv.cash : inv.khqr}</strong></span></div>
+  <div class="row"><span class="muted">${inv.payment}</span><span><strong>${paymentMethod === 'CASH' ? inv.cash : paymentMethod === 'KHQR' ? inv.khqr : bankName ? `${inv.staticQr} — ${bankName}` : inv.staticQr}</strong></span></div>
   ${cashRows}
 
   <hr class="dash2">
@@ -183,7 +183,7 @@ export default function Invoice({ invoiceData, locale, onClose }) {
     dash();
 
     pdf.setFontSize(10);
-    row(inv.payment, paymentMethod === 'CASH' ? inv.cash : inv.khqr);
+    row(inv.payment, paymentMethod === 'CASH' ? inv.cash : paymentMethod === 'KHQR' ? inv.khqr : bankName ? `${inv.staticQr} — ${bankName}` : inv.staticQr);
     if (paymentMethod === 'CASH') {
       if (amountPaidUsd > 0) row(inv.paidUsd, `$${Number(amountPaidUsd).toFixed(2)}`);
       if (amountPaidKhr > 0) row(inv.paidKhr, `${Number(amountPaidKhr).toLocaleString()} ៛`);
@@ -311,7 +311,7 @@ export default function Invoice({ invoiceData, locale, onClose }) {
           <div className="space-y-1 text-[11px] mb-3">
             <div className="flex justify-between">
               <span className="text-slate-500">{inv.payment}</span>
-              <span className="font-bold">{paymentMethod === 'CASH' ? inv.cash : inv.khqr}</span>
+              <span className="font-bold">{paymentMethod === 'CASH' ? inv.cash : paymentMethod === 'KHQR' ? inv.khqr : bankName ? `${inv.staticQr} — ${bankName}` : inv.staticQr}</span>
             </div>
             {paymentMethod === 'CASH' && (
               <>

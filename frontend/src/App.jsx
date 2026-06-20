@@ -16,6 +16,7 @@ export default function App() {
   const [invoiceData, setInvoiceData] = useState(null);
   const [view, setView] = useState('REGISTER');
   const [activeKhqr, setActiveKhqr] = useState(null);
+  const [staticQrBank, setStaticQrBank] = useState('');
   const [dynamicRate, setDynamicRate] = useState(4100);
   const [showManualInput, setShowManualInput] = useState(false);
   const [locale, setLocale] = useState('km'); 
@@ -261,6 +262,7 @@ export default function App() {
     const payload = {
       items: cart,
       payment_method: paymentMethod,
+      bank_name: paymentMethod === 'STATIC_QR' ? staticQrBank : null,
       total_amount: totalUsd,
       amount_paid_usd: paidUsd,
       amount_paid_khr: paidKhr,
@@ -282,6 +284,7 @@ export default function App() {
           totalUsd,
           totalKhr,
           paymentMethod,
+          bankName: paymentMethod === 'STATIC_QR' ? staticQrBank : null,
           amountPaidUsd: paidUsd,
           amountPaidKhr: paidKhr,
           changeDueKhr: data.change_due_khr || 0,
@@ -291,6 +294,7 @@ export default function App() {
         setAmountPaidUsd('');
         setAmountPaidKhr('');
         setActiveKhqr(null);
+        setStaticQrBank('');
       } else {
         alert(`Checkout Failed: ${data.error}`);
       }
@@ -485,18 +489,24 @@ export default function App() {
 
             <div>
               <label className="block text-[11px] font-bold tracking-wider text-slate-400 uppercase mb-2 font-display">{t[locale].settlementType}</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button 
+              <div className="grid grid-cols-3 gap-2">
+                <button
                   onClick={() => { setPaymentMethod('CASH'); setCheckoutResult(null); setActiveKhqr(null); }}
-                  className={`py-3 px-4 rounded-xl border font-bold text-xs transition-all flex items-center justify-center gap-2 ${paymentMethod === 'CASH' ? 'bg-slate-900 text-white border-slate-900 shadow-xs' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  className={`py-3 px-2 rounded-xl border font-bold text-xs transition-all flex items-center justify-center gap-1 ${paymentMethod === 'CASH' ? 'bg-slate-900 text-white border-slate-900 shadow-xs' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {t[locale].cash}
                 </button>
-                <button 
+                <button
                   onClick={() => { setPaymentMethod('KHQR'); setCheckoutResult(null); fetchKHQRString(totalUsd); }}
-                  className={`py-3 px-4 rounded-xl border font-bold text-xs transition-all flex items-center justify-center gap-2 ${paymentMethod === 'KHQR' ? 'bg-rose-600 text-white border-rose-600 shadow-xs' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  className={`py-3 px-2 rounded-xl border font-bold text-xs transition-all flex items-center justify-center gap-1 ${paymentMethod === 'KHQR' ? 'bg-rose-600 text-white border-rose-600 shadow-xs' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {t[locale].khqr}
+                </button>
+                <button
+                  onClick={() => { setPaymentMethod('STATIC_QR'); setCheckoutResult(null); setActiveKhqr(null); setStaticQrBank(''); }}
+                  className={`py-3 px-2 rounded-xl border font-bold text-xs transition-all flex items-center justify-center gap-1 ${paymentMethod === 'STATIC_QR' ? 'bg-amber-500 text-white border-amber-500 shadow-xs' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                >
+                  {t[locale].staticQr}
                 </button>
               </div>
             </div>
@@ -551,6 +561,29 @@ export default function App() {
                     </p>
                   </div>
                 )}
+              </div>
+            ) : paymentMethod === 'STATIC_QR' ? (
+              <div className="space-y-3 bg-amber-50/30 border border-amber-100 p-4 rounded-2xl">
+                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide font-display">{t[locale].staticQrPrompt}</p>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {['ABA', 'ACLEDA', 'Wing', 'KB Prasac', 'Sathapana', 'Canadia', 'Maybank', 'CHIP Mong', 'Hattha', 'Prince', 'Other'].map(bank => (
+                    <button
+                      key={bank}
+                      onClick={() => setStaticQrBank(b => b === bank ? '' : bank)}
+                      className={`py-2 px-1 rounded-xl border font-bold text-[11px] transition-all ${staticQrBank === bank ? 'bg-amber-500 text-white border-amber-500' : 'bg-white border-slate-200 text-slate-600 hover:bg-amber-50 hover:border-amber-200'}`}
+                    >
+                      {bank}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-slate-400">{t[locale].staticQrNote}</p>
+                <button
+                  onClick={handleCheckout}
+                  disabled={cart.length === 0 || !staticQrBank}
+                  className={`w-full py-3 rounded-xl font-bold text-sm transition-all font-display shadow-xs ${cart.length === 0 || !staticQrBank ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-amber-500 text-white hover:bg-amber-600 active:scale-[0.99]'}`}
+                >
+                  {staticQrBank ? t[locale].confirmReceived : `${t[locale].selectBank}...`}
+                </button>
               </div>
             ) : (
               <div className="space-y-4 bg-rose-50/30 border border-rose-100 p-5 rounded-2xl flex flex-col items-center">

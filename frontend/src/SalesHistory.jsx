@@ -109,6 +109,7 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
   // counts from unfiltered orders so payment filter buttons always show full period totals
   const cashCount = orders.filter(o => o.payment_method === 'CASH').length;
   const khqrCount = orders.filter(o => o.payment_method === 'KHQR').length;
+  const staticQrCount = orders.filter(o => o.payment_method === 'STATIC_QR').length;
 
   const formatDateTime = (ts) =>
     new Date(ts).toLocaleString(currentLocale === 'km' ? 'km-KH' : 'en-US', {
@@ -128,6 +129,7 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
       totalUsd: parseFloat(order.total_amount),
       totalKhr: Math.round(parseFloat(order.total_amount) * dynamicRate),
       paymentMethod: order.payment_method,
+      bankName: order.bank_name || null,
       amountPaidUsd: parseFloat(order.amount_paid_usd) || 0,
       amountPaidKhr: parseFloat(order.amount_paid_khr) || 0,
       changeDueKhr: parseFloat(order.change_given_khr) || 0,
@@ -285,8 +287,9 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
 
         <div className="flex gap-2">
           {[
-            { key: 'CASH', label: s.cashSales, icon: '💵', count: cashCount, activeClass: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
-            { key: 'KHQR', label: s.khqrSales, icon: '📱', count: khqrCount, activeClass: 'bg-rose-50 border-rose-200 text-rose-700' },
+            { key: 'CASH',       label: s.cashSales,     icon: '💵', count: cashCount,     activeClass: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
+            { key: 'KHQR',       label: s.khqrSales,     icon: '📱', count: khqrCount,     activeClass: 'bg-rose-50 border-rose-200 text-rose-700' },
+            { key: 'STATIC_QR',  label: s.staticQrSales, icon: '🏦', count: staticQrCount, activeClass: 'bg-amber-50 border-amber-200 text-amber-700' },
           ].map(({ key, label, icon, count, activeClass }) => (
             <button
               key={key}
@@ -445,8 +448,9 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
                 <div className="flex gap-1.5">
                   {[
                     { value: 'all',  label: 'All' },
-                    { value: 'CASH', label: '💵 Cash' },
-                    { value: 'KHQR', label: '📱 KHQR' },
+                    { value: 'CASH',      label: '💵 Cash' },
+                    { value: 'KHQR',      label: '📱 KHQR' },
+                    { value: 'STATIC_QR', label: '🏦 Bank QR' },
                   ].map(({ value, label }) => (
                     <button
                       key={value}
@@ -544,9 +548,17 @@ function OrderRow({ order, s, dynamicRate, mainCurrency, locale, expanded, onTog
           <span className={`px-2 py-1 rounded-lg text-[10px] font-bold ${
             order.payment_method === 'CASH'
               ? 'bg-emerald-50 text-emerald-700'
-              : 'bg-rose-50 text-rose-700'
+              : order.payment_method === 'KHQR'
+              ? 'bg-rose-50 text-rose-700'
+              : 'bg-amber-50 text-amber-700'
           }`}>
-            {order.payment_method === 'CASH' ? s.cash : s.khqr}
+            {order.payment_method === 'CASH'
+              ? s.cash
+              : order.payment_method === 'KHQR'
+              ? s.khqr
+              : order.bank_name
+              ? `🏦 ${order.bank_name}`
+              : s.staticQr}
           </span>
         </div>
 
