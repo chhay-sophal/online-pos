@@ -15,7 +15,7 @@ export default function App() {
   const [activeKhqr, setActiveKhqr] = useState(null);
   const [dynamicRate, setDynamicRate] = useState(4100);
   const [showManualInput, setShowManualInput] = useState(false);
-  const [locale, setLocale] = useState('km'); // 'km' is default
+  const [locale, setLocale] = useState('km'); 
   
   const barcodeRef = useRef(null);
   const BACKEND_URL = 'http://localhost:5050';
@@ -24,50 +24,35 @@ export default function App() {
     focusScanner();
   }, [view]);
 
-  // Automated Global Barcode Background Listening Engine
   useEffect(() => {
-    // Only activate global keyboard intercept when the user is actively inside the REGISTER view
     if (view !== 'REGISTER') return;
 
     let keyBuffer = '';
     let lastTimestamp = Date.now();
 
     const handleGlobalScanStream = (e) => {
-      // CRITICAL: If the cursor is focused inside ANY input field (like cash fields or our manual input), 
-      // do not let the global background listener intercept the keys!
       if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
       
       const currentTimestamp = Date.now();
-      
-      // Check timing signature: Hardware scanners typically type characters sub-50ms.
-      // If the time between keypresses is long, a human is manually typing. Clear the buffer.
       if (currentTimestamp - lastTimestamp > 50) {
         keyBuffer = '';
       }
-      
       lastTimestamp = currentTimestamp;
 
-      // Detect the automated carriage return suffix key ('Enter') appended by the scanner gun
       if (e.key === 'Enter') {
         const cleanBarcode = keyBuffer.trim();
         if (cleanBarcode.length > 0) {
-          console.log(`⚡ [GLOBAL BACKGROUND SCANNER] Caught Barcode Sequence: "${cleanBarcode}"`);
-          
-          // Emulate input form dispatch sequence by passing the buffered string straight to our API lookup logic
           executeDirectBarcodeLookup(cleanBarcode);
-          
-          keyBuffer = ''; // Flush memory array ready for next item check
+          keyBuffer = ''; 
         }
         return;
       }
 
-      // Capture standard single alphanumeric characters, ignoring structural modifiers like 'Shift' or 'Control'
       if (e.key.length === 1) {
         keyBuffer += e.key;
       }
     };
 
-    // Helper method matching your existing fetch lookup block architecture
     const executeDirectBarcodeLookup = async (scannedBarcode) => {
       try {
         const response = await fetch(`${BACKEND_URL}/api/products/barcode/${scannedBarcode}`);
@@ -94,30 +79,14 @@ export default function App() {
     };
 
     window.addEventListener('keydown', handleGlobalScanStream);
-    
-    // Cleanup hook to tear down listeners when the component unmounts or view states shift
-    return () => {
-      window.removeEventListener('keydown', handleGlobalScanStream);
-    };
+    return () => window.removeEventListener('keydown', handleGlobalScanStream);
   }, [view, BACKEND_URL]);
 
   useEffect(() => {
-    // Pull dynamic settings variables from backend
     fetch(`${BACKEND_URL}/api/settings`)
       .then(res => res.json())
       .then(data => {
         if (data.exchange_rate) setDynamicRate(Number(data.exchange_rate));
-      })
-      .catch(err => console.error("Could not sync app settings configuration", err));
-  }, [view]); // Automatically syncs whenever you shift back to the main register view
-
-  useEffect(() => {
-    // Pull dynamic settings variables from backend
-    fetch(`${BACKEND_URL}/api/settings`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.exchange_rate) setDynamicRate(Number(data.exchange_rate));
-        // Read saved user language preference choice (if it exists)
         if (data.locale) setLocale(data.locale); 
       })
       .catch(err => console.error("Could not sync app settings configuration", err));
@@ -127,7 +96,6 @@ export default function App() {
     if (view === 'REGISTER' && barcodeRef.current) barcodeRef.current.focus();
   };
 
-  // Automated Verification Polling Engine Effect Loop
   useEffect(() => {
     let pollingInterval = null;
 
@@ -219,19 +187,11 @@ export default function App() {
   const totalUsd = cart.reduce((sum, item) => sum + (item.price_usd * item.quantity), 0);
   const totalKhr = totalUsd * dynamicRate;
 
-  // --- LIVE CHANGE CALCULATION ENGINE ---
-  // 1. Convert whatever raw cash text inputs the cashier typed into floating numbers safely
   const tenderedUsd = parseFloat(amountPaidUsd || 0);
   const tenderedKhr = parseFloat(amountPaidKhr || 0);
-
-  // 2. Combine both currencies into a single master USD value
-  const totalTenderedInUsd = tenderedUsd + (tenderedKhr / 4100);
-
-  // 3. Calculate the remaining balance gap
+  const totalTenderedInUsd = tenderedUsd + (tenderedKhr / dynamicRate);
   const changeDueUsd = totalTenderedInUsd - totalUsd;
-
-  // 4. Convert that gap to a clean, rounded Riel integer if they paid over the total limit
-  const changeDueKhr = changeDueUsd > 0 ? Math.round(changeDueUsd * 4100) : 0;
+  const changeDueKhr = changeDueUsd > 0 ? Math.round(changeDueUsd * dynamicRate) : 0;
 
   const autoCommitKhqrOrder = async (khqrDetails) => {
     const payload = {
@@ -240,12 +200,6 @@ export default function App() {
       total_amount_usd: totalUsd,
       amount_paid_usd: totalUsd,
       amount_paid_khr: 0,
-      khqr_data: {
-        md5_hash: khqrDetails.md5_hash,
-        qr_string: khqrDetails.qr_string,
-        currency: 'USD',
-        bank_name: 'Bakong Network'
-      }
     };
 
     try {
@@ -301,7 +255,7 @@ export default function App() {
   };
 
   if (view === 'STOCK') {
-    return <StockManager onBackToRegister={() => setView('REGISTER')} />;
+    return <StockManager onBackToRegister={() => setView('REGISTER')} currentLocale={locale} />;
   }
 
   if (view === 'SETTINGS') {
@@ -315,69 +269,68 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 antialiased">
-      <header className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shadow-xs">
-        <div className="flex items-center gap-3">
-          <div className="bg-indigo-600 text-white p-2.5 rounded-xl font-bold text-lg">👶</div>
+    <div className="h-screen w-screen overflow-hidden bg-slate-50 flex flex-col font-sans text-slate-900 antialiased">
+      {/* Structural Header Grid */}
+      <header className="bg-white border-b border-slate-200 px-6 py-3.5 flex justify-between items-center shadow-xs flex-shrink-0">
+        <div className="flex items-center gap-3.5">
+          <div className="bg-indigo-600 text-white w-10 h-10 rounded-xl font-bold text-lg flex items-center justify-center shadow-sm shadow-indigo-100">👶</div>
           <div>
-            <h1 className="text-lg font-bold text-slate-900 tracking-tight">{t[locale].shopName}</h1>
-            <p className="text-xs font-semibold text-indigo-600 tracking-wider uppercase">{t[locale].register}</p>
+            <h1 className="text-base font-bold text-slate-900 tracking-tight font-display">{t[locale].shopName}</h1>
+            <p className="text-[11px] font-bold text-indigo-600 tracking-wider uppercase">{t[locale].register}</p>
           </div>
+          <div className="h-6 w-px bg-slate-200 ml-2"></div>
           <button 
             onClick={() => setView('STOCK')}
-            className="ml-4 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-bold text-slate-600 transition-colors"
+            className="px-3.5 py-1.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-all flex items-center gap-1.5"
           >
             {t[locale].manageInventory}
           </button>
           <button 
             onClick={() => setView('SETTINGS')}
-            className="ml-2 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-bold text-slate-600 transition-colors"
+            className="px-3.5 py-1.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-all flex items-center gap-1.5"
           >
             {t[locale].settings}
           </button>
         </div>
-        <div className="bg-slate-100 px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-600">
-          {t[locale].exchangeRate}: <span className="font-bold text-slate-900">$1 = {dynamicRate.toLocaleString()} ៛</span>
+        <div className="bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600">
+          {t[locale].exchangeRate}: <span className="font-bold text-slate-900 font-mono ml-1">$1 = {dynamicRate.toLocaleString()} ៛</span>
         </div>
       </header>
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Side: Operations */}
-        <div className="flex-1 p-6 flex flex-col overflow-y-auto gap-6 max-w-5xl mx-auto w-full">
-          {/* Background listener active status banner with Manual Type Fallback functionality */}
-          <div className="bg-indigo-50/50 border border-indigo-200 px-6 py-4 rounded-2xl text-indigo-700 space-y-3">
+      {/* Main Container Dashboard split layout */}
+      <div className="flex-1 flex overflow-hidden w-full">
+        {/* Left Workspace Panel: Basket stream and actions */}
+        <div className="flex-1 flex flex-col p-5 overflow-hidden gap-4">
+          <div className="bg-white border border-slate-200/80 p-4 rounded-2xl shadow-xs text-indigo-900 flex-shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <span className="text-xl animate-pulse">📡</span>
-                <p className="text-sm font-semibold">
-                  {t[locale].bgListenerActive}
-                </p>
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                <p className="text-xs font-bold text-slate-600 tracking-wide uppercase">{t[locale].bgListenerActive}</p>
               </div>
               <button
                 onClick={() => {
                   setShowManualInput(!showManualInput);
                   setBarcodeInput('');
                 }}
-                className="text-xs bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-bold px-3 py-1.5 rounded-lg transition-colors"
+                className={`text-xs font-bold px-3 py-2 rounded-xl transition-all ${showManualInput ? 'bg-slate-100 text-slate-700' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'}`}
               >
                 {showManualInput ? t[locale].closeManual : t[locale].typeManual}
               </button>
             </div>
 
-            {/* Hidden text form wrapper that slides into view when clicked */}
             {showManualInput && (
-              <form onSubmit={handleBarcodeSubmit} className="flex gap-2 animate-fadeIn pt-1">
+              <form onSubmit={handleBarcodeSubmit} className="flex gap-2 mt-3 animate-fadeIn">
                 <input
                   type="text"
                   value={barcodeInput}
                   onChange={(e) => setBarcodeInput(e.target.value)}
                   placeholder={t[locale].placeholderManual}
-                  className="flex-1 px-4 py-2 bg-white border border-indigo-200 text-slate-800 rounded-xl text-sm font-mono font-medium focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                  className="flex-1 h-11 px-4 bg-slate-50 border border-slate-200 focus:bg-white text-slate-800 rounded-xl text-sm font-mono focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-50"
                   autoFocus
                 />
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-colors shadow-xs"
+                  className="h-11 px-5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-colors shadow-xs"
                 >
                   {t[locale].addItem}
                 </button>
@@ -385,38 +338,39 @@ export default function App() {
             )}
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs flex-1 flex flex-col overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-              <h2 className="font-bold text-slate-800 tracking-tight">{t[locale].currentBasket}</h2>
-              <span className="text-xs bg-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded-full">
+          {/* Master Item Basket View */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 flex-1 flex flex-col overflow-hidden shadow-xs">
+            <div className="px-5 py-3.5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center flex-shrink-0">
+              <h2 className="text-sm font-bold text-slate-800 tracking-tight font-display">{t[locale].currentBasket}</h2>
+              <span className="text-xs bg-slate-200/80 text-slate-700 font-bold px-3 py-1 rounded-full font-mono">
                 {cart.reduce((a, b) => a + b.quantity, 0)} {t[locale].itemsCount}
               </span>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-4 content-start">
               {cart.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-2">
-                  <span className="text-4xl">🛒</span>
-                  <p className="font-medium text-slate-500">{t[locale].basketEmpty}</p>
+                <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-3 py-12">
+                  <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-2xl border border-slate-100">🛒</div>
+                  <p className="text-sm font-semibold text-slate-400 font-display">{t[locale].basketEmpty}</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {cart.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
+                    <div key={item.id} className="flex items-center justify-between p-3.5 bg-slate-50/60 hover:bg-slate-50 rounded-xl border border-slate-100/80 transition-colors">
                       <div className="flex-1 min-w-0 pr-4">
-                        <h3 className="font-semibold text-slate-900 truncate">{item.name}</h3>
-                        <p className="text-xs text-slate-400 font-mono">#{item.barcode}</p>
+                        <h3 className="font-bold text-sm text-slate-900 truncate">{item.name}</h3>
+                        <p className="text-[11px] text-slate-400 font-mono tracking-wider mt-0.5">#{item.barcode}</p>
                       </div>
-                      <div className="flex items-center gap-6">
-                        <div className="flex items-center border border-slate-200 bg-white rounded-lg p-1">
-                          <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 flex items-center justify-center font-bold text-slate-500 hover:bg-slate-50 rounded-md">&minus;</button>
-                          <span className="w-10 text-center font-bold text-slate-800">{item.quantity}</span>
-                          <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 flex items-center justify-center font-bold text-slate-500 hover:bg-slate-50 rounded-md">+</button>
+                      <div className="flex items-center gap-5">
+                        <div className="flex items-center border border-slate-200 bg-white rounded-xl p-0.5 shadow-2xs">
+                          <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 flex items-center justify-center font-bold text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">&minus;</button>
+                          <span className="w-9 text-center font-bold text-sm text-slate-800 font-mono">{item.quantity}</span>
+                          <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 flex items-center justify-center font-bold text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">+</button>
                         </div>
                         <div className="text-right w-24">
-                          <p className="font-bold text-slate-900">${(Number(item.price_usd) * item.quantity).toFixed(2)}</p>
+                          <p className="font-bold text-sm text-slate-900 font-mono">${(Number(item.price_usd) * item.quantity).toFixed(2)}</p>
                         </div>
-                        <button onClick={() => removeItem(item.id)} className="text-slate-400 hover:text-rose-500 p-1 text-lg">✕</button>
+                        <button onClick={() => removeItem(item.id)} className="text-slate-300 hover:text-rose-500 hover:bg-rose-50 w-8 h-8 rounded-lg transition-all text-xs flex items-center justify-center">✕</button>
                       </div>
                     </div>
                   ))}
@@ -426,36 +380,36 @@ export default function App() {
           </div>
         </div>
 
-        {/* Right Side: Payment Context */}
-        <div className="w-100 bg-white border-l border-slate-200 shadow-xl p-6 flex flex-col justify-between overflow-y-auto">
-          <div>
-            <h2 className="text-xs font-bold tracking-wider text-slate-400 uppercase mb-4">{t[locale].paymentStatement}</h2>
+        {/* Right Checkout Ledger Panel */}
+        <div className="w-96 bg-white border-l border-slate-200 shadow-xl p-5 flex flex-col justify-between overflow-y-auto flex-shrink-0">
+          <div className="space-y-5">
+            <h2 className="text-[11px] font-bold tracking-wider text-slate-400 uppercase font-display">{t[locale].paymentStatement}</h2>
             
-            <div className="bg-slate-900 text-white rounded-2xl p-5 mb-6 relative overflow-hidden">
-              <div className="space-y-4 relative z-10">
+            <div className="bg-slate-900 text-white rounded-2xl p-5 relative overflow-hidden shadow-md shadow-slate-900/10">
+              <div className="space-y-3 relative z-10">
                 <div className="flex justify-between items-baseline">
-                  <span className="text-sm font-medium text-slate-400">{t[locale].totalUsd}</span>
-                  <span className="text-4xl font-black tracking-tight">${totalUsd.toFixed(2)}</span>
+                  <span className="text-xs font-medium text-slate-400 font-display">{t[locale].totalUsd}</span>
+                  <span className="text-3xl font-black tracking-tight font-mono">${totalUsd.toFixed(2)}</span>
                 </div>
-                <div className="border-t border-slate-800 pt-3 flex justify-between items-baseline">
-                  <span className="text-xs font-medium text-slate-400">{t[locale].totalKhr}</span>
-                  <span className="text-lg font-bold text-emerald-400 font-mono">{totalKhr.toLocaleString()} ៛</span>
+                <div className="border-t border-slate-800/80 pt-2.5 flex justify-between items-baseline">
+                  <span className="text-xs font-medium text-slate-400 font-display">{t[locale].totalKhr}</span>
+                  <span className="text-base font-bold text-emerald-400 font-mono">{totalKhr.toLocaleString()} ៛</span>
                 </div>
               </div>
             </div>
 
-            <div className="mb-6">
-              <label className="block text-xs font-bold tracking-wider text-slate-400 uppercase mb-2">{t[locale].settlementType}</label>
-              <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11px] font-bold tracking-wider text-slate-400 uppercase mb-2 font-display">{t[locale].settlementType}</label>
+              <div className="grid grid-cols-2 gap-2">
                 <button 
                   onClick={() => { setPaymentMethod('CASH'); setCheckoutResult(null); setActiveKhqr(null); }}
-                  className={`py-3 px-4 rounded-xl border font-bold text-sm transition-all flex items-center justify-center gap-2 ${paymentMethod === 'CASH' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white border-slate-200 text-slate-600'}`}
+                  className={`py-3 px-4 rounded-xl border font-bold text-xs transition-all flex items-center justify-center gap-2 ${paymentMethod === 'CASH' ? 'bg-slate-900 text-white border-slate-900 shadow-xs' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {t[locale].cash}
                 </button>
                 <button 
                   onClick={() => { setPaymentMethod('KHQR'); setCheckoutResult(null); fetchKHQRString(totalUsd); }}
-                  className={`py-3 px-4 rounded-xl border font-bold text-sm transition-all flex items-center justify-center gap-2 ${paymentMethod === 'KHQR' ? 'bg-rose-500 text-white border-rose-500' : 'bg-white border-slate-200 text-slate-600'}`}
+                  className={`py-3 px-4 rounded-xl border font-bold text-xs transition-all flex items-center justify-center gap-2 ${paymentMethod === 'KHQR' ? 'bg-rose-600 text-white border-rose-600 shadow-xs' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {t[locale].khqr}
                 </button>
@@ -464,38 +418,36 @@ export default function App() {
 
             {paymentMethod === 'CASH' ? (
               <div className="space-y-4">
-                {/* Input Tenders Container */}
-                <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200/60">
+                <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200/60">
                   <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">{t[locale].tenderedUsd}</label>
+                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide font-display">{t[locale].tenderedUsd}</label>
                     <input 
                       type="number" 
                       value={amountPaidUsd} 
                       onChange={(e) => { setAmountPaidUsd(e.target.value); setCheckoutResult(null); }} 
-                      className="w-full mt-1.5 p-2.5 bg-white border border-slate-200 rounded-lg font-bold text-slate-800 focus:ring-2 focus:ring-indigo-100 focus:outline-hidden" 
+                      className="w-full mt-1.5 h-10 px-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-800 font-mono text-sm focus:ring-2 focus:ring-indigo-50 focus:outline-hidden focus:border-indigo-500" 
                       placeholder="0.00" 
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">{t[locale].tenderedKhr}</label>
+                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide font-display">{t[locale].tenderedKhr}</label>
                     <input 
                       type="number" 
                       value={amountPaidKhr} 
                       onChange={(e) => { setAmountPaidKhr(e.target.value); setCheckoutResult(null); }} 
-                      className="w-full mt-1.5 p-2.5 bg-white border border-slate-200 rounded-lg font-bold text-slate-800 focus:ring-2 focus:ring-indigo-100 focus:outline-hidden" 
+                      className="w-full mt-1.5 h-10 px-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-800 font-mono text-sm focus:ring-2 focus:ring-indigo-50 focus:outline-hidden focus:border-indigo-500" 
                       placeholder="0" 
                     />
                   </div>
                 </div>
 
-                {/* LIVE CALCULATION REFCARD READOUT */}
                 {totalTenderedInUsd > 0 && (
-                  <div className={`p-4 rounded-xl border transition-all ${changeDueUsd >= 0 ? 'bg-emerald-50/60 border-emerald-200' : 'bg-amber-50/60 border-amber-200'}`}>
+                  <div className={`p-4 rounded-2xl border transition-all ${changeDueUsd >= 0 ? 'bg-emerald-50/50 border-emerald-200' : 'bg-amber-50/50 border-amber-200'}`}>
                     <div className="flex justify-between items-center">
-                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide font-display">
                         {changeDueUsd >= 0 ? t[locale].changeDue : t[locale].shortage}
                       </span>
-                      <span className={`text-xl font-black font-mono ${changeDueUsd >= 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                      <span className={`text-lg font-black font-mono ${changeDueUsd >= 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
                         {changeDueUsd >= 0 
                           ? `${changeDueKhr.toLocaleString()} ៛` 
                           : `${Math.abs(Math.round(changeDueUsd * dynamicRate)).toLocaleString()} ៛`
@@ -503,7 +455,7 @@ export default function App() {
                       </span>
                     </div>
                     {changeDueUsd > 0 && (
-                      <p className="text-[10px] text-emerald-600 font-semibold text-right mt-1">
+                      <p className="text-[10px] text-emerald-600 font-bold font-mono text-right mt-0.5">
                         {t[locale].approx} ${(changeDueUsd).toFixed(2)} USD
                       </p>
                     )}
@@ -511,33 +463,33 @@ export default function App() {
                 )}
               </div>
             ) : (
-              <div className="space-y-4 bg-rose-50/40 border border-rose-100 p-5 rounded-2xl flex flex-col items-center">
+              <div className="space-y-4 bg-rose-50/30 border border-rose-100 p-5 rounded-2xl flex flex-col items-center">
                 {activeKhqr ? (
                   <>
-                    <div className="bg-white p-3 rounded-xl shadow-xs border border-rose-100">
-                      <QRCodeCanvas value={activeKhqr.qr_string} size={180} level={"M"} includeMargin={true} />
+                    <div className="bg-white p-2.5 rounded-xl shadow-xs border border-rose-100">
+                      <QRCodeCanvas value={activeKhqr.qr_string} size={160} level={"M"} includeMargin={true} />
                     </div>
                     <div className="text-center">
-                      <p className="font-bold text-sm text-slate-800">{t[locale].scanToPay}</p>
-                      <p className="text-xs text-rose-500 font-semibold font-mono mt-0.5">{t[locale].ref}: {activeKhqr.md5_hash.substring(0, 8).toUpperCase()}</p>
-                      <p className="text-[10px] text-slate-400 mt-2 animate-pulse">{t[locale].waitingPayment}</p>
+                      <p className="font-bold text-xs text-slate-800 font-display">{t[locale].scanToPay}</p>
+                      <p className="text-[10px] text-rose-500 font-bold font-mono mt-0.5">{t[locale].ref}: {activeKhqr.md5_hash.substring(0, 8).toUpperCase()}</p>
+                      <p className="text-[9px] text-slate-400 mt-2 font-display animate-pulse">{t[locale].waitingPayment}</p>
                     </div>
                   </>
                 ) : (
-                  <p className="text-xs text-slate-400 font-medium animate-pulse">{t[locale].assemblingPacket}</p>
+                  <p className="text-xs text-slate-400 font-bold font-display animate-pulse">{t[locale].assemblingPacket}</p>
                 )}
               </div>
             )}
           </div>
 
-          <div className="mt-6 space-y-4">
+          <div className="mt-5 space-y-3 flex-shrink-0">
             {checkoutResult && (
-              <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 p-4 rounded-xl flex items-start gap-3">
-                <span className="text-xl">✅</span>
+              <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 p-3.5 rounded-xl flex items-start gap-2.5">
+                <span className="text-base">✅</span>
                 <div className="flex-1">
-                  <p className="font-bold text-sm text-emerald-900">{t[locale].orderSaved}</p>
+                  <p className="font-bold text-xs text-emerald-900 font-display">{t[locale].orderSaved}</p>
                   {checkoutResult.change_due_khr > 0 && (
-                    <p className="text-lg font-black text-emerald-600 font-mono mt-1">{checkoutResult.change_due_khr.toLocaleString()} ៛</p>
+                    <p className="text-base font-black text-emerald-600 font-mono mt-0.5">{checkoutResult.change_due_khr.toLocaleString()} ៛</p>
                   )}
                 </div>
               </div>
@@ -547,7 +499,7 @@ export default function App() {
               <button 
                 onClick={handleCheckout}
                 disabled={cart.length === 0}
-                className={`w-full py-4 rounded-xl font-bold transition-all text-base ${cart.length === 0 ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-indigo-600 text-white cursor-pointer hover:bg-indigo-700'}`}
+                className={`w-full h-12 rounded-xl font-bold transition-all text-sm font-display shadow-xs ${cart.length === 0 ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-indigo-600 text-white cursor-pointer hover:bg-indigo-700 active:scale-[0.99]'}`}
               >
                 {t[locale].finalizeOrder}
               </button>
