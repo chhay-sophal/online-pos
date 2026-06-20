@@ -4,7 +4,7 @@ import Invoice from './Invoice';
 import { translations as t } from './locales';
 
 const PAGE_SIZE = 10;
-const BACKEND_URL = 'http://localhost:5050';
+const BACKEND_URL = import.meta.env.PROD ? '' : 'http://localhost:5050';
 
 function getPeriodRange(period) {
   const now = new Date();

@@ -2,8 +2,12 @@
 -- 001_initial_schema.sql
 -- SOSO BABY MART — Point of Sale System
 --
--- Fresh-database setup. For existing databases apply migrate_single_currency.sql
--- on top of the old query.sql instead.
+-- Canonical fresh-database setup. Creates all types, tables, indexes, and
+-- default store settings.
+--
+-- Note: migrate_single_currency.sql has been retired. Its changes (consolidating
+-- dual-currency price columns into a single price + currency column) are already
+-- reflected in this schema and do not need to be applied separately.
 -- =============================================================================
 
 BEGIN;
@@ -12,7 +16,7 @@ BEGIN;
 -- ENUM TYPES
 -- =============================================================================
 
-CREATE TYPE payment_type  AS ENUM ('CASH', 'KHQR');
+CREATE TYPE payment_type AS ENUM ('CASH', 'KHQR');
 CREATE TYPE order_status  AS ENUM ('COMPLETED', 'CANCELLED');
 CREATE TYPE khqr_status   AS ENUM ('PENDING', 'SUCCESS', 'FAILED', 'EXPIRED');
 
@@ -85,31 +89,24 @@ CREATE TABLE store_settings (
 -- Unique constraints already carry an implicit index (barcode, md5_hash).
 -- =============================================================================
 
-CREATE INDEX idx_orders_created_at      ON orders             (created_at DESC);
-CREATE INDEX idx_orders_customer_id     ON orders             (customer_id);
-CREATE INDEX idx_order_items_order_id   ON order_items        (order_id);
-CREATE INDEX idx_khqr_order_id          ON khqr_transactions  (order_id);
+CREATE INDEX idx_orders_created_at    ON orders            (created_at DESC);
+CREATE INDEX idx_orders_customer_id   ON orders            (customer_id);
+CREATE INDEX idx_order_items_order_id ON order_items       (order_id);
+CREATE INDEX idx_khqr_order_id        ON khqr_transactions (order_id);
 
 -- =============================================================================
--- SEED DATA — settings defaults
+-- DEFAULT STORE SETTINGS
+-- These are the initial values. All can be updated at runtime through the
+-- Settings screen in the app — no database access required.
 -- =============================================================================
 
 INSERT INTO store_settings (key, value) VALUES
     ('exchange_rate',        '4100'),
     ('locale',               'km'),
     ('main_currency',        'USD'),
-    ('bakong_account_id',    'your_account@abaa'),
+    ('bakong_account_id',    'your_account@bank'),
     ('bakong_merchant_name', 'SOSO Baby Mart'),
     ('bakong_merchant_city', 'Phnom Penh')
 ON CONFLICT (key) DO NOTHING;
-
--- =============================================================================
--- SEED DATA — demo products (remove before deploying to production)
--- =============================================================================
-
-INSERT INTO products (name, barcode, price, currency, stock) VALUES
-    ('Enfamil A+ Stage 1 (400g)', '884321678901', 18.50, 'USD', 24),
-    ('MamyPoko Wipes 80s',        '885111112222',  2.25, 'USD', 50),
-    ('Pampers Pants XL 46s',      '490243075631', 14.20, 'USD', 15);
 
 COMMIT;

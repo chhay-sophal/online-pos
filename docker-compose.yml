@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pos
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: posdb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Only the numbered init scripts run — migrate_single_currency.sql is excluded
+      - ./backend/sql/001_initial_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      # Remove the line below before going to production (mock data only)
+      # - ./backend/sql/002_seed_mock_data.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pos -d posdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      PORT: 5050
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: pos
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_DATABASE: posdb
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

@@ -15,7 +15,7 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showConfirmPopup, setShowConfirmPopup] = useState(false);
   
-  const BACKEND_URL = 'http://localhost:5050';
+  const BACKEND_URL = import.meta.env.PROD ? '' : 'http://localhost:5050';
 
   useEffect(() => {
     fetchSettings();

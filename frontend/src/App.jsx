@@ -22,7 +22,7 @@ export default function App() {
   const [mainCurrency, setMainCurrency] = useState('USD');
   
   const barcodeRef = useRef(null);
-  const BACKEND_URL = 'http://localhost:5050';
+  const BACKEND_URL = import.meta.env.PROD ? '' : 'http://localhost:5050';
 
   useEffect(() => {
     focusScanner();
