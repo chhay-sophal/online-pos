@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import StockManager from './StockManager';
+import SettingsManager from './SettingsManager';
 
 export default function App() {
   const [cart, setCart] = useState([]);
@@ -11,6 +12,7 @@ export default function App() {
   const [checkoutResult, setCheckoutResult] = useState(null);
   const [view, setView] = useState('REGISTER');
   const [activeKhqr, setActiveKhqr] = useState(null);
+  const [dynamicRate, setDynamicRate] = useState(4100);
   
   const barcodeRef = useRef(null);
   const BACKEND_URL = 'http://localhost:5050';
@@ -91,6 +93,16 @@ export default function App() {
       window.removeEventListener('keydown', handleGlobalScanStream);
     };
   }, [view, BACKEND_URL]);
+
+  useEffect(() => {
+    // Pull dynamic settings variables from backend
+    fetch(`${BACKEND_URL}/api/settings`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.exchange_rate) setDynamicRate(Number(data.exchange_rate));
+      })
+      .catch(err => console.error("Could not sync app settings configuration", err));
+  }, [view]); // Automatically syncs whenever you shift back to the main register view
 
   const focusScanner = () => {
     if (view === 'REGISTER' && barcodeRef.current) barcodeRef.current.focus();
@@ -186,7 +198,7 @@ export default function App() {
   };
 
   const totalUsd = cart.reduce((sum, item) => sum + (item.price_usd * item.quantity), 0);
-  const totalKhr = totalUsd * 4100;
+  const totalKhr = totalUsd * dynamicRate;
 
   // --- LIVE CHANGE CALCULATION ENGINE ---
   // 1. Convert whatever raw cash text inputs the cashier typed into floating numbers safely
@@ -273,6 +285,10 @@ export default function App() {
     return <StockManager onBackToRegister={() => setView('REGISTER')} />;
   }
 
+  if (view === 'SETTINGS') {
+    return <SettingsManager onBackToRegister={() => setView('REGISTER')} />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 antialiased">
       <header className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shadow-xs">
@@ -288,9 +304,15 @@ export default function App() {
           >
             ⚙️ Manage Inventory Stock
           </button>
+          <button 
+            onClick={() => setView('SETTINGS')}
+            className="ml-2 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-bold text-slate-600 transition-colors"
+          >
+            ⚙️ Settings
+          </button>
         </div>
         <div className="bg-slate-100 px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-600">
-          Exchange Rate: <span className="font-bold text-slate-900">$1 = 4,100 ៛</span>
+          Exchange Rate: <span className="font-bold text-slate-900">$1 = {dynamicRate.toLocaleString()}</span>
         </div>
       </header>
 

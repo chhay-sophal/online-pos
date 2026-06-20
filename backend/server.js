@@ -2,22 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import pg from 'pg';
 import dotenv from 'dotenv';
-// import {KHQR, khqrData, IndividualInfo, MerchantInfo, SourceInfo} from 'bakong-khqr';
-// import BakongKHQR from 'bakong-khqr';
-// const {
-// BakongKHQR,
-// khqrData,
-// IndividualInfo,
-// MerchantInfo,
-// } = require("bakong-khqr");
-
-// const bakongKhqr = new KHQR();
-
 import pkg from 'bakong-khqr';
-// const { BakongKHQR } = pkg; // Extract the core class safely
-
-// Create your class instance
-// const khqrInstance = new BakongKHQR();
+import axios from 'axios';
 
 dotenv.config();
 
@@ -117,8 +103,6 @@ app.post('/api/payments/khqr', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
-import axios from 'axios';
 
 // 2b. PRODUCTION CHECK LOOP: Query the Central Bank of Cambodia directly (with Detailed Debug Console logs)
 app.get('/api/payments/check-status/:md5_hash', async (req, res) => {
@@ -318,6 +302,52 @@ app.post('/api/products', async (req, res) => {
   } catch (err) {
     console.error('Error introducing new product:', err.message);
     res.status(500).json({ error: err.message });
+  }
+});
+
+
+// --- STORE SETTINGS ENDPOINTS ---
+
+// Fetch all system configurations
+app.get('/api/settings', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM store_settings');
+    // Convert rows array into a clean key-value object e.g., { exchange_rate: '4100' }
+    const settingsObj = {};
+    result.rows.forEach(row => {
+      settingsObj[row.key] = row.value;
+    });
+    res.json(settingsObj);
+  } catch (err) {
+    console.error('Error loading config rows:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update multiple settings at once
+app.put('/api/settings', async (req, res) => {
+  const settings = req.body; // Expects key-value pair map object
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    for (const [key, value] of Object.entries(settings)) {
+      await client.query(
+        `INSERT INTO store_settings (key, value) 
+         VALUES ($1, $2) 
+         ON CONFLICT (key) DO UPDATE SET value = $2`,
+        [key, String(value)]
+      );
+    }
+    await client.query('COMMIT');
+    console.log('⚙️ System configuration table updated successfully.');
+    res.json({ message: 'Settings saved perfectly' });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Error committing setting adjustments:', err.message);
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
   }
 });
 
