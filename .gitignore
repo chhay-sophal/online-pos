@@ -35,6 +35,3 @@ Thumbs.db
 
 # Distribution directory
 dist/
-
-# SQL dumps
-sql/
