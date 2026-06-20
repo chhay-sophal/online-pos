@@ -77,31 +77,6 @@ body {
   box-sizing: border-box;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: var(--heading);
-  font-weight: 700; /* Bolder font weight for modern unlooped Khmer font pop */
-  color: var(--text-h);
-  margin: 0;
-}
-
-p {
-  margin: 0;
-}
-
-code {
-  font-family: var(--mono);
-  font-size: 13px;
-  padding: 2px 6px;
-  background: var(--code-bg);
-  border-radius: 6px;
-  color: var(--text-h);
-}
-
 /* Clean utility fade-in for input drawer dropdowns */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-4px); }
