@@ -162,205 +162,215 @@ export default function StockManager({ onBackToRegister, currentLocale, mainCurr
 
   return (
     <div className="h-screen bg-slate-50 flex flex-col font-sans text-slate-900 antialiased overflow-hidden">
-      <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-xs flex-shrink-0">
-        <div className="flex items-center gap-4">
+      <header className="bg-white border-b border-slate-200 px-6 py-3.5 flex justify-between items-center flex-shrink-0">
+        <div className="flex items-center gap-3.5">
           <button
             onClick={onBackToRegister}
-            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-semibold transition-colors text-slate-600 font-display cursor-pointer"
+            className="px-3.5 py-1.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-all flex items-center gap-1.5 cursor-pointer"
           >
-            ⬅ {t[currentLocale]?.register || 'Register'}
+            ← {t[currentLocale]?.register || 'Register'}
           </button>
+          <div className="h-6 w-px bg-slate-200" />
           <div>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight font-display">
-              {t[currentLocale]?.manageInventory || 'Inventory Management'}
-            </h1>
-            <p className="text-xs font-bold text-indigo-600 tracking-wider uppercase font-display">
-              {labels.inventoryLedger || 'Inventory Stock Ledger'}
-            </p>
+            <h1 className="text-base font-bold text-slate-900 tracking-tight">{t[currentLocale]?.manageInventory || 'Inventory Management'}</h1>
+            <p className="text-[11px] font-bold text-indigo-600 tracking-wider uppercase">{labels.inventoryLedger || 'Inventory Stock Ledger'}</p>
           </div>
         </div>
 
-        <div className="relative mx-6 flex-1 max-w-sm">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-          </svg>
-          <input
-            type="text"
-            value={search}
-            onChange={e => { setSearch(e.target.value); setEditingId(null); }}
-            placeholder={labels.searchPlaceholder}
-            className="w-full pl-8 pr-8 py-2 text-sm bg-slate-100 border border-transparent focus:border-indigo-300 focus:bg-white rounded-xl outline-none transition-all placeholder:text-slate-400 font-medium"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
-            >✕</button>
-          )}
+        <div className="flex items-center gap-3 flex-1 mx-6">
+          <div className="relative flex-1 max-w-sm">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+            </svg>
+            <input
+              type="text"
+              value={search}
+              onChange={e => { setSearch(e.target.value); setEditingId(null); }}
+              placeholder={labels.searchPlaceholder}
+              className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-100 border border-transparent focus:border-indigo-300 focus:bg-white rounded-xl outline-none transition-all placeholder:text-slate-400 font-medium"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+              >✕</button>
+            )}
+          </div>
         </div>
 
         <button
           onClick={() => setShowAddForm(true)}
-          className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm shadow-sm transition-all flex items-center gap-2 font-display cursor-pointer active:scale-95 flex-shrink-0"
+          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-sm transition-all flex items-center gap-2 cursor-pointer active:scale-95 flex-shrink-0"
         >
-          {labels.registerNewProduct || '➕ Register New Product'}
+          {labels.registerNewProduct || '+ Register New Product'}
         </button>
       </header>
 
+      {/* Data Matrix Grid Table Wrapper */}
       <div className="flex-1 overflow-hidden flex flex-col">
-        <div className="flex-1 p-6 pb-0 max-w-6xl mx-auto w-full overflow-hidden flex flex-col">
-          {/* Data Matrix Grid Table Wrapper */}
-          <div className="flex-1 bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden flex flex-col">
-          {/* Filter bar */}
-          <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-3 flex-shrink-0">
-            <div className="flex gap-1">
-              {['all', 'USD', 'KHR'].map(c => (
-                <button
-                  key={c}
-                  onClick={() => setCurrFilter(c)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
-                    currFilter === c ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                  }`}
-                >
-                  {c === 'all' ? 'All' : c}
-                </button>
-              ))}
-            </div>
-            <div className="h-4 w-px bg-slate-200" />
-            <button
-              onClick={() => setLowStock(v => !v)}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
-                lowStock ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-              }`}
-            >
-              ⚠ Low Stock
-            </button>
-            <span className="ml-auto text-[11px] text-slate-400 font-mono">{displayed.length} products</span>
+        {/* Filter bar */}
+        <div className="px-4 py-2.5 bg-white border-b border-slate-200 flex items-center gap-3 flex-shrink-0">
+          <div className="flex gap-1">
+            {['all', 'USD', 'KHR'].map(c => (
+              <button
+                key={c}
+                onClick={() => setCurrFilter(c)}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                currFilter === c ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                }`}
+              >
+                {c === 'all' ? 'All' : c}
+              </button>
+            ))}
           </div>
-          <div className="flex-1 overflow-x-auto overflow-y-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase tracking-wider font-display">
-                  <th className="px-6 py-3.5 w-12 text-center cursor-pointer select-none hover:text-slate-600" onClick={() => toggleSort('id')}>ID{si('id')}</th>
-                  <th className="px-6 py-3.5 cursor-pointer select-none hover:text-slate-600" onClick={() => toggleSort('name')}>{labels.thName || 'Product Name'}{si('name')}</th>
-                  <th className="px-6 py-3.5 cursor-pointer select-none hover:text-slate-600" onClick={() => toggleSort('barcode')}>{labels.thBarcode || 'Barcode Key'}{si('barcode')}</th>
-                  <th className="px-6 py-3.5 text-center cursor-pointer select-none hover:text-slate-600" onClick={() => toggleSort('price')}>{labels.thPrice || 'Unit Price'}{si('price')}</th>
-                  <th className="px-6 py-3.5 w-36 cursor-pointer select-none hover:text-slate-600" onClick={() => toggleSort('stock')}>{labels.thStock || 'Current Stock Level'}{si('stock')}</th>
-                  <th className="px-6 py-3.5 text-right w-28">{labels.thActions || 'Actions'}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-sm font-medium text-slate-700">
-                {paged.map((product) => {
-                  const isEditing = editingId === product.id;
-                  const isLowStock = product.stock <= 5;
-                  
-                  return (
-                    <tr key={product.id} className={`hover:bg-slate-50/50 transition-colors ${isEditing ? 'bg-indigo-50/20' : ''}`}>
-                      <td className="px-6 py-3 text-center text-xs font-mono font-bold text-slate-400">{product.id}</td>
-                      
-                      {/* Name Column Rendering */}
-                      <td className="px-6 py-3">
-                        {isEditing ? (
-                          <input 
-                            type="text"
-                            value={editForm.name}
-                            onChange={(e) => setEditForm({...editForm, name: e.target.value})}
-                            className="p-1.5 border border-slate-200 rounded bg-white w-full max-w-xs font-display text-sm font-semibold"
-                          />
-                        ) : (
-                          <span className="text-slate-900 font-bold font-display">{product.name}</span>
-                        )}
-                      </td>
+          <div className="h-4 w-px bg-slate-200" />
+          <button
+            onClick={() => setLowStock(v => !v)}
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+            lowStock ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+            }`}
+          >
+            ⚠ Low Stock
+          </button>
+          <span className="ml-auto text-[11px] text-slate-400 font-mono">{displayed.length} products</span>
+        </div>
 
-                      {/* Barcode Column Rendering */}
-                      <td className="px-6 py-3">
-                        {isEditing ? (
-                          <input 
-                            type="text"
-                            value={editForm.barcode}
-                            onChange={(e) => setEditForm({...editForm, barcode: e.target.value})}
-                            className="p-1.5 border border-slate-200 rounded bg-white w-full font-mono text-xs text-slate-600"
-                          />
-                        ) : (
-                          <span className="font-mono text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded-md font-bold">{product.barcode}</span>
-                        )}
-                      </td>
+        <div className="flex-1 overflow-y-auto p-5">
+        {products.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400">
+          <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-2xl">📦</div>
+          <p className="text-sm font-semibold">{labels.noProducts || 'No products yet'}</p>
+          </div>
+        ) : displayed.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400">
+          <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-2xl">🔍</div>
+          <p className="text-sm font-semibold">{labels.noResults || 'No matching products'}</p>
+          </div>
+        ) : (
+            <div className="space-y-2 max-w-5xl mx-auto">
+            {/* Column headers */}
+            <div className="grid grid-cols-[44px_1fr_150px_150px_110px_100px] gap-3 px-4 py-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                <button className="text-left cursor-pointer hover:text-slate-600 select-none" onClick={() => toggleSort('id')}>ID{si('id')}</button>
+                <button className="text-left cursor-pointer hover:text-slate-600 select-none" onClick={() => toggleSort('name')}>{labels.thName || 'Name'}{si('name')}</button>
+                <button className="text-left cursor-pointer hover:text-slate-600 select-none" onClick={() => toggleSort('barcode')}>{labels.thBarcode || 'Barcode'}{si('barcode')}</button>
+                <button className="text-center cursor-pointer hover:text-slate-600 select-none" onClick={() => toggleSort('price')}>{labels.thPrice || 'Price'}{si('price')}</button>
+                <button className="text-left cursor-pointer hover:text-slate-600 select-none" onClick={() => toggleSort('stock')}>{labels.thStock || 'Stock'}{si('stock')}</button>
+                <span />
+            </div>
 
-                      {/* Price Column */}
-                      <td className="px-6 py-3 text-center">
-                        {isEditing ? (
-                          <div className="flex items-center gap-1.5 justify-center">
-                            <input
+            {paged.map((product) => {
+                const isEditing = editingId === product.id;
+                const isLowStock = product.stock <= 5;
+
+                return (
+                <div
+                    key={product.id}
+                    className={`bg-white rounded-2xl border transition-all overflow-hidden ${
+                    isEditing
+                        ? 'border-indigo-200 shadow-sm'
+                        : isLowStock
+                        ? 'border-amber-200/60 hover:border-amber-300'
+                        : 'border-slate-200/80 hover:border-slate-300'
+                    }`}
+                >
+                    <div className="grid grid-cols-[44px_1fr_150px_150px_110px_100px] gap-3 px-4 py-3.5 items-center">
+                    {/* ID */}
+                    <span className="font-black text-sm text-indigo-600 font-mono">#{String(product.id).padStart(3, '0')}</span>
+
+                    {/* Name */}
+                    {isEditing ? (
+                        <input
+                        type="text"
+                        value={editForm.name}
+                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                        className="px-2.5 py-1.5 border border-slate-200 rounded-xl bg-white w-full text-sm font-semibold outline-none focus:border-indigo-300"
+                        />
+                    ) : (
+                        <span className="text-sm font-bold text-slate-900 truncate">{product.name}</span>
+                    )}
+
+                    {/* Barcode */}
+                    {isEditing ? (
+                        <input
+                        type="text"
+                        value={editForm.barcode}
+                        onChange={(e) => setEditForm({ ...editForm, barcode: e.target.value })}
+                        className="px-2.5 py-1.5 border border-slate-200 rounded-xl bg-white w-full font-mono text-xs outline-none focus:border-indigo-300"
+                        />
+                    ) : (
+                        <span className="font-mono text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded-lg font-bold truncate inline-block max-w-full">{product.barcode}</span>
+                    )}
+
+                    {/* Price */}
+                    {isEditing ? (
+                        <div className="flex items-center gap-1.5">
+                          <input
                               type="number"
                               step={editForm.currency === 'USD' ? '0.01' : '100'}
                               value={editForm.price}
                               onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
-                              className="p-1.5 border border-slate-200 rounded bg-white w-24 text-center font-semibold text-sm"
-                            />
-                            <select
+                              className="px-2 py-1.5 border border-slate-200 rounded-xl bg-white min-w-20 text-center font-semibold text-sm outline-none focus:border-indigo-300"
+                          />
+                          <select
                               value={editForm.currency}
                               onChange={(e) => setEditForm({ ...editForm, currency: e.target.value })}
-                              className="p-1.5 border border-slate-200 rounded bg-white text-xs font-bold text-slate-600"
-                            >
+                              className="px-1.5 py-1.5 border border-slate-200 rounded-xl bg-white text-xs font-bold text-slate-600 outline-none focus:border-indigo-300"
+                          >
                               <option value="USD">USD</option>
                               <option value="KHR">KHR</option>
-                            </select>
-                          </div>
-                        ) : (
-                          <div>
-                            <span className="font-bold text-slate-800">
-                              {product.currency === 'KHR'
-                                ? `${parseFloat(product.price).toLocaleString()} ៛`
-                                : `$${parseFloat(product.price).toFixed(2)}`}
-                            </span>
-                            <p className="text-[10px] text-slate-400 font-mono mt-0.5">
-                              {product.currency === 'KHR'
-                                ? `≈ $${(parseFloat(product.price) / dynamicRate).toFixed(2)}`
-                                : `≈ ${Math.round(parseFloat(product.price) * dynamicRate).toLocaleString()} ៛`}
-                            </p>
-                          </div>
-                        )}
-                      </td>
+                          </select>
+                        </div>
+                    ) : (
+                        <div className="text-center">
+                        <p className="text-sm font-black text-slate-900 font-mono">
+                            {product.currency === 'KHR'
+                            ? `${parseFloat(product.price).toLocaleString()} ៛`
+                            : `$${parseFloat(product.price).toFixed(2)}`}
+                        </p>
+                        <p className="text-[10px] text-slate-400 font-mono mt-0.5">
+                            {product.currency === 'KHR'
+                            ? `≈ $${(parseFloat(product.price) / dynamicRate).toFixed(2)}`
+                            : `≈ ${Math.round(parseFloat(product.price) * dynamicRate).toLocaleString()} ៛`}
+                        </p>
+                        </div>
+                    )}
 
-                      {/* Stock Inventory Controls Row Column */}
-                      <td className="px-6 py-3">
-                        {isEditing ? (
-                          <input 
-                            type="number"
-                            value={editForm.stock}
-                            onChange={(e) => setEditForm({...editForm, stock: e.target.value})}
-                            className="p-1.5 border border-slate-200 rounded bg-white w-16 text-center font-bold text-sm"
-                          />
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold font-mono ${isLowStock ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-700'}`}>
-                              {product.stock}
-                            </span>
-                            {isLowStock && <span className="text-[11px] text-amber-600 font-bold font-display">{labels.needsRestock}</span>}
-                          </div>
-                        )}
-                      </td>
+                    {/* Stock */}
+                    {isEditing ? (
+                        <input
+                        type="number"
+                        value={editForm.stock}
+                        onChange={(e) => setEditForm({ ...editForm, stock: e.target.value })}
+                        className="px-2 py-1.5 border border-slate-200 rounded-xl bg-white w-16 text-center font-bold text-sm outline-none focus:border-indigo-300"
+                        />
+                    ) : (
+                        <div className="flex items-center gap-1.5">
+                        <span className={`px-2.5 py-1 rounded-lg text-xs font-bold font-mono ${isLowStock ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-700'}`}>
+                            {product.stock}
+                        </span>
+                        {isLowStock && <span className="text-[10px] text-amber-600 font-bold">{labels.needsRestock}</span>}
+                        </div>
+                    )}
 
-                      {/* Control Actions Row Layout */}
-                      <td className="px-6 py-3 text-right">
-                        {isEditing ? (
-                          <div className="flex justify-end gap-1.5">
-                            <button onClick={() => handleSaveEdit(product.id)} className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold font-display cursor-pointer">{labels.saveBtn}</button>
-                            <button onClick={() => setEditingId(null)} className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg text-xs font-bold font-display cursor-pointer">{labels.cancelBtn}</button>
-                          </div>
-                        ) : (
-                          <button onClick={() => handleEditClick(product)} className="text-indigo-600 hover:text-indigo-900 text-xs font-bold bg-indigo-50/60 hover:bg-indigo-100 px-3 py-1.5 rounded-xl transition-colors font-display cursor-pointer">
+                    {/* Actions */}
+                    {isEditing ? (
+                        <div className="flex justify-end gap-1.5">
+                        <button onClick={() => handleSaveEdit(product.id)} className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold cursor-pointer transition-colors">{labels.saveBtn}</button>
+                        <button onClick={() => setEditingId(null)} className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg text-xs font-bold cursor-pointer transition-colors">{labels.cancelBtn}</button>
+                        </div>
+                    ) : (
+                        <div className="flex justify-end">
+                        <button onClick={() => handleEditClick(product)} className="text-indigo-600 hover:text-indigo-900 text-xs font-bold bg-indigo-50/60 hover:bg-indigo-100 px-3 py-1.5 rounded-xl transition-colors cursor-pointer">
                             {labels.editBtn}
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
+                        </button>
+                        </div>
+                    )}
+                    </div>
+                </div>
+                );
+            })}
+            </div>
+        )}
         </div>
       </div>
 
@@ -380,7 +390,6 @@ export default function StockManager({ onBackToRegister, currentLocale, mainCurr
           </div>
         </div>
       )}
-      </div>
 
       {/* MODAL POPUP DIALOG: REGISTER NEW PRODUCT */}
       {showAddForm && (
