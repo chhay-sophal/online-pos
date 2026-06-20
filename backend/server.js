@@ -23,6 +23,44 @@ const pool = new Pool({
 // Exchange rate helper (Standard Cambodia retail benchmark: $1 = 4,100 KHR)
 const EXCHANGE_RATE = 4100;
 
+// --- BACKGROUND WORKER: Automated Token Renewal Every 80 Days (Bakong tokens last 90 days, we renew at day 80 to be safe) ---
+// Dynamic automated function to request a fresh token straight from the central bank ledger
+async function autoRenewBakongToken() {
+  try {
+    // 1. Fetch the owner's registered email address from our dynamic settings table
+    const emailResult = await pool.query("SELECT value FROM store_settings WHERE key = 'bakong_registered_email'");
+    const registeredEmail = emailResult.rows[0]?.value;
+
+    if (!registeredEmail) {
+      console.error("❌ Token renewal aborted: No 'bakong_registered_email' set in database config.");
+      return null;
+    }
+
+    console.log(`🔄 Requesting automated token rotation for: ${registeredEmail}`);
+
+    // 2. Query the official NBC Open API token maintenance link
+    const response = await axios.post('https://api-bakong.nbc.gov.kh/v1/renew_token', {
+      email: registeredEmail
+    });
+
+    if (response.data && response.data.responseCode === 0) {
+      const freshToken = response.data.data.token; // The new 90-day string token string
+      
+      // 3. Persist the fresh token into our settings table for immediate reuse
+      await pool.query(
+        "INSERT INTO store_settings (key, value) VALUES ('bakong_api_token', $1) ON CONFLICT (key) DO UPDATE SET value = $1",
+        [`Bearer ${freshToken}`]
+      );
+
+      console.log("💚 Token rotated successfully! Saved to PostgreSQL registry.");
+      return `Bearer ${freshToken}`;
+    }
+  } catch (err) {
+    console.error("❌ Critical exception during background token rotation:", err.message);
+    return null;
+  }
+}
+
 // --- API ENDPOINTS ---
 
 // 1. SCANNER ENDPOINT: Fetch item immediately when barcode scanner inputs text
@@ -108,62 +146,49 @@ app.post('/api/payments/khqr', async (req, res) => {
 app.get('/api/payments/check-status/:md5_hash', async (req, res) => {
   const { md5_hash } = req.params;
 
-  console.log('\n--- 📡 [BAKONG INTEGRATION DEBUG CONSOLE] ---');
-  console.log(`⏰ Timestamp: ${new Date().toLocaleTimeString()}`);
-  console.log(`🔍 Checking MD5 Reference Hash: "${md5_hash}"`);
-  console.log(`🔑 Token Detected: ${process.env.BAKONG_API_TOKEN ? '✅ Present (Masked)' : '❌ MISSING FROM .ENV'}`);
-
   try {
-    const targetUrl = 'https://api-bakong.nbc.gov.kh/v1/check_transaction_by_md5';
+    // Grab whatever token is currently cached in the database settings
+    let tokenResult = await pool.query("SELECT value FROM store_settings WHERE key = 'bakong_api_token'");
+    let currentToken = tokenResult.rows[0]?.value;
+
+    let targetUrl = 'https://api-bakong.nbc.gov.kh/v1/check_transaction_by_md5';
     
-    console.log(`📤 Sending POST request to central bank gateway...`);
-    const response = await axios.post(
-      targetUrl,
-      { md5: md5_hash },
-      {
-        headers: {
-          'Authorization': process.env.BAKONG_API_TOKEN,
-          'Content-Type': 'application/json'
-        },
-        timeout: 4000 // 4 seconds network fallback protection timeout
-      }
-    );
-
-    console.log(`📥 Raw Network Response Received (Status ${response.status}):`);
-    console.dir(response.data, { depth: null }); // Prints the nested object tree in full detail
-
-    // Evaluate standard Bakong API transaction schema
-    if (response.data && response.data.responseCode === 0) {
-      console.log('💚 [MATCH DETECTED]: Transaction status is SUCCESS. Funds settled.');
-      console.log('--------------------------------------------------\n');
-      return res.json({ 
-        status: 'PAID', 
-        md5_hash, 
-        details: response.data.data || null 
+    let response;
+    try {
+      response = await axios.post(targetUrl, { md5: md5_hash }, {
+        headers: { 'Authorization': currentToken, 'Content-Type': 'application/json' },
+        timeout: 4000
       });
+    } catch (err) {
+      // IF THE TOKEN EXPIRED, NBC RETURNS A 401 UNAUTHORIZED OR API CODE REJECTION
+      if (err.response && (err.response.status === 401 || err.response.data?.responseCode === 6)) {
+        console.log("⚠️ Token expiration detected live. Attempting immediate auto-renewal...");
+        
+        // Attempt rotation instantly
+        const renewedToken = await autoRenewBakongToken();
+        
+        if (renewedToken) {
+          // Retry the network lookup exactly once using the brand new token string
+          response = await axios.post(targetUrl, { md5: md5_hash }, {
+            headers: { 'Authorization': renewedToken, 'Content-Type': 'application/json' },
+            timeout: 4000
+          });
+        } else {
+          throw new Error("Automated authentication recovery failed");
+        }
+      } else {
+        throw err; // Re-throw other non-token related errors (like network timeouts)
+      }
     }
 
-    console.log(`🟡 [PENDING]: Code ${response.data?.responseCode} - Transaction not settled or incomplete.`);
-    console.log('--------------------------------------------------\n');
+    // Process status response normally...
+    if (response.data && response.data.responseCode === 0) {
+      return res.json({ status: 'PAID', md5_hash });
+    }
     res.json({ status: 'PENDING', md5_hash });
 
   } catch (err) {
-    // If the transaction simply isn't found in the national ledger yet, Bakong returns a 404 or 400 error packet
-    if (err.response) {
-      console.log(`⚠️ [GATEWAY REJECTION]: Network returned error status ${err.response.status}`);
-      console.log('Response Payload Details:', err.response.data);
-      
-      if (err.response.data?.responseCode === 1) {
-        console.log('ℹ️ [INFO]: Code 1 means the transaction ledger entry does not exist yet (User hasn\'t authorized it yet).');
-        console.log('--------------------------------------------------\n');
-        return res.json({ status: 'PENDING', md5_hash });
-      }
-    } else {
-      console.error("🚨 [CRITICAL ERROR]: Failed to execute outgoing HTTP call:", err.message);
-    }
-    
-    console.log('--------------------------------------------------\n');
-    res.status(500).json({ error: "Unable to reach Bakong network", message: err.message });
+    res.status(500).json({ error: "Communication breakdown" });
   }
 });
 
