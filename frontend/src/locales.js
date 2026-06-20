@@ -64,7 +64,9 @@ export const translations = {
       unitPrice: 'តម្លៃ/ចំណែក',
       subtotal: 'សរុបរង',
       noOrders: 'គ្មានប្រតិបត្តិការក្នុងអំឡុងពេលដែលបានជ្រើស',
+      noResults: 'គ្មានលទ្ធផលត្រូវនឹងការស្វែងរក',
       loading: 'កំពុងដំណើរការ...',
+      searchPlaceholder: 'ស្វែងរកតាមលេខ ឬឈ្មោះទំនិញ...',
     },
 
     // INVOICE LABELS
@@ -116,6 +118,7 @@ export const translations = {
       placeholderItemName: 'ឧទាហរណ៍៖ ម្សៅទឹកដោះគោ',
       placeholderBarcode: 'ស្កេនឬវាយលេខបាកូដ',
       registerNewProduct: 'ចុះឈ្មោះទំនិញថ្មី',
+      searchPlaceholder: 'ស្វែងរកតាមឈ្មោះ ឬបាកូដ...',
     },
 
     // SETTINGS SPECIFIC LABELS
@@ -208,7 +211,9 @@ export const translations = {
       unitPrice: 'Unit Price',
       subtotal: 'Subtotal',
       noOrders: 'No transactions found for this period',
+      noResults: 'No orders match your search',
       loading: 'Loading...',
+      searchPlaceholder: 'Search by order no. or product name...',
     },
 
     // INVOICE LABELS
@@ -259,6 +264,7 @@ export const translations = {
       placeholderItemName: 'E.g. Baby Formula Powder',
       placeholderBarcode: 'Scan or type code',
       registerNewProduct: 'Register New Product',
+      searchPlaceholder: 'Search by name or barcode...',
     },
 
     // SETTINGS SPECIFIC LABELS

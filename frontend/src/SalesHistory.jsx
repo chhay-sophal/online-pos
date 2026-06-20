@@ -19,6 +19,7 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('today');
   const [expandedId, setExpandedId] = useState(null);
+  const [search, setSearch] = useState('');
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -40,9 +41,18 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
-  const totalRevenue = orders.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
-  const cashCount   = orders.filter(o => o.payment_method === 'CASH').length;
-  const khqrCount   = orders.filter(o => o.payment_method === 'KHQR').length;
+  const q = search.trim().toLowerCase();
+  const filteredOrders = q
+    ? orders.filter(o => {
+        if (String(o.id).includes(q)) return true;
+        if (o.payment_method.toLowerCase().includes(q)) return true;
+        return (o.items || []).some(i => i.product_name && i.product_name.toLowerCase().includes(q));
+      })
+    : orders;
+
+  const totalRevenue = filteredOrders.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+  const cashCount   = filteredOrders.filter(o => o.payment_method === 'CASH').length;
+  const khqrCount   = filteredOrders.filter(o => o.payment_method === 'KHQR').length;
 
   const formatDateTime = (ts) =>
     new Date(ts).toLocaleString(currentLocale === 'km' ? 'km-KH' : 'en-US', {
@@ -70,8 +80,29 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
           </div>
         </div>
 
+        <div className="flex items-center gap-3 flex-1 mx-6">
+          <div className="relative flex-1 max-w-sm">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+            </svg>
+            <input
+              type="text"
+              value={search}
+              onChange={e => { setSearch(e.target.value); setExpandedId(null); }}
+              placeholder={s.searchPlaceholder}
+              className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-100 border border-transparent focus:border-indigo-300 focus:bg-white rounded-xl outline-none transition-all placeholder:text-slate-400 font-medium"
+            />
+            {search && (
+              <button
+                onClick={() => { setSearch(''); setExpandedId(null); }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+              >✕</button>
+            )}
+          </div>
+        </div>
+
         {/* Period tabs */}
-        <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
+        <div className="flex gap-1 bg-slate-100 p-1 rounded-xl flex-shrink-0">
           {PERIODS.map(p => (
             <button
               key={p}
@@ -138,6 +169,11 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
             <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-2xl">🗂️</div>
             <p className="text-sm font-semibold">{s.noOrders}</p>
           </div>
+        ) : filteredOrders.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400">
+            <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-2xl">🔍</div>
+            <p className="text-sm font-semibold">{s.noResults}</p>
+          </div>
         ) : (
           <div className="space-y-2 max-w-4xl mx-auto">
             {/* Table header */}
@@ -150,7 +186,7 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
               <span />
             </div>
 
-            {orders.map(order => (
+            {filteredOrders.map(order => (
               <OrderRow
                 key={order.id}
                 order={order}
@@ -209,7 +245,7 @@ function OrderRow({ order, s, dynamicRate, mainCurrency, locale, expanded, onTog
           </span>
         </div>
 
-        <span className={`text-slate-400 text-xs font-bold transition-transform ${expanded ? 'rotate-90' : ''}`}>›</span>
+        <span className={`inline-block w-2 h-2 border-r-2 border-b-2 border-slate-400 transition-transform ${expanded ? 'rotate-45' : '-rotate-45'}`} />
       </button>
 
       {/* Expanded item details */}
