@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 
-export default function SettingsManager({ onBackToRegister }) {
+export default function SettingsManager({ onBackToRegister, currentLocale, onLocaleChange }) {
   const [settings, setSettings] = useState({
     exchange_rate: '4100',
     bakong_account_id: '',
     bakong_merchant_name: '',
-    bakong_merchant_city: ''
+    bakong_merchant_city: '',
+    locale: 'km'
   });
   const [saveSuccess, setSaveSuccess] = useState(false);
   const BACKEND_URL = 'http://localhost:5050';
@@ -36,10 +37,12 @@ export default function SettingsManager({ onBackToRegister }) {
       });
 
       if (response.ok) {
+        // Update top-level application state instantly
+        onLocaleChange(settings.locale);
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 3000);
       } else {
-        alert('Failed to save settings configurations.');
+        alert(settings.locale === 'km' ? 'ការរក្សាទុកការកំណត់បានបរាជ័យ។' : 'Failed to save settings configurations.');
       }
     } catch (err) {
       console.error('Error pushing updated options layout:', err);
@@ -53,22 +56,64 @@ export default function SettingsManager({ onBackToRegister }) {
           onClick={onBackToRegister}
           className="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-semibold transition-colors text-slate-600"
         >
-          ⬅️ Register Terminal
+          ⬅️ {currentLocale === 'km' ? 'បញ្ជរលក់ទំនិញ' : 'Register Terminal'}
         </button>
         <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">System Settings</h1>
-          <p className="text-xs font-semibold text-indigo-600 tracking-wider uppercase">Terminal Configuration</p>
+          <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+            {currentLocale === 'km' ? 'ការកំណត់ប្រព័ន្ធ' : 'System Settings'}
+          </h1>
+          <p className="text-xs font-semibold text-indigo-600 tracking-wider uppercase">
+            {currentLocale === 'km' ? 'ការកំណត់ទម្រង់ម៉ាស៊ីន' : 'Terminal Configuration'}
+          </p>
         </div>
       </header>
 
       <div className="flex-1 p-6 max-w-2xl mx-auto w-full">
         <form onSubmit={handleSave} className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden p-6 space-y-6">
           
+          {/* Section: Language Selection */}
+          <div>
+            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 mb-4">
+              🌐 Language / ភាសា
+            </h2>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
+              {settings.locale === 'km' ? 'ភាសាបង្ហាញរបស់ម៉ាស៊ីន' : 'Terminal Display Language'}
+            </label>
+            <div className="grid grid-cols-2 gap-3 mt-2">
+              <button
+                type="button"
+                onClick={() => setSettings({ ...settings, locale: 'km' })}
+                className={`py-3 px-4 rounded-xl border font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+                  settings.locale === 'km' 
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' 
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                🇰🇭 ភាសាខ្មែរ (Khmer)
+              </button>
+              <button
+                type="button"
+                onClick={() => setSettings({ ...settings, locale: 'en' })}
+                className={`py-3 px-4 rounded-xl border font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+                  settings.locale === 'en' 
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' 
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                🇺🇸 English (EN)
+              </button>
+            </div>
+          </div>
+
           {/* Section 1: Financial parameters */}
           <div>
-            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 mb-4">💰 Financials & Rates</h2>
+            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 mb-4">
+              💰 {settings.locale === 'km' ? 'ហិរញ្ញវត្ថុ & អត្រាប្តូរប្រាក់' : 'Financials & Rates'}
+            </h2>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Market Exchange Rate (1 USD = ? KHR)</label>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
+                {settings.locale === 'km' ? 'អត្រាប្តូរប្រាក់ទីផ្សារ (1 USD = ? KHR)' : 'Market Exchange Rate (1 USD = ? KHR)'}
+              </label>
               <input 
                 type="number"
                 value={settings.exchange_rate}
@@ -76,29 +121,43 @@ export default function SettingsManager({ onBackToRegister }) {
                 className="w-full mt-1.5 p-2.5 border border-slate-200 bg-slate-50 rounded-lg text-sm font-bold tracking-wide"
                 placeholder="4100"
               />
-              <p className="text-xs text-slate-400 mt-1">Used to automatically calculate Riel checkout conversions and changes at the physical cash register drawer.</p>
+              <p className="text-xs text-slate-400 mt-1">
+                {settings.locale === 'km' 
+                  ? 'ប្រើប្រាស់សម្រាប់គណនាការប្តូរប្រាក់រៀលស្វ័យប្រវត្តិនៅពេលទូទាត់ប្រាក់ និងគណនាប្រាក់អាប់ជូនអតិថិជន។' 
+                  : 'Used to automatically calculate Riel checkout conversions and changes at the physical cash register drawer.'}
+              </p>
             </div>
           </div>
 
           {/* Section 2: Bakong Credentials */}
           <div className="space-y-4">
-            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 mb-2">📱 Individual KHQR Profile</h2>
+            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 mb-2">
+              📱 {settings.locale === 'km' ? 'គណនី KHQR ផ្ទាល់ខ្លួន' : 'Individual KHQR Profile'}
+            </h2>
             
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Bakong Individual Account ID</label>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
+                {settings.locale === 'km' ? 'អត្តសញ្ញាណគណនីបាកុង (Bakong Account ID)' : 'Bakong Individual Account ID'}
+              </label>
               <input 
                 type="text"
                 value={settings.bakong_account_id}
                 onChange={(e) => setSettings({...settings, bakong_account_id: e.target.value})}
                 className="w-full mt-1.5 p-2.5 border border-slate-200 bg-slate-50 rounded-lg text-sm font-mono text-indigo-600"
-                placeholder="e.g. chhay_sophal@abaa"
+                placeholder="e.g. store_account@abaa"
               />
-              <p className="text-xs text-slate-400 mt-1">Your official personal or individual merchant username address generated inside your mobile banking application.</p>
+              <p className="text-xs text-slate-400 mt-1">
+                {settings.locale === 'km' 
+                  ? 'អាសយដ្ឋានគណនីបាកុងផ្លូវការរបស់អ្នកដែលបានបង្កើតឡើងនៅក្នុងកម្មវិធីធនាគារចល័តរបស់អ្នក។' 
+                  : 'Your official personal or individual merchant username address generated inside your mobile banking application.'}
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Display Shop Name</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
+                  {settings.locale === 'km' ? 'ឈ្មោះហាងបង្ហាញ' : 'Display Shop Name'}
+                </label>
                 <input 
                   type="text"
                   value={settings.bakong_merchant_name}
@@ -108,7 +167,9 @@ export default function SettingsManager({ onBackToRegister }) {
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Store Operating City</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
+                  {settings.locale === 'km' ? 'ទីក្រុងដំណើរការហាង' : 'Store Operating City'}
+                </label>
                 <input 
                   type="text"
                   value={settings.bakong_merchant_city}
@@ -124,7 +185,7 @@ export default function SettingsManager({ onBackToRegister }) {
           <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
             {saveSuccess ? (
               <span className="text-emerald-600 text-sm font-bold flex items-center gap-1.5">
-                ✅ Changes stored securely!
+                {settings.locale === 'km' ? '✅ រក្សាទុកការផ្លាស់ប្តូរដោយជោគជ័យ!' : '✅ Changes stored securely!'}
               </span>
             ) : <div />}
             
@@ -132,7 +193,7 @@ export default function SettingsManager({ onBackToRegister }) {
               type="submit"
               className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm shadow-xs transition-colors"
             >
-              Commit Configuration Save
+              {settings.locale === 'km' ? 'រក្សាទុកការកំណត់' : 'Commit Configuration Save'}
             </button>
           </div>
         </form>

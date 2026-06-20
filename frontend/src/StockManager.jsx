@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import { translations as t } from './locales'; // Import the central dictionary
 
-export default function StockManager({ onBackToRegister }) {
+export default function StockManager({ onBackToRegister, currentLocale }) {
   const [products, setProducts] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ name: '', barcode: '', price_usd: '', stock: '' });
   
-  // State for creating a new product row entry
   const [showAddForm, setShowAddForm] = useState(false);
   const [newProduct, setNewProduct] = useState({ name: '', barcode: '', price_usd: '', stock: '' });
 
   const BACKEND_URL = 'http://localhost:5050';
+  
+  // Quick reference to the active localized stock group
+  const labels = t[currentLocale]?.stock || t['km'].stock;
 
   useEffect(() => {
     fetchInventory();
@@ -47,9 +50,9 @@ export default function StockManager({ onBackToRegister }) {
 
       if (response.ok) {
         setEditingId(null);
-        fetchInventory(); // Refresh view grid layout
+        fetchInventory(); 
       } else {
-        alert('Failed to update product details.');
+        alert(labels.alertUpdateFail);
       }
     } catch (err) {
       console.error('Error committing inline updates:', err);
@@ -59,7 +62,7 @@ export default function StockManager({ onBackToRegister }) {
   const handleCreateProduct = async (e) => {
     e.preventDefault();
     if (!newProduct.name || !newProduct.barcode || !newProduct.price_usd) {
-      alert('Please fill out all mandatory identity fields');
+      alert(labels.alertMandatory);
       return;
     }
 
@@ -82,18 +85,17 @@ export default function StockManager({ onBackToRegister }) {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 antialiased">
-      {/* Mini Top Header Grid Row layout */}
       <header className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shadow-xs">
         <div className="flex items-center gap-4">
           <button 
             onClick={onBackToRegister}
             className="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-semibold transition-colors text-slate-600 flex items-center gap-1"
           >
-            ⬅️ Register Terminal
+            ⬅️ {labels.backBtn}
           </button>
           <div>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Inventory Stock Ledger</h1>
-            <p className="text-xs font-semibold text-indigo-600 tracking-wider uppercase">Audit Room</p>
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">{labels.title}</h1>
+            <p className="text-xs font-semibold text-indigo-600 tracking-wider uppercase">{labels.subtitle}</p>
           </div>
         </div>
 
@@ -101,16 +103,15 @@ export default function StockManager({ onBackToRegister }) {
           onClick={() => setShowAddForm(!showAddForm)}
           className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-xs transition-colors"
         >
-          {showAddForm ? 'Close Drawer' : '➕ Register New Product'}
+          {showAddForm ? labels.closeDrawer : labels.registerNew}
         </button>
       </header>
 
       <div className="flex-1 p-6 max-w-6xl mx-auto w-full space-y-6">
-        {/* Dropdown creation card block drawer */}
         {showAddForm && (
           <form onSubmit={handleCreateProduct} className="bg-white border border-slate-200 p-6 rounded-2xl shadow-xs grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Item Name</label>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">{labels.itemName}</label>
               <input 
                 type="text" 
                 value={newProduct.name} 
@@ -120,7 +121,7 @@ export default function StockManager({ onBackToRegister }) {
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Barcode String</label>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">{labels.barcodeStr}</label>
               <input 
                 type="text" 
                 value={newProduct.barcode} 
@@ -131,7 +132,7 @@ export default function StockManager({ onBackToRegister }) {
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Retail Price (USD)</label>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">{labels.retailPrice}</label>
               <input 
                 type="number" step="0.01"
                 value={newProduct.price_usd} 
@@ -141,7 +142,7 @@ export default function StockManager({ onBackToRegister }) {
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Initial Stock Count</label>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">{labels.initialStock}</label>
               <input 
                 type="number" 
                 value={newProduct.stock} 
@@ -152,23 +153,22 @@ export default function StockManager({ onBackToRegister }) {
             </div>
             <div className="md:col-span-4 flex justify-end">
               <button type="submit" className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-sm">
-                Save Product Card to Database
+                {labels.saveToDb}
               </button>
             </div>
           </form>
         )}
 
-        {/* Master Stock Table Spreadsheet Layout Container */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  <th className="px-6 py-4">Product Name</th>
-                  <th className="px-6 py-4">Barcode Key</th>
-                  <th className="px-6 py-4">Unit Price</th>
-                  <th className="px-6 py-4">Current Stock Level</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
+                  <th className="px-6 py-4">{labels.thName}</th>
+                  <th className="px-6 py-4">{labels.thBarcode}</th>
+                  <th className="px-6 py-4">{labels.thPrice}</th>
+                  <th className="px-6 py-4">{labels.thStock}</th>
+                  <th className="px-6 py-4 text-right">{labels.thActions}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm font-medium text-slate-700">
@@ -226,21 +226,21 @@ export default function StockManager({ onBackToRegister }) {
                         ) : (
                           <div className="flex items-center gap-2">
                             <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${isLowStock ? 'bg-rose-100 text-rose-700 font-black' : 'bg-slate-100 text-slate-700'}`}>
-                              {product.stock} units
+                              {product.stock} {labels.units}
                             </span>
-                            {isLowStock && <span className="text-xs text-amber-600 font-semibold">⚠️ Needs Restock</span>}
+                            {isLowStock && <span className="text-xs text-amber-600 font-semibold">{labels.needsRestock}</span>}
                           </div>
                         )}
                       </td>
                       <td className="px-6 py-4 text-right">
                         {isEditing ? (
                           <div className="flex justify-end gap-2">
-                            <button onClick={() => handleSaveEdit(product.id)} className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-bold">Save</button>
-                            <button onClick={() => setEditingId(null)} className="px-3 py-1 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-md text-xs font-bold">Cancel</button>
+                            <button onClick={() => handleSaveEdit(product.id)} className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-bold">{labels.saveBtn}</button>
+                            <button onClick={() => setEditingId(null)} className="px-3 py-1 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-md text-xs font-bold">{labels.cancelBtn}</button>
                           </div>
                         ) : (
                           <button onClick={() => handleEditClick(product)} className="text-indigo-600 hover:text-indigo-900 text-xs font-bold bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors">
-                            ✏️ Edit Record
+                            {labels.editBtn}
                           </button>
                         )}
                       </td>

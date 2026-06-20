@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import StockManager from './StockManager';
 import SettingsManager from './SettingsManager';
+import { translations as t } from './locales';
 
 export default function App() {
   const [cart, setCart] = useState([]);
@@ -14,6 +15,7 @@ export default function App() {
   const [activeKhqr, setActiveKhqr] = useState(null);
   const [dynamicRate, setDynamicRate] = useState(4100);
   const [showManualInput, setShowManualInput] = useState(false);
+  const [locale, setLocale] = useState('km'); // 'km' is default
   
   const barcodeRef = useRef(null);
   const BACKEND_URL = 'http://localhost:5050';
@@ -108,6 +110,18 @@ export default function App() {
       })
       .catch(err => console.error("Could not sync app settings configuration", err));
   }, [view]); // Automatically syncs whenever you shift back to the main register view
+
+  useEffect(() => {
+    // Pull dynamic settings variables from backend
+    fetch(`${BACKEND_URL}/api/settings`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.exchange_rate) setDynamicRate(Number(data.exchange_rate));
+        // Read saved user language preference choice (if it exists)
+        if (data.locale) setLocale(data.locale); 
+      })
+      .catch(err => console.error("Could not sync app settings configuration", err));
+  }, [view]);
 
   const focusScanner = () => {
     if (view === 'REGISTER' && barcodeRef.current) barcodeRef.current.focus();
@@ -291,7 +305,13 @@ export default function App() {
   }
 
   if (view === 'SETTINGS') {
-    return <SettingsManager onBackToRegister={() => setView('REGISTER')} />;
+    return (
+      <SettingsManager 
+        onBackToRegister={() => setView('REGISTER')} 
+        currentLocale={locale}
+        onLocaleChange={setLocale}
+      />
+    );
   }
 
   return (
@@ -300,24 +320,24 @@ export default function App() {
         <div className="flex items-center gap-3">
           <div className="bg-indigo-600 text-white p-2.5 rounded-xl font-bold text-lg">👶</div>
           <div>
-            <h1 className="text-lg font-bold text-slate-900 tracking-tight">BABY MART</h1>
-            <p className="text-xs font-semibold text-indigo-600 tracking-wider uppercase">In-Store Register</p>
+            <h1 className="text-lg font-bold text-slate-900 tracking-tight">{t[locale].shopName}</h1>
+            <p className="text-xs font-semibold text-indigo-600 tracking-wider uppercase">{t[locale].register}</p>
           </div>
           <button 
             onClick={() => setView('STOCK')}
             className="ml-4 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-bold text-slate-600 transition-colors"
           >
-            ⚙️ Manage Inventory Stock
+            {t[locale].manageInventory}
           </button>
           <button 
             onClick={() => setView('SETTINGS')}
             className="ml-2 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-bold text-slate-600 transition-colors"
           >
-            ⚙️ Settings
+            {t[locale].settings}
           </button>
         </div>
         <div className="bg-slate-100 px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-600">
-          Exchange Rate: <span className="font-bold text-slate-900">$1 = {dynamicRate.toLocaleString()}</span>
+          {t[locale].exchangeRate}: <span className="font-bold text-slate-900">$1 = {dynamicRate.toLocaleString()} ៛</span>
         </div>
       </header>
 
@@ -330,7 +350,7 @@ export default function App() {
               <div className="flex items-center gap-3">
                 <span className="text-xl animate-pulse">📡</span>
                 <p className="text-sm font-semibold">
-                  Background listener active. Scan any item barcode at any time.
+                  {t[locale].bgListenerActive}
                 </p>
               </div>
               <button
@@ -340,7 +360,7 @@ export default function App() {
                 }}
                 className="text-xs bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-bold px-3 py-1.5 rounded-lg transition-colors"
               >
-                {showManualInput ? '🔒 Close Manual Entry' : '⌨️ Type Barcode Manually'}
+                {showManualInput ? t[locale].closeManual : t[locale].typeManual}
               </button>
             </div>
 
@@ -351,7 +371,7 @@ export default function App() {
                   type="text"
                   value={barcodeInput}
                   onChange={(e) => setBarcodeInput(e.target.value)}
-                  placeholder="Type barcode digits manually (e.g. 8904091113606)..."
+                  placeholder={t[locale].placeholderManual}
                   className="flex-1 px-4 py-2 bg-white border border-indigo-200 text-slate-800 rounded-xl text-sm font-mono font-medium focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
                   autoFocus
                 />
@@ -359,7 +379,7 @@ export default function App() {
                   type="submit"
                   className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-colors shadow-xs"
                 >
-                  Add Item
+                  {t[locale].addItem}
                 </button>
               </form>
             )}
@@ -367,15 +387,17 @@ export default function App() {
 
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xs flex-1 flex flex-col overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-              <h2 className="font-bold text-slate-800 tracking-tight">Current Basket Queue</h2>
-              <span className="text-xs bg-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded-full">{cart.reduce((a, b) => a + b.quantity, 0)} Items</span>
+              <h2 className="font-bold text-slate-800 tracking-tight">{t[locale].currentBasket}</h2>
+              <span className="text-xs bg-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded-full">
+                {cart.reduce((a, b) => a + b.quantity, 0)} {t[locale].itemsCount}
+              </span>
             </div>
 
             <div className="flex-1 overflow-y-auto p-6">
               {cart.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-2">
                   <span className="text-4xl">🛒</span>
-                  <p className="font-medium text-slate-500">Registry tray is empty.</p>
+                  <p className="font-medium text-slate-500">{t[locale].basketEmpty}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -407,35 +429,35 @@ export default function App() {
         {/* Right Side: Payment Context */}
         <div className="w-100 bg-white border-l border-slate-200 shadow-xl p-6 flex flex-col justify-between overflow-y-auto">
           <div>
-            <h2 className="text-xs font-bold tracking-wider text-slate-400 uppercase mb-4">Payment Statement</h2>
+            <h2 className="text-xs font-bold tracking-wider text-slate-400 uppercase mb-4">{t[locale].paymentStatement}</h2>
             
             <div className="bg-slate-900 text-white rounded-2xl p-5 mb-6 relative overflow-hidden">
               <div className="space-y-4 relative z-10">
                 <div className="flex justify-between items-baseline">
-                  <span className="text-sm font-medium text-slate-400">Total USD</span>
+                  <span className="text-sm font-medium text-slate-400">{t[locale].totalUsd}</span>
                   <span className="text-4xl font-black tracking-tight">${totalUsd.toFixed(2)}</span>
                 </div>
                 <div className="border-t border-slate-800 pt-3 flex justify-between items-baseline">
-                  <span className="text-xs font-medium text-slate-400">Total KHR</span>
+                  <span className="text-xs font-medium text-slate-400">{t[locale].totalKhr}</span>
                   <span className="text-lg font-bold text-emerald-400 font-mono">{totalKhr.toLocaleString()} ៛</span>
                 </div>
               </div>
             </div>
 
             <div className="mb-6">
-              <label className="block text-xs font-bold tracking-wider text-slate-400 uppercase mb-2">Settlement Type</label>
+              <label className="block text-xs font-bold tracking-wider text-slate-400 uppercase mb-2">{t[locale].settlementType}</label>
               <div className="grid grid-cols-2 gap-3">
                 <button 
                   onClick={() => { setPaymentMethod('CASH'); setCheckoutResult(null); setActiveKhqr(null); }}
                   className={`py-3 px-4 rounded-xl border font-bold text-sm transition-all flex items-center justify-center gap-2 ${paymentMethod === 'CASH' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white border-slate-200 text-slate-600'}`}
                 >
-                  💵 Cash
+                  {t[locale].cash}
                 </button>
                 <button 
                   onClick={() => { setPaymentMethod('KHQR'); setCheckoutResult(null); fetchKHQRString(totalUsd); }}
                   className={`py-3 px-4 rounded-xl border font-bold text-sm transition-all flex items-center justify-center gap-2 ${paymentMethod === 'KHQR' ? 'bg-rose-500 text-white border-rose-500' : 'bg-white border-slate-200 text-slate-600'}`}
                 >
-                  📱 KHQR Digital
+                  {t[locale].khqr}
                 </button>
               </div>
             </div>
@@ -445,7 +467,7 @@ export default function App() {
                 {/* Input Tenders Container */}
                 <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200/60">
                   <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Tendered Cash Amount (USD)</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">{t[locale].tenderedUsd}</label>
                     <input 
                       type="number" 
                       value={amountPaidUsd} 
@@ -455,7 +477,7 @@ export default function App() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Tendered Cash Amount (KHR)</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">{t[locale].tenderedKhr}</label>
                     <input 
                       type="number" 
                       value={amountPaidKhr} 
@@ -471,18 +493,18 @@ export default function App() {
                   <div className={`p-4 rounded-xl border transition-all ${changeDueUsd >= 0 ? 'bg-emerald-50/60 border-emerald-200' : 'bg-amber-50/60 border-amber-200'}`}>
                     <div className="flex justify-between items-center">
                       <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">
-                        {changeDueUsd >= 0 ? '💰 Change Due to Customer:' : '⏳ Remaining Shortage:'}
+                        {changeDueUsd >= 0 ? t[locale].changeDue : t[locale].shortage}
                       </span>
                       <span className={`text-xl font-black font-mono ${changeDueUsd >= 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
                         {changeDueUsd >= 0 
                           ? `${changeDueKhr.toLocaleString()} ៛` 
-                          : `${Math.abs(Math.round(changeDueUsd * 4100)).toLocaleString()} ៛`
+                          : `${Math.abs(Math.round(changeDueUsd * dynamicRate)).toLocaleString()} ៛`
                         }
                       </span>
                     </div>
                     {changeDueUsd > 0 && (
                       <p className="text-[10px] text-emerald-600 font-semibold text-right mt-1">
-                        approx. ${(changeDueUsd).toFixed(2)} USD
+                        {t[locale].approx} ${(changeDueUsd).toFixed(2)} USD
                       </p>
                     )}
                   </div>
@@ -496,13 +518,13 @@ export default function App() {
                       <QRCodeCanvas value={activeKhqr.qr_string} size={180} level={"M"} includeMargin={true} />
                     </div>
                     <div className="text-center">
-                      <p className="font-bold text-sm text-slate-800">Scan to Pay via KHQR</p>
-                      <p className="text-xs text-rose-500 font-semibold font-mono mt-0.5">Ref: {activeKhqr.md5_hash.substring(0, 8).toUpperCase()}</p>
-                      <p className="text-[10px] text-slate-400 mt-2 animate-pulse">Waiting for customer payment detection...</p>
+                      <p className="font-bold text-sm text-slate-800">{t[locale].scanToPay}</p>
+                      <p className="text-xs text-rose-500 font-semibold font-mono mt-0.5">{t[locale].ref}: {activeKhqr.md5_hash.substring(0, 8).toUpperCase()}</p>
+                      <p className="text-[10px] text-slate-400 mt-2 animate-pulse">{t[locale].waitingPayment}</p>
                     </div>
                   </>
                 ) : (
-                  <p className="text-xs text-slate-400 font-medium animate-pulse">Assembling secure banking packet...</p>
+                  <p className="text-xs text-slate-400 font-medium animate-pulse">{t[locale].assemblingPacket}</p>
                 )}
               </div>
             )}
@@ -513,7 +535,7 @@ export default function App() {
               <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 p-4 rounded-xl flex items-start gap-3">
                 <span className="text-xl">✅</span>
                 <div className="flex-1">
-                  <p className="font-bold text-sm text-emerald-900">Order successfully saved!</p>
+                  <p className="font-bold text-sm text-emerald-900">{t[locale].orderSaved}</p>
                   {checkoutResult.change_due_khr > 0 && (
                     <p className="text-lg font-black text-emerald-600 font-mono mt-1">{checkoutResult.change_due_khr.toLocaleString()} ៛</p>
                   )}
@@ -527,7 +549,7 @@ export default function App() {
                 disabled={cart.length === 0}
                 className={`w-full py-4 rounded-xl font-bold transition-all text-base ${cart.length === 0 ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-indigo-600 text-white cursor-pointer hover:bg-indigo-700'}`}
               >
-                Finalize Counter Order
+                {t[locale].finalizeOrder}
               </button>
             )}
           </div>
