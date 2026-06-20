@@ -16,13 +16,23 @@ export default function Invoice({ invoiceData, locale, onClose }) {
     hour: '2-digit', minute: '2-digit',
   });
 
+  const fmtUnit = (price, currency) => {
+    const p = Number(price);
+    return currency === 'KHR' ? `${Math.round(p).toLocaleString()} ៛` : `$${p.toFixed(2)}`;
+  };
+  const fmtSubtotal = (price, qty, currency) => {
+    const p = Number(price);
+    return currency === 'KHR' ? `${Math.round(p * qty).toLocaleString()} ៛` : `$${(p * qty).toFixed(2)}`;
+  };
+
   // Build a self-contained HTML invoice with only rgb() colors — no Tailwind, no oklch.
   const buildInvoiceHTML = () => {
     const itemRows = items.map(item => `
       <tr>
         <td class="name">${item.name}</td>
         <td class="center">${item.quantity}</td>
-        <td class="right">$${(Number(item.price) * item.quantity).toFixed(2)}</td>
+        <td class="right unit">${fmtUnit(item.price, item.currency)}</td>
+        <td class="right">${fmtSubtotal(item.price, item.quantity, item.currency)}</td>
       </tr>`).join('');
 
     const cashRows = paymentMethod === 'CASH' ? `
@@ -61,6 +71,7 @@ export default function Invoice({ invoiceData, locale, onClose }) {
     .center { text-align: center; }
     .right  { text-align: right; }
     .name   { padding-right: 8px; }
+    .unit   { color: rgb(100,100,100); }
     thead th.center { text-align: center; }
     thead th.right  { text-align: right; }
     .total  { font-size: 13px; font-weight: bold; }
@@ -84,6 +95,7 @@ export default function Invoice({ invoiceData, locale, onClose }) {
       <tr>
         <th>${inv.item}</th>
         <th class="center">${inv.qty}</th>
+        <th class="right unit">${inv.unitPrice || 'Unit'}</th>
         <th class="right">${inv.amount}</th>
       </tr>
     </thead>
@@ -140,20 +152,25 @@ export default function Invoice({ invoiceData, locale, onClose }) {
     row(inv.time, timeStr);
     dash();
 
+    const qtyX  = m + (W - 2 * m) * 0.50;
+    const unitX = m + (W - 2 * m) * 0.72;
+
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
     pdf.text(inv.item.toUpperCase(), m, y);
-    pdf.text(inv.qty.toUpperCase(), W / 2, y, { align: 'center' });
+    pdf.text(inv.qty.toUpperCase(), qtyX, y, { align: 'center' });
+    pdf.text((inv.unitPrice || 'UNIT').toUpperCase(), unitX, y, { align: 'right' });
     pdf.text(inv.amount.toUpperCase(), W - m, y, { align: 'right' });
     y += 4;
 
     pdf.setFontSize(10);
     items.forEach(item => {
-      const nameLines = pdf.splitTextToSize(item.name, (W - 2 * m) * 0.62);
+      const nameLines = pdf.splitTextToSize(item.name, (W - 2 * m) * 0.46);
       pdf.setFont('helvetica', 'normal');
       pdf.text(nameLines, m, y);
-      pdf.text(String(item.quantity), W / 2, y, { align: 'center' });
-      pdf.text(`$${(Number(item.price) * item.quantity).toFixed(2)}`, W - m, y, { align: 'right' });
+      pdf.text(String(item.quantity), qtyX, y, { align: 'center' });
+      pdf.text(fmtUnit(item.price, item.currency), unitX, y, { align: 'right' });
+      pdf.text(fmtSubtotal(item.price, item.quantity, item.currency), W - m, y, { align: 'right' });
       y += nameLines.length * 4 + 1;
     });
     dash(true);
@@ -256,17 +273,21 @@ export default function Invoice({ invoiceData, locale, onClose }) {
 
           <div className="flex text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1.5">
             <span className="flex-1">{inv.item}</span>
-            <span className="w-7 text-center">{inv.qty}</span>
-            <span className="w-18 text-right">{inv.amount}</span>
+            <span className="w-6 text-center">{inv.qty}</span>
+            <span className="w-20 text-right">{inv.unitPrice || 'Unit'}</span>
+            <span className="w-20 text-right">{inv.amount}</span>
           </div>
 
           <div className="space-y-1.5 mb-3">
             {items.map((item) => (
               <div key={item.id} className="flex items-start text-[11px]">
                 <span className="flex-1 leading-tight pr-2 break-words">{item.name}</span>
-                <span className="w-7 text-center font-bold shrink-0">{item.quantity}</span>
-                <span className="w-18 text-right font-bold shrink-0">
-                  ${(Number(item.price) * item.quantity).toFixed(2)}
+                <span className="w-6 text-center font-bold shrink-0">{item.quantity}</span>
+                <span className="w-20 text-right text-slate-400 shrink-0">
+                  {fmtUnit(item.price, item.currency)}
+                </span>
+                <span className="w-20 text-right font-bold shrink-0">
+                  {fmtSubtotal(item.price, item.quantity, item.currency)}
                 </span>
               </div>
             ))}

@@ -559,7 +559,7 @@ function OrderRow({ order, s, dynamicRate, mainCurrency, locale, expanded, onTog
           {/* Items table */}
           <div className="mb-3">
             <div className="grid grid-cols-[1fr_48px_80px_80px] gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1.5 px-1">
-              <span>Item</span>
+              <span>{s.item}</span>
               <span className="text-center">{s.qty}</span>
               <span className="text-right">{s.unitPrice}</span>
               <span className="text-right">{s.subtotal}</span>
@@ -581,6 +581,19 @@ function OrderRow({ order, s, dynamicRate, mainCurrency, locale, expanded, onTog
                   </span>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Grand total */}
+          <div className="border-t-2 border-dashed border-slate-200 pt-2.5 mb-2.5 flex justify-between items-baseline">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">{s.total}</span>
+            <div className="text-right">
+              <p className="text-sm font-black text-slate-900 font-mono">
+                {mainCurrency === 'USD' ? `$${totalUsd.toFixed(2)}` : `${totalKhr.toLocaleString()} ៛`}
+              </p>
+              <p className="text-[10px] text-slate-400 font-mono">
+                {mainCurrency === 'USD' ? `${totalKhr.toLocaleString()} ៛` : `$${totalUsd.toFixed(2)}`}
+              </p>
             </div>
           </div>
 
