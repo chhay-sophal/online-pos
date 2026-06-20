@@ -33,6 +33,9 @@ export const translations = {
     closeManual: '🔒 បិទការវាយដោយដៃ',
     placeholderManual: 'វាយលេខបាកូដដោយដៃ (ឧទាហរណ៍៖ 8904...)',
     addItem: 'បន្ថែមទំនិញ',
+    currencySetting: 'រូបិយប័ណ្ណគោល',
+    mainCurrencyUsd: 'ដុល្លារអាមេរិក (USD)',
+    mainCurrencyKhr: 'ប្រាក់រៀល (KHR)',
     
     // STOCK SPECIFIC LABELS
     stock: {
@@ -92,6 +95,9 @@ export const translations = {
     closeManual: '🔒 Close Manual Entry',
     placeholderManual: 'Type barcode digits manually...',
     addItem: 'Add Item',
+    currencySetting: 'Main Currency Base',
+    mainCurrencyUsd: 'US Dollar (USD)',
+    mainCurrencyKhr: 'Khmer Riel (KHR)',
     
     // STOCK SPECIFIC LABELS
     stock: {

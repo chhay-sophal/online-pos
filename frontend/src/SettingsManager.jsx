@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 
-export default function SettingsManager({ onBackToRegister, currentLocale, onLocaleChange }) {
+// 1. Accept currency handling state callbacks from App.jsx
+export default function SettingsManager({ onBackToRegister, currentLocale, onLocaleChange, mainCurrency, onCurrencyChange }) {
   const [settings, setSettings] = useState({
     exchange_rate: '4100',
     bakong_account_id: '',
     bakong_merchant_name: '',
     bakong_merchant_city: '',
-    locale: 'km'
+    locale: 'km',
+    main_currency: 'USD' // 2. Keep track of local state database field mapping
   });
   const [saveSuccess, setSaveSuccess] = useState(false);
   const BACKEND_URL = 'http://localhost:5050';
@@ -37,8 +39,9 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
       });
 
       if (response.ok) {
-        // Update top-level application state instantly
+        // Sync parent React application context levels immediately upon successful commit
         onLocaleChange(settings.locale);
+        onCurrencyChange(settings.main_currency); 
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 3000);
       } else {
@@ -105,7 +108,41 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
             </div>
           </div>
 
-          {/* Section 1: Financial parameters */}
+          {/* 3. NEW ADDITION: Section for primary Base Currency configuration */}
+          <div>
+            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 mb-4">
+              💱 Base Transaction Currency / រូបិយប័ណ្ណគោល
+            </h2>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
+              {settings.locale === 'km' ? 'ជ្រើសរើសរូបិយប័ណ្ណចម្បងសម្រាប់ទូទាត់ប្រាក់' : 'Select Primary Transactional Currency'}
+            </label>
+            <div className="grid grid-cols-2 gap-3 mt-2">
+              <button
+                type="button"
+                onClick={() => setSettings({ ...settings, main_currency: 'USD' })}
+                className={`py-3 px-4 rounded-xl border font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+                  settings.main_currency === 'USD' 
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' 
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                💵 ដុល្លារអាមេរិក (USD)
+              </button>
+              <button
+                type="button"
+                onClick={() => setSettings({ ...settings, main_currency: 'KHR' })}
+                className={`py-3 px-4 rounded-xl border font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+                  settings.main_currency === 'KHR' 
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' 
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                🇰🇭 ប្រាក់រៀល (KHR)
+              </button>
+            </div>
+          </div>
+
+          {/* Section: Financial parameters */}
           <div>
             <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 mb-4">
               💰 {settings.locale === 'km' ? 'ហិរញ្ញវត្ថុ & អត្រាប្តូរប្រាក់' : 'Financials & Rates'}
@@ -129,7 +166,7 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
             </div>
           </div>
 
-          {/* Section 2: Bakong Credentials */}
+          {/* Section: Bakong Credentials */}
           <div className="space-y-4">
             <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 mb-2">
               📱 {settings.locale === 'km' ? 'គណនី KHQR ផ្ទាល់ខ្លួន' : 'Individual KHQR Profile'}

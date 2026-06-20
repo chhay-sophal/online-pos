@@ -16,6 +16,7 @@ export default function App() {
   const [dynamicRate, setDynamicRate] = useState(4100);
   const [showManualInput, setShowManualInput] = useState(false);
   const [locale, setLocale] = useState('km'); 
+  const [mainCurrency, setMainCurrency] = useState('USD');
   
   const barcodeRef = useRef(null);
   const BACKEND_URL = 'http://localhost:5050';
@@ -120,6 +121,17 @@ export default function App() {
       if (pollingInterval) clearInterval(pollingInterval);
     };
   }, [activeKhqr, paymentMethod, cart]);
+
+  useEffect(() => {
+    fetch(`${BACKEND_URL}/api/settings`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.exchange_rate) setDynamicRate(Number(data.exchange_rate));
+        if (data.locale) setLocale(data.locale); 
+        if (data.main_currency) setMainCurrency(data.main_currency); // Add this line
+      })
+      .catch(err => console.error("Could not sync app settings configuration", err));
+  }, [view]);
 
   const handleBarcodeSubmit = async (e) => {
     e.preventDefault();
@@ -255,7 +267,14 @@ export default function App() {
   };
 
   if (view === 'STOCK') {
-    return <StockManager onBackToRegister={() => setView('REGISTER')} currentLocale={locale} />;
+    return (
+      <StockManager 
+        onBackToRegister={() => setView('REGISTER')} 
+        currentLocale={locale} 
+        mainCurrency={mainCurrency}
+        dynamicRate={dynamicRate}
+      />
+    );
   }
 
   if (view === 'SETTINGS') {
@@ -264,6 +283,9 @@ export default function App() {
         onBackToRegister={() => setView('REGISTER')} 
         currentLocale={locale}
         onLocaleChange={setLocale}
+        mainCurrency={mainCurrency}
+        onCurrencyChange={setMainCurrency}
+        backendUrl={BACKEND_URL}
       />
     );
   }
@@ -388,12 +410,20 @@ export default function App() {
             <div className="bg-slate-900 text-white rounded-2xl p-5 relative overflow-hidden shadow-md shadow-slate-900/10">
               <div className="space-y-3 relative z-10">
                 <div className="flex justify-between items-baseline">
-                  <span className="text-xs font-medium text-slate-400 font-display">{t[locale].totalUsd}</span>
-                  <span className="text-3xl font-black tracking-tight font-mono">${totalUsd.toFixed(2)}</span>
+                  <span className="text-xs font-medium text-slate-400 font-display">
+                    {mainCurrency === 'USD' ? t[locale].totalUsd : t[locale].totalKhr}
+                  </span>
+                  <span className="text-3xl font-black tracking-tight font-mono">
+                    {mainCurrency === 'USD' ? `$${totalUsd.toFixed(2)}` : `${Math.round(totalKhr).toLocaleString()} ៛`}
+                  </span>
                 </div>
                 <div className="border-t border-slate-800/80 pt-2.5 flex justify-between items-baseline">
-                  <span className="text-xs font-medium text-slate-400 font-display">{t[locale].totalKhr}</span>
-                  <span className="text-base font-bold text-emerald-400 font-mono">{totalKhr.toLocaleString()} ៛</span>
+                  <span className="text-xs font-medium text-slate-400 font-display">
+                    {mainCurrency === 'USD' ? t[locale].totalKhr : t[locale].totalUsd}
+                  </span>
+                  <span className="text-base font-bold text-emerald-400 font-mono">
+                    {mainCurrency === 'USD' ? `${Math.round(totalKhr).toLocaleString()} ៛` : `$${totalUsd.toFixed(2)}`}
+                  </span>
                 </div>
               </div>
             </div>
@@ -427,6 +457,8 @@ export default function App() {
                       onChange={(e) => { setAmountPaidUsd(e.target.value); setCheckoutResult(null); }} 
                       className="w-full mt-1.5 h-10 px-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-800 font-mono text-sm focus:ring-2 focus:ring-indigo-50 focus:outline-hidden focus:border-indigo-500" 
                       placeholder="0.00" 
+                      step="0.01"
+                      min="0.00"
                     />
                   </div>
                   <div>
@@ -437,6 +469,8 @@ export default function App() {
                       onChange={(e) => { setAmountPaidKhr(e.target.value); setCheckoutResult(null); }} 
                       className="w-full mt-1.5 h-10 px-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-800 font-mono text-sm focus:ring-2 focus:ring-indigo-50 focus:outline-hidden focus:border-indigo-500" 
                       placeholder="0" 
+                      step="100"
+                      min="0"
                     />
                   </div>
                 </div>
@@ -448,17 +482,18 @@ export default function App() {
                         {changeDueUsd >= 0 ? t[locale].changeDue : t[locale].shortage}
                       </span>
                       <span className={`text-lg font-black font-mono ${changeDueUsd >= 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
-                        {changeDueUsd >= 0 
-                          ? `${changeDueKhr.toLocaleString()} ៛` 
-                          : `${Math.abs(Math.round(changeDueUsd * dynamicRate)).toLocaleString()} ៛`
+                        {mainCurrency === 'USD'
+                          ? changeDueUsd >= 0 ? `$${changeDueUsd.toFixed(2)}` : `$${Math.abs(changeDueUsd).toFixed(2)}`
+                          : changeDueUsd >= 0 ? `${Math.round(changeDueUsd * dynamicRate).toLocaleString()} ៛` : `${Math.round(Math.abs(changeDueUsd) * dynamicRate).toLocaleString()} ៛`
                         }
                       </span>
                     </div>
-                    {changeDueUsd > 0 && (
-                      <p className="text-[10px] text-emerald-600 font-bold font-mono text-right mt-0.5">
-                        {t[locale].approx} ${(changeDueUsd).toFixed(2)} USD
-                      </p>
-                    )}
+                    <p className="text-[10px] font-bold font-mono text-right mt-0.5 text-slate-400">
+                      {mainCurrency === 'USD' 
+                        ? `${Math.round(changeDueUsd * dynamicRate).toLocaleString()} ៛` 
+                        : `$${changeDueUsd.toFixed(2)} USD`
+                      }
+                    </p>
                   </div>
                 )}
               </div>

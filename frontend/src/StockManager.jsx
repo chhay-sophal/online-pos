@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { translations as t } from './locales';
 
-export default function StockManager({ onBackToRegister, currentLocale }) {
+export default function StockManager({ onBackToRegister, currentLocale, mainCurrency = 'USD', dynamicRate = 4100 }) {
   const [products, setProducts] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ name: '', barcode: '', price_usd: '', stock: '' });
@@ -204,16 +204,18 @@ export default function StockManager({ onBackToRegister, currentLocale }) {
                           product.barcode
                         )}
                       </td>
-                      <td className="px-6 py-3 text-slate-900 font-bold font-mono">
+                      <td className="px-6 py-4 text-slate-900 font-bold">
                         {isEditing ? (
                           <input 
                             type="number" step="0.01"
                             value={editForm.price_usd} 
                             onChange={(e) => setEditForm({ ...editForm, price_usd: e.target.value })}
-                            className="h-9 px-2.5 border border-slate-200 focus:border-indigo-500 focus:outline-hidden rounded-lg w-24 bg-white font-mono"
+                            className="p-1.5 border border-slate-300 rounded-md w-24 bg-white"
                           />
                         ) : (
-                          `$${Number(product.price_usd).toFixed(2)}`
+                          mainCurrency === 'USD' 
+                            ? `$${Number(product.price_usd).toFixed(2)}` 
+                            : `${Math.round(Number(product.price_usd) * dynamicRate).toLocaleString()} ៛`
                         )}
                       </td>
                       <td className="px-6 py-3">
