@@ -13,6 +13,7 @@ export default function App() {
   const [view, setView] = useState('REGISTER');
   const [activeKhqr, setActiveKhqr] = useState(null);
   const [dynamicRate, setDynamicRate] = useState(4100);
+  const [showManualInput, setShowManualInput] = useState(false);
   
   const barcodeRef = useRef(null);
   const BACKEND_URL = 'http://localhost:5050';
@@ -30,6 +31,10 @@ export default function App() {
     let lastTimestamp = Date.now();
 
     const handleGlobalScanStream = (e) => {
+      // CRITICAL: If the cursor is focused inside ANY input field (like cash fields or our manual input), 
+      // do not let the global background listener intercept the keys!
+      if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+      
       const currentTimestamp = Date.now();
       
       // Check timing signature: Hardware scanners typically type characters sub-50ms.
@@ -319,14 +324,45 @@ export default function App() {
       <div className="flex-1 flex overflow-hidden">
         {/* Left Side: Operations */}
         <div className="flex-1 p-6 flex flex-col overflow-y-auto gap-6 max-w-5xl mx-auto w-full">
-          <div className="bg-indigo-50/50 border border-dashed border-indigo-200 px-6 py-4 rounded-2xl flex items-center justify-between text-indigo-700">
-            <div className="flex items-center gap-3">
-              <span className="text-xl animate-pulse">📡</span>
-              <p className="text-sm font-semibold">
-                Background listener active. You can scan any item barcode at any time to add it to the basket.
-              </p>
+          {/* Background listener active status banner with Manual Type Fallback functionality */}
+          <div className="bg-indigo-50/50 border border-indigo-200 px-6 py-4 rounded-2xl text-indigo-700 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-xl animate-pulse">📡</span>
+                <p className="text-sm font-semibold">
+                  Background listener active. Scan any item barcode at any time.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowManualInput(!showManualInput);
+                  setBarcodeInput('');
+                }}
+                className="text-xs bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-bold px-3 py-1.5 rounded-lg transition-colors"
+              >
+                {showManualInput ? '🔒 Close Manual Entry' : '⌨️ Type Barcode Manually'}
+              </button>
             </div>
-            <span className="text-xs bg-indigo-100 font-bold px-2.5 py-1 rounded-md uppercase tracking-wider">Ready</span>
+
+            {/* Hidden text form wrapper that slides into view when clicked */}
+            {showManualInput && (
+              <form onSubmit={handleBarcodeSubmit} className="flex gap-2 animate-fadeIn pt-1">
+                <input
+                  type="text"
+                  value={barcodeInput}
+                  onChange={(e) => setBarcodeInput(e.target.value)}
+                  placeholder="Type barcode digits manually (e.g. 8904091113606)..."
+                  className="flex-1 px-4 py-2 bg-white border border-indigo-200 text-slate-800 rounded-xl text-sm font-mono font-medium focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-colors shadow-xs"
+                >
+                  Add Item
+                </button>
+              </form>
+            )}
           </div>
 
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xs flex-1 flex flex-col overflow-hidden">
