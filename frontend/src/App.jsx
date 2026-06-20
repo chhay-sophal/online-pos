@@ -188,6 +188,20 @@ export default function App() {
   const totalUsd = cart.reduce((sum, item) => sum + (item.price_usd * item.quantity), 0);
   const totalKhr = totalUsd * 4100;
 
+  // --- LIVE CHANGE CALCULATION ENGINE ---
+  // 1. Convert whatever raw cash text inputs the cashier typed into floating numbers safely
+  const tenderedUsd = parseFloat(amountPaidUsd || 0);
+  const tenderedKhr = parseFloat(amountPaidKhr || 0);
+
+  // 2. Combine both currencies into a single master USD value
+  const totalTenderedInUsd = tenderedUsd + (tenderedKhr / 4100);
+
+  // 3. Calculate the remaining balance gap
+  const changeDueUsd = totalTenderedInUsd - totalUsd;
+
+  // 4. Convert that gap to a clean, rounded Riel integer if they paid over the total limit
+  const changeDueKhr = changeDueUsd > 0 ? Math.round(changeDueUsd * 4100) : 0;
+
   const autoCommitKhqrOrder = async (khqrDetails) => {
     const payload = {
       items: cart,
@@ -369,15 +383,52 @@ export default function App() {
             </div>
 
             {paymentMethod === 'CASH' ? (
-              <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200/60">
-                <div>
-                  <label className="text-xs font-bold text-slate-500">Tendered Cash Amount (USD)</label>
-                  <input type="number" value={amountPaidUsd} onChange={(e) => setAmountPaidUsd(e.target.value)} className="w-full mt-1.5 p-2.5 bg-white border border-slate-200 rounded-lg font-bold text-slate-800" placeholder="0.00" />
+              <div className="space-y-4">
+                {/* Input Tenders Container */}
+                <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200/60">
+                  <div>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Tendered Cash Amount (USD)</label>
+                    <input 
+                      type="number" 
+                      value={amountPaidUsd} 
+                      onChange={(e) => { setAmountPaidUsd(e.target.value); setCheckoutResult(null); }} 
+                      className="w-full mt-1.5 p-2.5 bg-white border border-slate-200 rounded-lg font-bold text-slate-800 focus:ring-2 focus:ring-indigo-100 focus:outline-hidden" 
+                      placeholder="0.00" 
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Tendered Cash Amount (KHR)</label>
+                    <input 
+                      type="number" 
+                      value={amountPaidKhr} 
+                      onChange={(e) => { setAmountPaidKhr(e.target.value); setCheckoutResult(null); }} 
+                      className="w-full mt-1.5 p-2.5 bg-white border border-slate-200 rounded-lg font-bold text-slate-800 focus:ring-2 focus:ring-indigo-100 focus:outline-hidden" 
+                      placeholder="0" 
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs font-bold text-slate-500">Tendered Cash Amount (KHR)</label>
-                  <input type="number" value={amountPaidKhr} onChange={(e) => setAmountPaidKhr(e.target.value)} className="w-full mt-1.5 p-2.5 bg-white border border-slate-200 rounded-lg font-bold text-slate-800" placeholder="0" />
-                </div>
+
+                {/* LIVE CALCULATION REFCARD READOUT */}
+                {totalTenderedInUsd > 0 && (
+                  <div className={`p-4 rounded-xl border transition-all ${changeDueUsd >= 0 ? 'bg-emerald-50/60 border-emerald-200' : 'bg-amber-50/60 border-amber-200'}`}>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                        {changeDueUsd >= 0 ? '💰 Change Due to Customer:' : '⏳ Remaining Shortage:'}
+                      </span>
+                      <span className={`text-xl font-black font-mono ${changeDueUsd >= 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                        {changeDueUsd >= 0 
+                          ? `${changeDueKhr.toLocaleString()} ៛` 
+                          : `${Math.abs(Math.round(changeDueUsd * 4100)).toLocaleString()} ៛`
+                        }
+                      </span>
+                    </div>
+                    {changeDueUsd > 0 && (
+                      <p className="text-[10px] text-emerald-600 font-semibold text-right mt-1">
+                        approx. ${(changeDueUsd).toFixed(2)} USD
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-4 bg-rose-50/40 border border-rose-100 p-5 rounded-2xl flex flex-col items-center">
