@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import * as XLSX from 'xlsx';
+import Invoice from './Invoice';
 import { translations as t } from './locales';
 
 const PAGE_SIZE = 10;
@@ -27,6 +28,7 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
   const [payFilter, setPayFilter] = useState('all');
   const [page, setPage] = useState(1);
 
+  const [invoiceModal, setInvoiceModal] = useState(null);
   const [showExportModal, setShowExportModal] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportDateFrom, setExportDateFrom] = useState(() => {
@@ -112,6 +114,26 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
     new Date(ts).toLocaleString(currentLocale === 'km' ? 'km-KH' : 'en-US', {
       month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit',
     });
+
+  const openInvoice = (order) => {
+    setInvoiceModal({
+      order_id: order.id,
+      items: (order.items || []).filter(i => i.product_name).map((i, idx) => ({
+        id: idx,
+        name: i.product_name,
+        price: i.price,
+        quantity: i.quantity,
+        currency: i.currency,
+      })),
+      totalUsd: parseFloat(order.total_amount),
+      totalKhr: Math.round(parseFloat(order.total_amount) * dynamicRate),
+      paymentMethod: order.payment_method,
+      amountPaidUsd: parseFloat(order.amount_paid_usd) || 0,
+      amountPaidKhr: parseFloat(order.amount_paid_khr) || 0,
+      changeDueKhr: parseFloat(order.change_given_khr) || 0,
+      timestamp: order.created_at,
+    });
+  };
 
   const EXPORT_COL_DEFS = [
     { key: 'orderId',   header: 'Order #',      wch: 10, val: (o) => o.id },
@@ -320,6 +342,7 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
                   locale={currentLocale}
                   expanded={expandedId === order.id}
                   onToggle={() => setExpandedId(expandedId === order.id ? null : order.id)}
+                  onInvoice={() => openInvoice(order)}
                   formatDateTime={formatDateTime}
                 />
               ))}
@@ -344,6 +367,14 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
           </div>
         )}
       </div>
+
+      {invoiceModal && (
+        <Invoice
+          invoiceData={invoiceModal}
+          locale={currentLocale}
+          onClose={() => setInvoiceModal(null)}
+        />
+      )}
 
       {/* EXPORT MODAL */}
       {showExportModal && (
@@ -480,7 +511,7 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
   );
 }
 
-function OrderRow({ order, s, dynamicRate, mainCurrency, locale, expanded, onToggle, formatDateTime }) {
+function OrderRow({ order, s, dynamicRate, mainCurrency, locale, expanded, onToggle, onInvoice, formatDateTime }) {
   const itemCount = (order.items || []).filter(i => i.product_name).length;
   const totalUsd = parseFloat(order.total_amount);
   const totalKhr = Math.round(totalUsd * dynamicRate);
@@ -579,6 +610,19 @@ function OrderRow({ order, s, dynamicRate, mainCurrency, locale, expanded, onTog
                 <span className="font-mono">{parseFloat(order.change_given_khr).toLocaleString()} ៛</span>
               </div>
             )}
+          </div>
+
+          {/* Invoice action */}
+          <div className="mt-3 flex justify-end">
+            <button
+              onClick={onInvoice}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.75 19.2m.72-5.371L6 13.5m12 .329c.24.03.48.062.72.096m-.72-.096a42.415 42.415 0 0 0-10.56 0m10.56 0L17.25 19.2m-.72-5.371L18 13.5M12 3v9m0 0-3-3m3 3 3-3" />
+              </svg>
+              Print / Save PDF
+            </button>
           </div>
         </div>
       )}
