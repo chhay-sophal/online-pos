@@ -1,5 +1,23 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: "Plus Jakarta Sans", "Noto Sans Khmer", sans-serif;
+  --font-display: "Kantumruy Pro", "Plus Jakarta Sans", sans-serif;
+}
+
+/* Force all headers to use the modern unlooped display font automatically */
+@utility headings {
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+  }
+}
+
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+  }
+}
+
 :root {
   --text: #6b6375;
   --text-h: #08060d;
@@ -13,8 +31,9 @@
   --shadow:
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  /* FIX: Map these to your modern Tailwind Theme Font Configurations */
+  --sans: var(--font-sans);
+  --heading: var(--font-display);
   --mono: ui-monospace, Consolas, monospace;
 
   font: 18px/145% var(--sans);
@@ -69,8 +88,12 @@ body {
 }
 
 h1,
-h2 {
-  font-family: var(--heading);
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--heading); /* Now correctly points to Kantumruy Pro */
   font-weight: 500;
   color: var(--text-h);
 }
