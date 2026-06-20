@@ -68,7 +68,7 @@ app.get('/api/products/barcode/:barcode', async (req, res) => {
   const { barcode } = req.params;
   try {
     const result = await pool.query(
-      'SELECT id, name, barcode, price_usd, stock FROM products WHERE barcode = $1', 
+      'SELECT id, name, barcode, price, currency, stock FROM products WHERE barcode = $1',
       [barcode]
     );
     
@@ -194,14 +194,14 @@ app.get('/api/payments/check-status/:md5_hash', async (req, res) => {
 
 // 3. IN-STORE CHECKOUT (Process transaction instantly at counter)
 app.post('/api/orders/checkout', async (req, res) => {
-  const { 
-    customer_id, 
-    items, 
-    payment_method, 
-    total_amount_usd, 
-    amount_paid_usd, 
+  const {
+    customer_id,
+    items,
+    payment_method,
+    total_amount,
+    amount_paid_usd,
     amount_paid_khr,
-    khqr_data 
+    khqr_data
   } = req.body;
 
   const client = await pool.connect();
@@ -212,23 +212,23 @@ app.post('/api/orders/checkout', async (req, res) => {
     // 1. Calculate Change given in KHR (Cambodian standard for retail)
     // Convert all inputs to USD values to find exact difference
     const totalPaidInUsd = parseFloat(amount_paid_usd || 0) + (parseFloat(amount_paid_khr || 0) / EXCHANGE_RATE);
-    const changeInUsd = totalPaidInUsd - parseFloat(total_amount_usd);
+    const changeInUsd = totalPaidInUsd - parseFloat(total_amount);
     const changeGivenKhr = changeInUsd > 0 ? Math.round(changeInUsd * EXCHANGE_RATE) : 0;
 
     // 2. Record the Order
     const orderResult = await client.query(
-      `INSERT INTO orders 
-        (customer_id, total_amount_usd, payment_method, amount_paid_usd, amount_paid_khr, change_given_khr, status) 
-       VALUES ($1, $2, $3, $4, $5, $6, 'COMPLETED') RETURNING id`,
-      [customer_id || null, total_amount_usd, payment_method, amount_paid_usd, amount_paid_khr, changeGivenKhr]
+      `INSERT INTO orders
+        (customer_id, total_amount, currency, payment_method, amount_paid_usd, amount_paid_khr, change_given_khr, status)
+       VALUES ($1, $2, 'USD', $3, $4, $5, $6, 'COMPLETED') RETURNING id`,
+      [customer_id || null, total_amount, payment_method, amount_paid_usd, amount_paid_khr, changeGivenKhr]
     );
     const orderId = orderResult.rows[0].id;
 
     // 3. Loop items to snapshot sale price and reduce inventory stock
     for (const item of items) {
       await client.query(
-        'INSERT INTO order_items (order_id, product_id, quantity, price_at_sale_usd) VALUES ($1, $2, $3, $4)',
-        [orderId, item.id, item.quantity, item.price_usd]
+        'INSERT INTO order_items (order_id, product_id, quantity, price_at_sale, currency) VALUES ($1, $2, $3, $4, $5)',
+        [orderId, item.id, item.quantity, item.price, item.currency || 'USD']
       );
 
       await client.query(
@@ -243,13 +243,13 @@ app.post('/api/orders/checkout', async (req, res) => {
         `INSERT INTO khqr_transactions 
           (order_id, md5_hash, qr_string, bank_name, transaction_currency, amount, status) 
          VALUES ($1, $2, $3, $4, $5, $6, 'SUCCESS')`,
-        [orderId, khqr_data.md5_hash, khqr_data.qr_string, khqr_data.bank_name || 'Bakong Network', khqr_data.currency, total_amount_usd]
+        [orderId, khqr_data.md5_hash, khqr_data.qr_string, khqr_data.bank_name || 'Bakong Network', khqr_data.currency, total_amount]
       );
     }
 
     // 5. Update loyalty points if customer exists (e.g., 1 point per $1 spent)
     if (customer_id) {
-      const pointsEarned = Math.floor(total_amount_usd);
+      const pointsEarned = Math.floor(total_amount);
       await client.query(
         'UPDATE customers SET loyalty_points = loyalty_points + $1 WHERE id = $2',
         [pointsEarned, customer_id]
@@ -293,7 +293,8 @@ app.get('/api/orders', async (req, res) => {
     const result = await pool.query(`
       SELECT
         o.id,
-        o.total_amount_usd,
+        o.total_amount,
+        o.currency,
         o.payment_method,
         o.amount_paid_usd,
         o.amount_paid_khr,
@@ -304,7 +305,8 @@ app.get('/api/orders', async (req, res) => {
           json_build_object(
             'product_name', p.name,
             'quantity',     oi.quantity,
-            'price_usd',    oi.price_at_sale_usd
+            'price',        oi.price_at_sale,
+            'currency',     oi.currency
           ) ORDER BY oi.id
         ) AS items
       FROM orders o
@@ -340,15 +342,15 @@ app.get('/api/products', async (req, res) => {
 // Update an individual product's details (Stock level, Price, Name)
 app.put('/api/products/:id', async (req, res) => {
   const { id } = req.params;
-  const { name, barcode, price_usd, stock } = req.body;
+  const { name, barcode, price, currency, stock } = req.body;
 
   try {
     const result = await pool.query(
-      `UPDATE products 
-       SET name = $1, barcode = $2, price_usd = $3, stock = $4 
-       WHERE id = $5 
+      `UPDATE products
+       SET name = $1, barcode = $2, price = $3, currency = $4, stock = $5
+       WHERE id = $6
        RETURNING *`,
-      [name, barcode, parseFloat(price_usd), parseInt(stock), id]
+      [name, barcode, parseFloat(price), currency || 'USD', parseInt(stock), id]
     );
 
     if (result.rows.length === 0) {
@@ -365,17 +367,13 @@ app.put('/api/products/:id', async (req, res) => {
 
 // Add a brand new product to the shelves
 app.post('/api/products', async (req, res) => {
-  const { name, barcode, price_usd, price_khr, stock } = req.body;
-  
-  // Ensure strict numeric defaults are applied if one arrives undefined or empty
-  const cleanUsd = price_usd ? parseFloat(price_usd) : 0.00;
-  const cleanKhr = price_khr ? parseInt(price_khr, 10) : 0;
+  const { name, barcode, price, currency, stock } = req.body;
 
   try {
-    const result = await db.query(
-      `INSERT INTO products (name, barcode, price_usd, price_khr, stock) 
+    const result = await pool.query(
+      `INSERT INTO products (name, barcode, price, currency, stock)
        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [name, barcode, cleanUsd, cleanKhr, stock || 0]
+      [name, barcode, parseFloat(price), currency || 'USD', parseInt(stock) || 0]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {

@@ -199,7 +199,10 @@ export default function App() {
     setActiveKhqr(null);
   };
 
-  const totalUsd = cart.reduce((sum, item) => sum + (item.price_usd * item.quantity), 0);
+  const totalUsd = cart.reduce((sum, item) => {
+    const priceUsd = item.currency === 'KHR' ? item.price / dynamicRate : Number(item.price);
+    return sum + (priceUsd * item.quantity);
+  }, 0);
   const totalKhr = totalUsd * dynamicRate;
 
   const tenderedUsd = parseFloat(amountPaidUsd || 0);
@@ -213,7 +216,7 @@ export default function App() {
     const payload = {
       items: cart,
       payment_method: 'KHQR',
-      total_amount_usd: totalUsd,
+      total_amount: totalUsd,
       amount_paid_usd: totalUsd,
       amount_paid_khr: 0,
     };
@@ -258,7 +261,7 @@ export default function App() {
     const payload = {
       items: cart,
       payment_method: paymentMethod,
-      total_amount_usd: totalUsd,
+      total_amount: totalUsd,
       amount_paid_usd: paidUsd,
       amount_paid_khr: paidKhr,
     };
@@ -438,7 +441,11 @@ export default function App() {
                           <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 flex items-center justify-center font-bold text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">+</button>
                         </div>
                         <div className="text-right w-24">
-                          <p className="font-bold text-sm text-slate-900 font-mono">${(Number(item.price_usd) * item.quantity).toFixed(2)}</p>
+                          <p className="font-bold text-sm text-slate-900 font-mono">
+                          {item.currency === 'KHR'
+                            ? `${(item.price * item.quantity).toLocaleString()} ៛`
+                            : `$${(Number(item.price) * item.quantity).toFixed(2)}`}
+                        </p>
                         </div>
                         <button onClick={() => removeItem(item.id)} className="text-slate-300 hover:text-rose-500 hover:bg-rose-50 w-8 h-8 rounded-lg transition-all text-xs flex items-center justify-center">✕</button>
                       </div>

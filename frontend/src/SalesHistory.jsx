@@ -40,7 +40,7 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
-  const totalRevenue = orders.reduce((sum, o) => sum + parseFloat(o.total_amount_usd || 0), 0);
+  const totalRevenue = orders.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
   const cashCount   = orders.filter(o => o.payment_method === 'CASH').length;
   const khqrCount   = orders.filter(o => o.payment_method === 'KHQR').length;
 
@@ -172,7 +172,7 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
 
 function OrderRow({ order, s, dynamicRate, mainCurrency, locale, expanded, onToggle, formatDateTime }) {
   const itemCount = (order.items || []).filter(i => i.product_name).length;
-  const totalUsd = parseFloat(order.total_amount_usd);
+  const totalUsd = parseFloat(order.total_amount);
   const totalKhr = Math.round(totalUsd * dynamicRate);
 
   return (
@@ -228,9 +228,15 @@ function OrderRow({ order, s, dynamicRate, mainCurrency, locale, expanded, onTog
                 <div key={idx} className="grid grid-cols-[1fr_48px_80px_80px] gap-2 text-xs px-1 py-0.5">
                   <span className="text-slate-800 font-medium truncate">{item.product_name}</span>
                   <span className="text-center text-slate-600 font-mono font-bold">{item.quantity}</span>
-                  <span className="text-right text-slate-600 font-mono">${parseFloat(item.price_usd).toFixed(2)}</span>
+                  <span className="text-right text-slate-600 font-mono">
+                    {item.currency === 'KHR'
+                      ? `${parseFloat(item.price).toLocaleString()} ៛`
+                      : `$${parseFloat(item.price).toFixed(2)}`}
+                  </span>
                   <span className="text-right text-slate-900 font-mono font-bold">
-                    ${(parseFloat(item.price_usd) * item.quantity).toFixed(2)}
+                    {item.currency === 'KHR'
+                      ? `${(parseFloat(item.price) * item.quantity).toLocaleString()} ៛`
+                      : `$${(parseFloat(item.price) * item.quantity).toFixed(2)}`}
                   </span>
                 </div>
               ))}
@@ -239,15 +245,21 @@ function OrderRow({ order, s, dynamicRate, mainCurrency, locale, expanded, onTog
 
           {/* Payment breakdown */}
           <div className="border-t border-slate-200 pt-2.5 space-y-1 text-xs">
+            {mainCurrency === 'KHR' && parseFloat(order.amount_paid_khr) > 0 && (
+              <div className="flex justify-between text-slate-500">
+                <span>{s.paidKhr}</span>
+                <span className="font-mono">{parseFloat(order.amount_paid_khr).toLocaleString()} ៛</span>
+              </div>
+            )}
             {parseFloat(order.amount_paid_usd) > 0 && (
               <div className="flex justify-between text-slate-500">
-                <span>{s.payment} (USD)</span>
+                <span>{s.paidUsd}</span>
                 <span className="font-mono">${parseFloat(order.amount_paid_usd).toFixed(2)}</span>
               </div>
             )}
-            {parseFloat(order.amount_paid_khr) > 0 && (
+            {mainCurrency === 'USD' && parseFloat(order.amount_paid_khr) > 0 && (
               <div className="flex justify-between text-slate-500">
-                <span>{s.payment} (KHR)</span>
+                <span>{s.paidKhr}</span>
                 <span className="font-mono">{parseFloat(order.amount_paid_khr).toLocaleString()} ៛</span>
               </div>
             )}

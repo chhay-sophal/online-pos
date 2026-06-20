@@ -22,7 +22,7 @@ export default function Invoice({ invoiceData, locale, onClose }) {
       <tr>
         <td class="name">${item.name}</td>
         <td class="center">${item.quantity}</td>
-        <td class="right">$${(Number(item.price_usd) * item.quantity).toFixed(2)}</td>
+        <td class="right">$${(Number(item.price) * item.quantity).toFixed(2)}</td>
       </tr>`).join('');
 
     const cashRows = paymentMethod === 'CASH' ? `
@@ -153,7 +153,7 @@ export default function Invoice({ invoiceData, locale, onClose }) {
       pdf.setFont('helvetica', 'normal');
       pdf.text(nameLines, m, y);
       pdf.text(String(item.quantity), W / 2, y, { align: 'center' });
-      pdf.text(`$${(Number(item.price_usd) * item.quantity).toFixed(2)}`, W - m, y, { align: 'right' });
+      pdf.text(`$${(Number(item.price) * item.quantity).toFixed(2)}`, W - m, y, { align: 'right' });
       y += nameLines.length * 4 + 1;
     });
     dash(true);
@@ -266,7 +266,7 @@ export default function Invoice({ invoiceData, locale, onClose }) {
                 <span className="flex-1 leading-tight pr-2 break-words">{item.name}</span>
                 <span className="w-7 text-center font-bold shrink-0">{item.quantity}</span>
                 <span className="w-18 text-right font-bold shrink-0">
-                  ${(Number(item.price_usd) * item.quantity).toFixed(2)}
+                  ${(Number(item.price) * item.quantity).toFixed(2)}
                 </span>
               </div>
             ))}

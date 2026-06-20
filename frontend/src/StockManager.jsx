@@ -4,10 +4,10 @@ import { translations as t } from './locales';
 export default function StockManager({ onBackToRegister, currentLocale, mainCurrency = 'USD', dynamicRate = 4100 }) {
   const [products, setProducts] = useState([]);
   const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm] = useState({ name: '', barcode: '', price_usd: '', price_khr: '', stock: '' });
-  
+  const [editForm, setEditForm] = useState({ name: '', barcode: '', price: '', currency: 'USD', stock: '' });
+
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newProduct, setNewProduct] = useState({ name: '', barcode: '', price_usd: '', price_khr: '', stock: '' });
+  const [newProduct, setNewProduct] = useState({ name: '', barcode: '', price: '', currency: 'USD', stock: '' });
 
   const BACKEND_URL = 'http://localhost:5050';
   
@@ -34,38 +34,23 @@ export default function StockManager({ onBackToRegister, currentLocale, mainCurr
     setEditForm({
       name: product.name,
       barcode: product.barcode,
-      price_usd: product.price_usd || '',
-      price_khr: product.price_khr || '',
-      stock: product.stock
+      price: product.price || '',
+      currency: product.currency || 'USD',
+      stock: product.stock,
     });
   };
 
-  // Automated Cross-Calculation Handlers for Form Mutations
-  const handleFormUsdChange = (val, isNewForm) => {
-    if (val === '') {
-      const resetValues = { price_usd: '', price_khr: '' };
-      isNewForm ? setNewProduct(prev => ({ ...prev, ...resetValues })) : setEditForm(prev => ({ ...prev, ...resetValues }));
-      return;
-    }
-    const calculatedKhr = Math.round((parseFloat(val) || 0) * dynamicRate);
-    const updatedValues = { price_usd: val, price_khr: calculatedKhr > 0 ? String(calculatedKhr) : '' };
-    isNewForm ? setNewProduct(prev => ({ ...prev, ...updatedValues })) : setEditForm(prev => ({ ...prev, ...updatedValues }));
-  };
-
-  const handleFormKhrChange = (val, isNewForm) => {
-    if (val === '') {
-      const resetValues = { price_usd: '', price_khr: '' };
-      isNewForm ? setNewProduct(prev => ({ ...prev, ...resetValues })) : setEditForm(prev => ({ ...prev, ...resetValues }));
-      return;
-    }
-    const calculatedUsd = ((parseInt(val, 10) || 0) / dynamicRate).toFixed(2);
-    const updatedValues = { price_khr: val, price_usd: parseFloat(calculatedUsd) > 0 ? calculatedUsd : '' };
-    isNewForm ? setNewProduct(prev => ({ ...prev, ...updatedValues })) : setEditForm(prev => ({ ...prev, ...updatedValues }));
+  const priceEquivalent = (form) => {
+    const p = parseFloat(form.price);
+    if (!p) return null;
+    return form.currency === 'USD'
+      ? `≈ ${Math.round(p * dynamicRate).toLocaleString()} ៛`
+      : `≈ $${(p / dynamicRate).toFixed(2)}`;
   };
 
   const handleSaveEdit = async (id) => {
-    if (!editForm.name || !editForm.barcode || (!editForm.price_usd && !editForm.price_khr)) {
-      alert(labels.alertMandatory || 'Please fill out all mandatory fields (requires at least one price).');
+    if (!editForm.name || !editForm.barcode || !editForm.price) {
+      alert(labels.alertMandatory || 'Please fill out all mandatory fields.');
       return;
     }
 
@@ -76,9 +61,9 @@ export default function StockManager({ onBackToRegister, currentLocale, mainCurr
         body: JSON.stringify({
           name: editForm.name,
           barcode: editForm.barcode,
-          price_usd: editForm.price_usd ? parseFloat(editForm.price_usd) : 0.00,
-          price_khr: editForm.price_khr ? parseInt(editForm.price_khr, 10) : 0,
-          stock: parseInt(editForm.stock, 10) || 0
+          price: parseFloat(editForm.price),
+          currency: editForm.currency,
+          stock: parseInt(editForm.stock, 10) || 0,
         }),
       });
 
@@ -95,7 +80,7 @@ export default function StockManager({ onBackToRegister, currentLocale, mainCurr
 
   const handleAddProductSubmit = async (e) => {
     e.preventDefault();
-    if (!newProduct.name || !newProduct.barcode || (!newProduct.price_usd && !newProduct.price_khr)) {
+    if (!newProduct.name || !newProduct.barcode || !newProduct.price) {
       alert(labels.alertMandatory || 'Please fill out all mandatory identity fields');
       return;
     }
@@ -107,14 +92,14 @@ export default function StockManager({ onBackToRegister, currentLocale, mainCurr
         body: JSON.stringify({
           name: newProduct.name,
           barcode: newProduct.barcode,
-          price_usd: newProduct.price_usd ? parseFloat(newProduct.price_usd) : 0.00,
-          price_khr: newProduct.price_khr ? parseInt(newProduct.price_khr, 10) : 0,
-          stock: parseInt(newProduct.stock, 10) || 0
+          price: parseFloat(newProduct.price),
+          currency: newProduct.currency,
+          stock: parseInt(newProduct.stock, 10) || 0,
         }),
       });
 
       if (response.ok) {
-        setNewProduct({ name: '', barcode: '', price_usd: '', price_khr: '', stock: '' });
+        setNewProduct({ name: '', barcode: '', price: '', currency: 'USD', stock: '' });
         setShowAddForm(false);
         fetchInventory();
       } else {
@@ -164,8 +149,7 @@ export default function StockManager({ onBackToRegister, currentLocale, mainCurr
                   <th className="px-6 py-3.5 w-12 text-center">ID</th>
                   <th className="px-6 py-3.5">{labels.thName || 'Product Name'}</th>
                   <th className="px-6 py-3.5">{labels.thBarcode || 'Barcode Key'}</th>
-                  <th className="px-6 py-3.5 text-center">{labels.thPrice || 'Unit Price (USD)'}</th>
-                  <th className="px-6 py-3.5 text-center">Unit Price (KHR)</th>
+                  <th className="px-6 py-3.5 text-center">{labels.thPrice || 'Unit Price'}</th>
                   <th className="px-6 py-3.5 w-36">{labels.thStock || 'Current Stock Level'}</th>
                   <th className="px-6 py-3.5 text-right w-28">{labels.thActions || 'Actions'}</th>
                 </tr>
@@ -207,32 +191,39 @@ export default function StockManager({ onBackToRegister, currentLocale, mainCurr
                         )}
                       </td>
 
-                      {/* Price USD Column Rendering */}
+                      {/* Price Column */}
                       <td className="px-6 py-3 text-center">
                         {isEditing ? (
-                          <input 
-                            type="number"
-                            step="0.01"
-                            value={editForm.price_usd}
-                            onChange={(e) => handleFormUsdChange(e.target.value, false)}
-                            className="p-1.5 border border-slate-200 rounded bg-white w-20 text-center font-semibold text-sm"
-                          />
+                          <div className="flex items-center gap-1.5 justify-center">
+                            <input
+                              type="number"
+                              step={editForm.currency === 'USD' ? '0.01' : '100'}
+                              value={editForm.price}
+                              onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
+                              className="p-1.5 border border-slate-200 rounded bg-white w-24 text-center font-semibold text-sm"
+                            />
+                            <select
+                              value={editForm.currency}
+                              onChange={(e) => setEditForm({ ...editForm, currency: e.target.value })}
+                              className="p-1.5 border border-slate-200 rounded bg-white text-xs font-bold text-slate-600"
+                            >
+                              <option value="USD">USD</option>
+                              <option value="KHR">KHR</option>
+                            </select>
+                          </div>
                         ) : (
-                          <span className="font-bold text-slate-800">${(parseFloat(product.price_usd) || 0).toFixed(2)}</span>
-                        )}
-                      </td>
-
-                      {/* Price KHR Column Rendering */}
-                      <td className="px-6 py-3 text-center">
-                        {isEditing ? (
-                          <input 
-                            type="number"
-                            value={editForm.price_khr}
-                            onChange={(e) => handleFormKhrChange(e.target.value, false)}
-                            className="p-1.5 border border-slate-200 rounded bg-white w-24 text-center font-mono font-bold text-indigo-600 text-sm"
-                          />
-                        ) : (
-                          <span className="font-mono font-bold text-indigo-600">{(parseInt(product.price_khr, 10) || 0).toLocaleString()} ៛</span>
+                          <div>
+                            <span className="font-bold text-slate-800">
+                              {product.currency === 'KHR'
+                                ? `${parseFloat(product.price).toLocaleString()} ៛`
+                                : `$${parseFloat(product.price).toFixed(2)}`}
+                            </span>
+                            <p className="text-[10px] text-slate-400 font-mono mt-0.5">
+                              {product.currency === 'KHR'
+                                ? `≈ $${(parseFloat(product.price) / dynamicRate).toFixed(2)}`
+                                : `≈ ${Math.round(parseFloat(product.price) * dynamicRate).toLocaleString()} ៛`}
+                            </p>
+                          </div>
                         )}
                       </td>
 
@@ -318,29 +309,29 @@ export default function StockManager({ onBackToRegister, currentLocale, mainCurr
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide font-display">{labels.retailPrice || 'Price'} (KHR)</label>
-                  <input 
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide font-display">{labels.retailPrice || 'Price'}</label>
+                <div className="flex gap-2 mt-1.5">
+                  <input
                     type="number"
-                    step="100"
-                    placeholder="0"
-                    value={newProduct.price_khr}
-                    onChange={(e) => handleFormKhrChange(e.target.value, true)}
-                    className="w-full mt-1.5 p-2.5 border border-slate-200 bg-slate-50 rounded-lg text-sm font-mono font-bold text-indigo-600 focus:outline-none focus:border-indigo-500"
+                    step={newProduct.currency === 'USD' ? '0.01' : '100'}
+                    placeholder={newProduct.currency === 'USD' ? '0.00' : '0'}
+                    value={newProduct.price}
+                    onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
+                    className="flex-1 p-2.5 border border-slate-200 bg-slate-50 rounded-lg text-sm font-mono font-bold text-indigo-600 focus:outline-none focus:border-indigo-500"
                   />
+                  <select
+                    value={newProduct.currency}
+                    onChange={(e) => setNewProduct({ ...newProduct, currency: e.target.value, price: '' })}
+                    className="p-2.5 border border-slate-200 bg-slate-50 rounded-lg text-sm font-bold text-slate-600 focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="USD">USD</option>
+                    <option value="KHR">KHR</option>
+                  </select>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide font-display">{labels.retailPrice || 'Price'} (USD)</label>
-                  <input 
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={newProduct.price_usd}
-                    onChange={(e) => handleFormUsdChange(e.target.value, true)}
-                    className="w-full mt-1.5 p-2.5 border border-slate-200 bg-slate-50 rounded-lg text-sm font-mono font-bold text-indigo-600 focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
+                {newProduct.price && (
+                  <p className="text-[11px] text-slate-400 font-mono mt-1">{priceEquivalent(newProduct)}</p>
+                )}
               </div>
 
               <div>
