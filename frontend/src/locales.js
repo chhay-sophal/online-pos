@@ -61,6 +61,31 @@ export const translations = {
       editBtn: '✏️ កែប្រែទិន្នន័យ',
       alertMandatory: 'សូមបំពេញព័ត៌មានចាំបាច់ឲ្យបានគ្រប់គ្រាន់!',
       alertUpdateFail: 'ការធ្វើបច្ចុប្បន្នភាពព័ត៌មានទំនិញបានបរាជ័យ។'
+    },
+
+    settingsPage: {
+        failSave: 'ការរក្សាទុកការកំណត់បានបរាជ័យ។',
+        inventoryLedger: 'បញ្ជីគ្រប់គ្រងស្តុកទំនិញ',
+        auditRoom: 'បន្ទប់សវនកម្ម',
+        registerNewProduct: '➕ ចុះឈ្មោះទំនិញថ្មី',
+        closeDrawer: '🔒 បិទផ្ទាំងបញ្ចូល',
+        itemName: 'ឈ្មោះទំនិញ',
+        barcodeString: 'លេខបាកូដ (Barcode)',
+        retailPriceUsd: 'តម្លៃលក់រាយ (USD)',
+        initialStockCount: 'ចំនួនស្តុកដំបូង',
+        saveProductCard: 'រក្សាទុកទំនិញទៅក្នុងប្រព័ន្ធ',
+        productName: 'ឈ្មោះទំនិញ',
+        barcodeKey: 'លេខបាកូដ',
+        unitPrice: 'តម្លៃរាយ',
+        currentStockLevel: 'កម្រិតស្តុកបច្ចុប្បន្ន',
+        actions: 'សកម្មភាព',
+        units: 'កញ្ចប់/ដប/ដុំ',
+        needsRestock: '⚠️ ត្រូវការបំពេញស្តុក',
+        editRecord: '✏️ កែប្រែទិន្នន័យ',
+        save: 'រក្សាទុក',
+        cancel: 'បោះបង់',
+        placeholderItemName: 'ឧទាហរណ៍៖ ខោទឹកនោម Huggies ទំហំ M',
+        placeholderBarcode: 'ស្កេន ឬវាយលេខបាកូដផលិតផល'
     }
   },
   en: {
@@ -123,6 +148,31 @@ export const translations = {
       editBtn: '✏️ Edit Record',
       alertMandatory: 'Please fill out all mandatory identity fields',
       alertUpdateFail: 'Failed to update product details.'
+    },
+
+    settingsPage: {
+        failSave: 'Failed to save settings configurations',
+        inventoryLedger: 'Inventory Stock Ledger',
+        auditRoom: 'Audit Room',
+        registerNewProduct: '➕ Register New Product',
+        closeDrawer: '🔒 Close Drawer',
+        itemName: 'Item Name',
+        barcodeString: 'Barcode String',
+        retailPriceUsd: 'Retail Price (USD)',
+        initialStockCount: 'Initial Stock Count',
+        saveProductCard: 'Save Product Card to Database',
+        productName: 'Product Name',
+        barcodeKey: 'Barcode Key',
+        unitPrice: 'Unit Price',
+        currentStockLevel: 'Current Stock Level',
+        actions: 'Actions',
+        units: 'units',
+        needsRestock: '⚠️ Needs Restock',
+        editRecord: '✏️ Edit Record',
+        save: 'Save',
+        cancel: 'Cancel',
+        placeholderItemName: 'e.g. Huggies Diapers M-Size',
+        placeholderBarcode: 'Scan or type package barcode'
     }
   }
 };
