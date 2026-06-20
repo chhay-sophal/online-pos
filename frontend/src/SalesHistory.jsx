@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { translations as t } from './locales';
 
+const PAGE_SIZE = 10;
 const BACKEND_URL = 'http://localhost:5050';
 
 function getPeriodRange(period) {
@@ -23,6 +24,9 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
   const [sortCol, setSortCol] = useState('id');
   const [sortDir, setSortDir] = useState('desc');
   const [payFilter, setPayFilter] = useState('all');
+  const [page, setPage] = useState(1);
+
+  useEffect(() => { setPage(1); }, [search, period, payFilter, sortCol, sortDir]);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -72,6 +76,18 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
         default:        return dir * (a.id - b.id);
       }
     });
+
+  const totalPages = Math.ceil(filteredOrders.length / PAGE_SIZE);
+  const pageNums = (() => {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const pages = [1];
+    if (page > 3) pages.push('...');
+    for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) pages.push(i);
+    if (page < totalPages - 2) pages.push('...');
+    if (totalPages > 1) pages.push(totalPages);
+    return pages;
+  })();
+  const pagedOrders = filteredOrders.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const totalRevenue = filteredOrders.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
   // counts from unfiltered orders so payment filter buttons always show full period totals
@@ -189,44 +205,63 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
       </div>
 
       {/* Order list */}
-      <div className="flex-1 overflow-y-auto p-5">
-        {loading ? (
-          <div className="flex items-center justify-center h-full text-slate-400 text-sm font-bold">{s.loading}</div>
-        ) : orders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400">
-            <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-2xl">🗂️</div>
-            <p className="text-sm font-semibold">{s.noOrders}</p>
-          </div>
-        ) : filteredOrders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400">
-            <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-2xl">🔍</div>
-            <p className="text-sm font-semibold">{s.noResults}</p>
-          </div>
-        ) : (
-          <div className="space-y-2 max-w-4xl mx-auto">
-            {/* Table header */}
-            <div className="grid grid-cols-[56px_1fr_80px_120px_80px_32px] gap-3 px-4 py-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-              <button className="text-left cursor-pointer hover:text-slate-600 select-none" onClick={() => toggleSort('id')}>{s.orderId}{si('id')}</button>
-              <button className="text-left cursor-pointer hover:text-slate-600 select-none" onClick={() => toggleSort('date')}>{s.dateTime}{si('date')}</button>
-              <button className="text-center cursor-pointer hover:text-slate-600 select-none" onClick={() => toggleSort('itemCount')}>{s.itemCount}{si('itemCount')}</button>
-              <button className="text-right cursor-pointer hover:text-slate-600 select-none" onClick={() => toggleSort('total')}>{s.total}{si('total')}</button>
-              <button className="text-center cursor-pointer hover:text-slate-600 select-none" onClick={() => toggleSort('payment')}>{s.payment}{si('payment')}</button>
-              <span />
+      <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex-1 overflow-y-auto p-5">
+          {loading ? (
+            <div className="flex items-center justify-center h-full text-slate-400 text-sm font-bold">{s.loading}</div>
+          ) : orders.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400">
+              <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-2xl">🗂️</div>
+              <p className="text-sm font-semibold">{s.noOrders}</p>
             </div>
+          ) : filteredOrders.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400">
+              <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-2xl">🔍</div>
+              <p className="text-sm font-semibold">{s.noResults}</p>
+            </div>
+          ) : (
+            <div className="space-y-2 max-w-4xl mx-auto">
+              {/* Table header */}
+              <div className="grid grid-cols-[56px_1fr_80px_120px_80px_32px] gap-3 px-4 py-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                <button className="text-left cursor-pointer hover:text-slate-600 select-none" onClick={() => toggleSort('id')}>{s.orderId}{si('id')}</button>
+                <button className="text-left cursor-pointer hover:text-slate-600 select-none" onClick={() => toggleSort('date')}>{s.dateTime}{si('date')}</button>
+                <button className="text-center cursor-pointer hover:text-slate-600 select-none" onClick={() => toggleSort('itemCount')}>{s.itemCount}{si('itemCount')}</button>
+                <button className="text-right cursor-pointer hover:text-slate-600 select-none" onClick={() => toggleSort('total')}>{s.total}{si('total')}</button>
+                <button className="text-center cursor-pointer hover:text-slate-600 select-none" onClick={() => toggleSort('payment')}>{s.payment}{si('payment')}</button>
+                <span />
+              </div>
 
-            {filteredOrders.map(order => (
-              <OrderRow
-                key={order.id}
-                order={order}
-                s={s}
-                dynamicRate={dynamicRate}
-                mainCurrency={mainCurrency}
-                locale={currentLocale}
-                expanded={expandedId === order.id}
-                onToggle={() => setExpandedId(expandedId === order.id ? null : order.id)}
-                formatDateTime={formatDateTime}
-              />
-            ))}
+              {pagedOrders.map(order => (
+                <OrderRow
+                  key={order.id}
+                  order={order}
+                  s={s}
+                  dynamicRate={dynamicRate}
+                  mainCurrency={mainCurrency}
+                  locale={currentLocale}
+                  expanded={expandedId === order.id}
+                  onToggle={() => setExpandedId(expandedId === order.id ? null : order.id)}
+                  formatDateTime={formatDateTime}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Pagination footer — always visible at the bottom */}
+        {!loading && totalPages > 1 && (
+          <div className="bg-white border-t border-slate-200 px-6 py-3 flex items-center justify-between flex-shrink-0">
+            <span className="text-xs text-slate-400 font-medium">
+              {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filteredOrders.length)} of {filteredOrders.length}
+            </span>
+            <div className="flex items-center gap-1">
+              <button onClick={() => setPage(p => p - 1)} disabled={page === 1} className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all">←</button>
+              {pageNums.map((n, i) => n === '...'
+                ? <span key={`e${i}`} className="px-1 text-slate-300 text-xs">…</span>
+                : <button key={n} onClick={() => setPage(n)} className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${page === n ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}>{n}</button>
+              )}
+              <button onClick={() => setPage(p => p + 1)} disabled={page === totalPages} className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all">→</button>
+            </div>
           </div>
         )}
       </div>

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { translations as t } from './locales';
 
+const PAGE_SIZE = 15;
+
 export default function StockManager({ onBackToRegister, currentLocale, mainCurrency = 'USD', dynamicRate = 4100 }) {
   const [products, setProducts] = useState([]);
   const [editingId, setEditingId] = useState(null);
@@ -10,9 +12,12 @@ export default function StockManager({ onBackToRegister, currentLocale, mainCurr
   const [sortDir, setSortDir] = useState('asc');
   const [currFilter, setCurrFilter] = useState('all');
   const [lowStock, setLowStock] = useState(false);
+  const [page, setPage] = useState(1);
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [newProduct, setNewProduct] = useState({ name: '', barcode: '', price: '', currency: 'USD', stock: '' });
+
+  useEffect(() => { setPage(1); }, [search, sortCol, sortDir, currFilter, lowStock]);
 
   const BACKEND_URL = 'http://localhost:5050';
   
@@ -143,8 +148,20 @@ export default function StockManager({ onBackToRegister, currentLocale, mainCurr
       }
     });
 
+  const totalPages = Math.ceil(displayed.length / PAGE_SIZE);
+  const pageNums = (() => {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const pages = [1];
+    if (page > 3) pages.push('...');
+    for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) pages.push(i);
+    if (page < totalPages - 2) pages.push('...');
+    if (totalPages > 1) pages.push(totalPages);
+    return pages;
+  })();
+  const paged = displayed.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 antialiased overflow-hidden">
+    <div className="h-screen bg-slate-50 flex flex-col font-sans text-slate-900 antialiased overflow-hidden">
       <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-xs flex-shrink-0">
         <div className="flex items-center gap-4">
           <button
@@ -190,9 +207,10 @@ export default function StockManager({ onBackToRegister, currentLocale, mainCurr
         </button>
       </header>
 
-      <div className="flex-1 p-6 max-w-6xl mx-auto w-full overflow-hidden flex flex-col gap-6">
-        {/* Data Matrix Grid Table Wrapper */}
-        <div className="flex-1 bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden flex flex-col">
+      <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex-1 p-6 pb-0 max-w-6xl mx-auto w-full overflow-hidden flex flex-col">
+          {/* Data Matrix Grid Table Wrapper */}
+          <div className="flex-1 bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden flex flex-col">
           {/* Filter bar */}
           <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-3 flex-shrink-0">
             <div className="flex gap-1">
@@ -219,7 +237,7 @@ export default function StockManager({ onBackToRegister, currentLocale, mainCurr
             </button>
             <span className="ml-auto text-[11px] text-slate-400 font-mono">{displayed.length} products</span>
           </div>
-          <div className="flex-1 overflow-x-auto overflow-y-auto max-h-[calc(100vh-185px)]">
+          <div className="flex-1 overflow-x-auto overflow-y-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase tracking-wider font-display">
@@ -232,7 +250,7 @@ export default function StockManager({ onBackToRegister, currentLocale, mainCurr
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm font-medium text-slate-700">
-                {displayed.map((product) => {
+                {paged.map((product) => {
                   const isEditing = editingId === product.id;
                   const isLowStock = product.stock <= 5;
                   
@@ -342,7 +360,26 @@ export default function StockManager({ onBackToRegister, currentLocale, mainCurr
               </tbody>
             </table>
           </div>
+
         </div>
+      </div>
+
+      {/* Pagination footer — always visible at the bottom */}
+      {totalPages > 1 && (
+        <div className="bg-white border-t border-slate-200 px-6 py-3 flex items-center justify-between flex-shrink-0">
+          <span className="text-xs text-slate-400 font-medium">
+            {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, displayed.length)} of {displayed.length}
+          </span>
+          <div className="flex items-center gap-1">
+            <button onClick={() => setPage(p => p - 1)} disabled={page === 1} className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all">←</button>
+            {pageNums.map((n, i) => n === '...'
+              ? <span key={`e${i}`} className="px-1 text-slate-300 text-xs">…</span>
+              : <button key={n} onClick={() => setPage(n)} className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${page === n ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}>{n}</button>
+            )}
+            <button onClick={() => setPage(p => p + 1)} disabled={page === totalPages} className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all">→</button>
+          </div>
+        </div>
+      )}
       </div>
 
       {/* MODAL POPUP DIALOG: REGISTER NEW PRODUCT */}
