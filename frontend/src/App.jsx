@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import StockManager from './StockManager';
 import SettingsManager from './SettingsManager';
+import Invoice from './Invoice';
 import { translations as t } from './locales';
 
 export default function App() {
@@ -11,6 +12,7 @@ export default function App() {
   const [amountPaidUsd, setAmountPaidUsd] = useState('');
   const [amountPaidKhr, setAmountPaidKhr] = useState('');
   const [checkoutResult, setCheckoutResult] = useState(null);
+  const [invoiceData, setInvoiceData] = useState(null);
   const [view, setView] = useState('REGISTER');
   const [activeKhqr, setActiveKhqr] = useState(null);
   const [dynamicRate, setDynamicRate] = useState(4100);
@@ -206,6 +208,7 @@ export default function App() {
   const changeDueKhr = changeDueUsd > 0 ? Math.round(changeDueUsd * dynamicRate) : 0;
 
   const autoCommitKhqrOrder = async (khqrDetails) => {
+    const cartSnapshot = [...cart];
     const payload = {
       items: cart,
       payment_method: 'KHQR',
@@ -224,6 +227,17 @@ export default function App() {
       const data = await response.json();
       if (response.ok) {
         setCheckoutResult(data);
+        setInvoiceData({
+          order_id: data.order_id,
+          items: cartSnapshot,
+          totalUsd,
+          totalKhr,
+          paymentMethod: 'KHQR',
+          amountPaidUsd: totalUsd,
+          amountPaidKhr: 0,
+          changeDueKhr: 0,
+          timestamp: new Date().toISOString(),
+        });
         setCart([]);
         setActiveKhqr(null);
         setPaymentMethod('CASH');
@@ -236,12 +250,16 @@ export default function App() {
   const handleCheckout = async () => {
     if (cart.length === 0) return;
 
+    const cartSnapshot = [...cart];
+    const paidUsd = paymentMethod === 'CASH' ? parseFloat(amountPaidUsd || 0) : totalUsd;
+    const paidKhr = paymentMethod === 'CASH' ? parseFloat(amountPaidKhr || 0) : 0;
+
     const payload = {
       items: cart,
       payment_method: paymentMethod,
       total_amount_usd: totalUsd,
-      amount_paid_usd: paymentMethod === 'CASH' ? parseFloat(amountPaidUsd || 0) : totalUsd,
-      amount_paid_khr: paymentMethod === 'CASH' ? parseFloat(amountPaidKhr || 0) : 0,
+      amount_paid_usd: paidUsd,
+      amount_paid_khr: paidKhr,
     };
 
     try {
@@ -254,6 +272,17 @@ export default function App() {
       const data = await response.json();
       if (response.ok) {
         setCheckoutResult(data);
+        setInvoiceData({
+          order_id: data.order_id,
+          items: cartSnapshot,
+          totalUsd,
+          totalKhr,
+          paymentMethod,
+          amountPaidUsd: paidUsd,
+          amountPaidKhr: paidKhr,
+          changeDueKhr: data.change_due_khr || 0,
+          timestamp: new Date().toISOString(),
+        });
         setCart([]);
         setAmountPaidUsd('');
         setAmountPaidKhr('');
@@ -291,6 +320,7 @@ export default function App() {
   }
 
   return (
+    <>
     <div className="h-screen w-screen overflow-hidden bg-slate-50 flex flex-col font-sans text-slate-900 antialiased">
       {/* Structural Header Grid */}
       <header className="bg-white border-b border-slate-200 px-6 py-3.5 flex justify-between items-center shadow-xs flex-shrink-0">
@@ -543,5 +573,14 @@ export default function App() {
         </div>
       </div>
     </div>
+
+      {invoiceData && (
+        <Invoice
+          invoiceData={invoiceData}
+          locale={locale}
+          onClose={() => setInvoiceData(null)}
+        />
+      )}
+    </>
   );
 }

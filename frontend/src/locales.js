@@ -36,7 +36,28 @@ export const translations = {
     currencySetting: 'រូបិយប័ណ្ណគោល',
     mainCurrencyUsd: 'ដុល្លារអាមេរិក (USD)',
     mainCurrencyKhr: 'ប្រាក់រៀល (KHR)',
-    
+
+    // INVOICE LABELS
+    invoice: {
+      receiptTitle: 'វិក្កយបត្រលក់ទំនិញ',
+      orderId: 'លេខកម្ម៉ង់',
+      date: 'កាលបរិច្ឆេទ',
+      time: 'ម៉ោង',
+      item: 'ទំនិញ',
+      qty: 'ចំនួន',
+      amount: 'សរុប',
+      total: 'តម្លៃសរុប',
+      payment: 'ការទូទាត់',
+      cash: 'ប្រាក់សុទ្ធ',
+      khqr: 'KHQR ឌីជីថល',
+      paidUsd: 'ទទួលប្រាក់ (USD)',
+      paidKhr: 'ទទួលប្រាក់ (KHR)',
+      change: 'ប្រាក់អាប់ជូន',
+      thankYou: 'អរគុណដែលបានអញ្ជើញមក!',
+      printBtn: '🖨️ បោះពុម្ពវិក្កយបត្រ',
+      closeBtn: 'បិទ',
+    },
+
     // STOCK SPECIFIC LABELS
     stock: {
       backBtn: 'បញ្ជរលក់ទំនិញ',
@@ -129,7 +150,28 @@ export const translations = {
     currencySetting: 'Main Currency Base',
     mainCurrencyUsd: 'US Dollar (USD)',
     mainCurrencyKhr: 'Khmer Riel (KHR)',
-    
+
+    // INVOICE LABELS
+    invoice: {
+      receiptTitle: 'Sales Receipt',
+      orderId: 'Order No.',
+      date: 'Date',
+      time: 'Time',
+      item: 'Item',
+      qty: 'Qty',
+      amount: 'Amount',
+      total: 'Total',
+      payment: 'Payment',
+      cash: 'Cash',
+      khqr: 'KHQR Digital',
+      paidUsd: 'Paid (USD)',
+      paidKhr: 'Paid (KHR)',
+      change: 'Change Due',
+      thankYou: 'Thank you for shopping with us!',
+      printBtn: '🖨️ Print Receipt',
+      closeBtn: 'Close',
+    },
+
     // STOCK SPECIFIC LABELS
     stock: {
       backBtn: 'Register Terminal',
