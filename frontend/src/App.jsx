@@ -450,18 +450,6 @@ export default function App() {
               <div className="space-y-4">
                 <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200/60">
                   <div>
-                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide font-display">{t[locale].tenderedUsd}</label>
-                    <input 
-                      type="number" 
-                      value={amountPaidUsd} 
-                      onChange={(e) => { setAmountPaidUsd(e.target.value); setCheckoutResult(null); }} 
-                      className="w-full mt-1.5 h-10 px-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-800 font-mono text-sm focus:ring-2 focus:ring-indigo-50 focus:outline-hidden focus:border-indigo-500" 
-                      placeholder="0.00" 
-                      step="0.01"
-                      min="0.00"
-                    />
-                  </div>
-                  <div>
                     <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide font-display">{t[locale].tenderedKhr}</label>
                     <input 
                       type="number" 
@@ -471,6 +459,18 @@ export default function App() {
                       placeholder="0" 
                       step="100"
                       min="0"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide font-display">{t[locale].tenderedUsd}</label>
+                    <input 
+                      type="number" 
+                      value={amountPaidUsd} 
+                      onChange={(e) => { setAmountPaidUsd(e.target.value); setCheckoutResult(null); }} 
+                      className="w-full mt-1.5 h-10 px-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-800 font-mono text-sm focus:ring-2 focus:ring-indigo-50 focus:outline-hidden focus:border-indigo-500" 
+                      placeholder="0.00" 
+                      step="0.01"
+                      min="0.00"
                     />
                   </div>
                 </div>

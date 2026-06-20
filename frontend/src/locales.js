@@ -46,8 +46,8 @@ export const translations = {
       registerNew: '➕ ចុះឈ្មោះទំនិញថ្មី',
       itemName: 'ឈ្មោះមុខទំនិញ',
       barcodeStr: 'លេខបាកូដ',
-      retailPrice: 'តម្លៃលក់រាយ (USD)',
-      initialStock: 'ចំនួនស្តុកដំបូង',
+      retailPrice: 'តម្លៃលក់រាយ',
+      initialStock: 'ចំនួនស្តុកដើម',
       saveToDb: 'រក្សាទុកទិន្នន័យទំនិញទៅក្នុងប្រព័ន្ធ',
       thName: 'ឈ្មោះមុខទំនិញ',
       thBarcode: 'កូដបាកូដ',
@@ -60,7 +60,11 @@ export const translations = {
       cancelBtn: 'បោះបង់',
       editBtn: '✏️ កែប្រែទិន្នន័យ',
       alertMandatory: 'សូមបំពេញព័ត៌មានចាំបាច់ឲ្យបានគ្រប់គ្រាន់!',
-      alertUpdateFail: 'ការធ្វើបច្ចុប្បន្នភាពព័ត៌មានទំនិញបានបរាជ័យ។'
+      alertUpdateFail: 'ការធ្វើបច្ចុប្បន្នភាពព័ត៌មានទំនិញបានបរាជ័យ។',
+      barcodeString: 'លេខបាកូដ',
+      placeholderItemName: 'ឧទាហរណ៍៖ ម្សៅទឹកដោះគោ',
+      placeholderBarcode: 'ស្កេនឬវាយលេខបាកូដ',
+      registerNewProduct: 'ចុះឈ្មោះទំនិញថ្មី',
     },
 
     // SETTINGS SPECIFIC LABELS
@@ -135,7 +139,7 @@ export const translations = {
       registerNew: '➕ Register New Product',
       itemName: 'Item Name',
       barcodeStr: 'Barcode String',
-      retailPrice: 'Retail Price (USD)',
+      retailPrice: 'Retail Price',
       initialStock: 'Initial Stock Count',
       saveToDb: 'Save Product Card to Database',
       thName: 'Product Name',
@@ -149,7 +153,10 @@ export const translations = {
       cancelBtn: 'Cancel',
       editBtn: '✏️ Edit Record',
       alertMandatory: 'Please fill out all mandatory identity fields',
-      alertUpdateFail: 'Failed to update product details.'
+      alertUpdateFail: 'Failed to update product details.',
+      placeholderItemName: 'E.g. Baby Formula Powder',
+      placeholderBarcode: 'Scan or type code',
+      registerNewProduct: 'Register New Product',
     },
 
     // SETTINGS SPECIFIC LABELS

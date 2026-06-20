@@ -315,18 +315,21 @@ app.put('/api/products/:id', async (req, res) => {
 
 // Add a brand new product to the shelves
 app.post('/api/products', async (req, res) => {
-  const { name, barcode, price_usd, stock } = req.body;
+  const { name, barcode, price_usd, price_khr, stock } = req.body;
+  
+  // Ensure strict numeric defaults are applied if one arrives undefined or empty
+  const cleanUsd = price_usd ? parseFloat(price_usd) : 0.00;
+  const cleanKhr = price_khr ? parseInt(price_khr, 10) : 0;
+
   try {
-    const result = await pool.query(
-      `INSERT INTO products (name, barcode, price_usd, stock) 
-       VALUES ($1, $2, $3, $4) 
-       RETURNING *`,
-      [name, barcode, parseFloat(price_usd), parseInt(stock || 0)]
+    const result = await db.query(
+      `INSERT INTO products (name, barcode, price_usd, price_khr, stock) 
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [name, barcode, cleanUsd, cleanKhr, stock || 0]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error('Error introducing new product:', err.message);
-    res.status(500).json({ error: err.message });
+    res.status(400).json({ error: err.message });
   }
 });
 
