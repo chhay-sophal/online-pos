@@ -263,5 +263,63 @@ app.post('/api/orders/checkout', async (req, res) => {
   }
 });
 
+
+// --- STOCK MANAGEMENT ENDPOINTS ---
+
+// Fetch all products for the inventory sheet
+app.get('/api/products', async (req, res) => {
+  try {
+    // Orders items by name so it's easy to look through alphabetically
+    const result = await pool.query('SELECT * FROM products ORDER BY name ASC');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching inventory list:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update an individual product's details (Stock level, Price, Name)
+app.put('/api/products/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name, barcode, price_usd, stock } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE products 
+       SET name = $1, barcode = $2, price_usd = $3, stock = $4 
+       WHERE id = $5 
+       RETURNING *`,
+      [name, barcode, parseFloat(price_usd), parseInt(stock), id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    console.log(`📦 Product ID ${id} updated in database. New Stock: ${stock}`);
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error updating product metrics:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Add a brand new product to the shelves
+app.post('/api/products', async (req, res) => {
+  const { name, barcode, price_usd, stock } = req.body;
+  try {
+    const result = await pool.query(
+      `INSERT INTO products (name, barcode, price_usd, stock) 
+       VALUES ($1, $2, $3, $4) 
+       RETURNING *`,
+      [name, barcode, parseFloat(price_usd), parseInt(stock || 0)]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error introducing new product:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`In-Store POS Backend active on port ${PORT}`));
