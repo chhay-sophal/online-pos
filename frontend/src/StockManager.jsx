@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import * as XLSX from "xlsx";
 import { translations as t } from "./locales";
 
 const PAGE_SIZE = 15;
@@ -26,6 +27,12 @@ export default function StockManager({
   const [page, setPage] = useState(1);
 
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportScope, setExportScope] = useState("filtered");
+  const [exportCols, setExportCols] = useState({
+    id: true, name: true, barcode: true, currency: true,
+    price: true, priceUsd: true, priceKhr: true, stock: true, lowStock: false,
+  });
   const [newProduct, setNewProduct] = useState({
     name: "",
     barcode: "",
@@ -212,6 +219,39 @@ export default function StockManager({
   })();
   const paged = displayed.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+  const EXPORT_COL_DEFS = [
+    { key: "id",       header: "ID",           wch: 6,  val: (p) => p.id },
+    { key: "name",     header: "Name",          wch: 36, val: (p) => p.name },
+    { key: "barcode",  header: "Barcode",       wch: 16, val: (p) => p.barcode },
+    { key: "currency", header: "Currency",      wch: 10, val: (p) => p.currency },
+    { key: "price",    header: "Price",         wch: 12, val: (p) => parseFloat(p.price) },
+    { key: "priceUsd", header: "Price (USD)",   wch: 12, val: (p) => p.currency === "KHR" ? parseFloat((parseFloat(p.price) / dynamicRate).toFixed(2)) : parseFloat(p.price) },
+    { key: "priceKhr", header: "Price (KHR)",   wch: 14, val: (p) => p.currency === "KHR" ? parseFloat(p.price) : Math.round(parseFloat(p.price) * dynamicRate) },
+    { key: "stock",    header: "Stock",         wch: 8,  val: (p) => p.stock },
+    { key: "lowStock", header: "Low Stock",     wch: 10, val: (p) => p.stock <= 5 ? "Yes" : "No" },
+  ];
+
+  const exportToExcel = () => {
+    const source = exportScope === "all" ? products : displayed;
+    const activeCols = EXPORT_COL_DEFS.filter((c) => exportCols[c.key]);
+
+    const rows = source.map((p) => {
+      const row = {};
+      activeCols.forEach((c) => { row[c.header] = c.val(p); });
+      return row;
+    });
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws["!cols"] = activeCols.map((c) => ({ wch: c.wch }));
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Inventory");
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `inventory-${dateStr}.xlsx`);
+    setShowExportModal(false);
+  };
+
   return (
     <div className="h-screen bg-slate-50 flex flex-col font-sans text-slate-900 antialiased overflow-hidden">
       <header className="bg-white border-b border-slate-200 px-6 py-3.5 flex justify-between items-center flex-shrink-0">
@@ -269,12 +309,21 @@ export default function StockManager({
           </div>
         </div>
 
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-sm transition-all flex items-center gap-2 cursor-pointer active:scale-95 flex-shrink-0"
-        >
-          {labels.registerNewProduct || "+ Register New Product"}
-        </button>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={() => setShowExportModal(true)}
+            disabled={products.length === 0}
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold rounded-xl text-xs shadow-sm transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+          >
+            ↓ Excel
+          </button>
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-sm transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+          >
+            {labels.registerNewProduct || "Register New Product"}
+          </button>
+        </div>
       </header>
 
       {/* Data Matrix Grid Table Wrapper */}
@@ -569,6 +618,98 @@ export default function StockManager({
             >
               →
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* EXPORT TO EXCEL MODAL */}
+      {showExportModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-xl w-full max-w-sm flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <div>
+                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Export to Excel</h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">Configure your export</p>
+              </div>
+              <button
+                onClick={() => setShowExportModal(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+              >✕</button>
+            </div>
+
+            <div className="px-5 py-4 space-y-5">
+              {/* Data scope */}
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Data</p>
+                <div className="space-y-1.5">
+                  {[
+                    { value: "filtered", label: "Current view", count: displayed.length },
+                    { value: "all",      label: "All products",  count: products.length },
+                  ].map(({ value, label, count }) => (
+                    <label key={value} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border cursor-pointer transition-all ${exportScope === value ? "border-indigo-300 bg-indigo-50" : "border-slate-200 hover:border-slate-300"}`}>
+                      <input
+                        type="radio"
+                        name="exportScope"
+                        value={value}
+                        checked={exportScope === value}
+                        onChange={() => setExportScope(value)}
+                        className="accent-indigo-600"
+                      />
+                      <span className="text-xs font-bold text-slate-700 flex-1">{label}</span>
+                      <span className="text-[11px] font-mono font-bold text-slate-400">{count} rows</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Column selection */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Columns</p>
+                  <div className="flex gap-2">
+                    <button onClick={() => setExportCols(Object.fromEntries(EXPORT_COL_DEFS.map(c => [c.key, true])))} className="text-[11px] font-bold text-indigo-500 hover:text-indigo-700 cursor-pointer">All</button>
+                    <span className="text-slate-200">|</span>
+                    <button onClick={() => setExportCols(Object.fromEntries(EXPORT_COL_DEFS.map(c => [c.key, false])))} className="text-[11px] font-bold text-slate-400 hover:text-slate-600 cursor-pointer">None</button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {EXPORT_COL_DEFS.map(({ key, header }) => (
+                    <label key={key} className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer transition-all ${exportCols[key] ? "border-indigo-300 bg-indigo-50" : "border-slate-200 hover:border-slate-300"}`}>
+                      <input
+                        type="checkbox"
+                        checked={exportCols[key]}
+                        onChange={() => setExportCols(prev => ({ ...prev, [key]: !prev[key] }))}
+                        className="accent-indigo-600"
+                      />
+                      <span className="text-xs font-semibold text-slate-700">{header}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 py-3.5 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+              <span className="text-[11px] text-slate-400 font-mono">
+                {Object.values(exportCols).filter(Boolean).length} cols · {exportScope === "all" ? products.length : displayed.length} rows
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowExportModal(false)}
+                  className="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 font-bold rounded-xl text-xs cursor-pointer transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={exportToExcel}
+                  disabled={Object.values(exportCols).every(v => !v)}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold rounded-xl text-xs cursor-pointer transition-colors"
+                >
+                  ↓ Export
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

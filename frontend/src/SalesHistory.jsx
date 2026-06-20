@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import * as XLSX from 'xlsx';
 import { translations as t } from './locales';
 
 const PAGE_SIZE = 10;
@@ -25,6 +26,19 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
   const [sortDir, setSortDir] = useState('desc');
   const [payFilter, setPayFilter] = useState('all');
   const [page, setPage] = useState(1);
+
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportDateFrom, setExportDateFrom] = useState(() => {
+    const d = new Date(); d.setDate(d.getDate() - 30); return d.toISOString().slice(0, 10);
+  });
+  const [exportDateTo, setExportDateTo] = useState(() => new Date().toISOString().slice(0, 10));
+  const [exportPayment, setExportPayment] = useState('all');
+  const [exportCols, setExportCols] = useState({
+    orderId: true, date: true, time: true, items: true,
+    totalUsd: true, totalKhr: true, payment: true,
+    paidUsd: false, paidKhr: false, changeKhr: false,
+  });
 
   useEffect(() => { setPage(1); }, [search, period, payFilter, sortCol, sortDir]);
 
@@ -99,6 +113,63 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
       month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit',
     });
 
+  const EXPORT_COL_DEFS = [
+    { key: 'orderId',   header: 'Order #',      wch: 10, val: (o) => o.id },
+    { key: 'date',      header: 'Date',          wch: 14, val: (o) => new Date(o.created_at).toLocaleDateString('en-US') },
+    { key: 'time',      header: 'Time',          wch: 10, val: (o) => new Date(o.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) },
+    { key: 'items',     header: 'Items',         wch: 8,  val: (o) => (o.items || []).filter(i => i.product_name).length },
+    { key: 'totalUsd',  header: 'Total (USD)',   wch: 12, val: (o) => parseFloat(o.total_amount) },
+    { key: 'totalKhr',  header: 'Total (KHR)',   wch: 14, val: (o) => Math.round(parseFloat(o.total_amount) * dynamicRate) },
+    { key: 'payment',   header: 'Payment',       wch: 10, val: (o) => o.payment_method },
+    { key: 'paidUsd',   header: 'Paid (USD)',    wch: 12, val: (o) => parseFloat(o.amount_paid_usd) || 0 },
+    { key: 'paidKhr',   header: 'Paid (KHR)',    wch: 12, val: (o) => parseFloat(o.amount_paid_khr) || 0 },
+    { key: 'changeKhr', header: 'Change (KHR)',  wch: 14, val: (o) => parseFloat(o.change_given_khr) || 0 },
+  ];
+
+  const applyExportPreset = (preset) => {
+    const today = new Date();
+    const fmt = (d) => d.toISOString().slice(0, 10);
+    const todayStr = fmt(today);
+    if (preset === 'today') { setExportDateFrom(todayStr); setExportDateTo(todayStr); }
+    else if (preset === '7d')  { const d = new Date(today); d.setDate(d.getDate() - 7);  setExportDateFrom(fmt(d)); setExportDateTo(todayStr); }
+    else if (preset === '30d') { const d = new Date(today); d.setDate(d.getDate() - 30); setExportDateFrom(fmt(d)); setExportDateTo(todayStr); }
+    else if (preset === 'month') { setExportDateFrom(fmt(new Date(today.getFullYear(), today.getMonth(), 1))); setExportDateTo(todayStr); }
+    else if (preset === 'all')   { setExportDateFrom(''); setExportDateTo(''); }
+  };
+
+  const exportOrders = async () => {
+    setExporting(true);
+    try {
+      const params = new URLSearchParams();
+      if (exportDateFrom) params.set('date_from', new Date(exportDateFrom).toISOString());
+      if (exportDateTo) {
+        const end = new Date(exportDateTo); end.setHours(23, 59, 59, 999);
+        params.set('date_to', end.toISOString());
+      }
+      const res = await fetch(`${BACKEND_URL}/api/orders?${params}`);
+      let data = await res.json();
+      if (!Array.isArray(data)) data = [];
+      if (exportPayment !== 'all') data = data.filter(o => o.payment_method === exportPayment);
+
+      const activeCols = EXPORT_COL_DEFS.filter(c => exportCols[c.key]);
+      const rows = data.map(o => {
+        const row = {}; activeCols.forEach(c => { row[c.header] = c.val(o); }); return row;
+      });
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      ws['!cols'] = activeCols.map(c => ({ wch: c.wch }));
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Sales History');
+      const tag = exportDateFrom && exportDateTo ? `${exportDateFrom}_to_${exportDateTo}` : 'all-time';
+      XLSX.writeFile(wb, `sales-${tag}.xlsx`);
+      setShowExportModal(false);
+    } catch (err) {
+      console.error('Export failed:', err);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const PERIODS = ['today', 'week', 'month', 'all'];
 
   return (
@@ -140,6 +211,14 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
             )}
           </div>
         </div>
+
+        <button
+          onClick={() => setShowExportModal(true)}
+          disabled={orders.length === 0}
+          className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 flex-shrink-0"
+        >
+          ↓ Excel
+        </button>
 
         {/* Period tabs */}
         <div className="flex gap-1 bg-slate-100 p-1 rounded-xl flex-shrink-0">
@@ -265,6 +344,138 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
           </div>
         )}
       </div>
+
+      {/* EXPORT MODAL */}
+      {showExportModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-xl w-full max-w-sm flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <div>
+                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Export Sales to Excel</h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">Choose a date range and columns</p>
+              </div>
+              <button onClick={() => setShowExportModal(false)} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer">✕</button>
+            </div>
+
+            <div className="px-5 py-4 space-y-5 overflow-y-auto max-h-[70vh]">
+              {/* Date range */}
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Date Range</p>
+                {/* Quick presets */}
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {[
+                    { label: 'Today',      preset: 'today' },
+                    { label: 'Last 7d',    preset: '7d' },
+                    { label: 'Last 30d',   preset: '30d' },
+                    { label: 'This month', preset: 'month' },
+                    { label: 'All time',   preset: 'all' },
+                  ].map(({ label, preset }) => (
+                    <button
+                      key={preset}
+                      onClick={() => applyExportPreset(preset)}
+                      className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 transition-all cursor-pointer"
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                {/* Date inputs */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">From</label>
+                    <input
+                      type="date"
+                      value={exportDateFrom}
+                      onChange={e => setExportDateFrom(e.target.value)}
+                      max={exportDateTo || undefined}
+                      className="w-full px-2.5 py-1.5 border border-slate-200 rounded-xl text-xs font-mono text-slate-700 outline-none focus:border-indigo-300 bg-slate-50"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">To</label>
+                    <input
+                      type="date"
+                      value={exportDateTo}
+                      onChange={e => setExportDateTo(e.target.value)}
+                      min={exportDateFrom || undefined}
+                      className="w-full px-2.5 py-1.5 border border-slate-200 rounded-xl text-xs font-mono text-slate-700 outline-none focus:border-indigo-300 bg-slate-50"
+                    />
+                  </div>
+                </div>
+                {(!exportDateFrom && !exportDateTo) && (
+                  <p className="text-[11px] text-amber-600 font-semibold mt-1.5">No date filter — all orders will be exported</p>
+                )}
+              </div>
+
+              {/* Payment filter */}
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Payment</p>
+                <div className="flex gap-1.5">
+                  {[
+                    { value: 'all',  label: 'All' },
+                    { value: 'CASH', label: '💵 Cash' },
+                    { value: 'KHQR', label: '📱 KHQR' },
+                  ].map(({ value, label }) => (
+                    <button
+                      key={value}
+                      onClick={() => setExportPayment(value)}
+                      className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${exportPayment === value ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Columns */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Columns</p>
+                  <div className="flex gap-2">
+                    <button onClick={() => setExportCols(Object.fromEntries(EXPORT_COL_DEFS.map(c => [c.key, true])))} className="text-[11px] font-bold text-indigo-500 hover:text-indigo-700 cursor-pointer">All</button>
+                    <span className="text-slate-200">|</span>
+                    <button onClick={() => setExportCols(Object.fromEntries(EXPORT_COL_DEFS.map(c => [c.key, false])))} className="text-[11px] font-bold text-slate-400 hover:text-slate-600 cursor-pointer">None</button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {EXPORT_COL_DEFS.map(({ key, header }) => (
+                    <label key={key} className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer transition-all ${exportCols[key] ? 'border-indigo-300 bg-indigo-50' : 'border-slate-200 hover:border-slate-300'}`}>
+                      <input
+                        type="checkbox"
+                        checked={exportCols[key]}
+                        onChange={() => setExportCols(prev => ({ ...prev, [key]: !prev[key] }))}
+                        className="accent-indigo-600"
+                      />
+                      <span className="text-xs font-semibold text-slate-700">{header}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 py-3.5 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+              <span className="text-[11px] text-slate-400 font-mono">
+                {Object.values(exportCols).filter(Boolean).length} cols
+                {exportDateFrom && exportDateTo ? ` · ${exportDateFrom} → ${exportDateTo}` : ' · all time'}
+              </span>
+              <div className="flex gap-2">
+                <button onClick={() => setShowExportModal(false)} className="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 font-bold rounded-xl text-xs cursor-pointer transition-colors">
+                  Cancel
+                </button>
+                <button
+                  onClick={exportOrders}
+                  disabled={exporting || Object.values(exportCols).every(v => !v)}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold rounded-xl text-xs cursor-pointer transition-colors flex items-center gap-1.5"
+                >
+                  {exporting ? '...' : '↓ Export'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
