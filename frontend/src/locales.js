@@ -63,29 +63,31 @@ export const translations = {
       alertUpdateFail: 'ការធ្វើបច្ចុប្បន្នភាពព័ត៌មានទំនិញបានបរាជ័យ។'
     },
 
+    // SETTINGS SPECIFIC LABELS
     settingsPage: {
-        failSave: 'ការរក្សាទុកការកំណត់បានបរាជ័យ។',
-        inventoryLedger: 'បញ្ជីគ្រប់គ្រងស្តុកទំនិញ',
-        auditRoom: 'បន្ទប់សវនកម្ម',
-        registerNewProduct: '➕ ចុះឈ្មោះទំនិញថ្មី',
-        closeDrawer: '🔒 បិទផ្ទាំងបញ្ចូល',
-        itemName: 'ឈ្មោះទំនិញ',
-        barcodeString: 'លេខបាកូដ (Barcode)',
-        retailPriceUsd: 'តម្លៃលក់រាយ (USD)',
-        initialStockCount: 'ចំនួនស្តុកដំបូង',
-        saveProductCard: 'រក្សាទុកទំនិញទៅក្នុងប្រព័ន្ធ',
-        productName: 'ឈ្មោះទំនិញ',
-        barcodeKey: 'លេខបាកូដ',
-        unitPrice: 'តម្លៃរាយ',
-        currentStockLevel: 'កម្រិតស្តុកបច្ចុប្បន្ន',
-        actions: 'សកម្មភាព',
-        units: 'កញ្ចប់/ដប/ដុំ',
-        needsRestock: '⚠️ ត្រូវការបំពេញស្តុក',
-        editRecord: '✏️ កែប្រែទិន្នន័យ',
-        save: 'រក្សាទុក',
-        cancel: 'បោះបង់',
-        placeholderItemName: 'ឧទាហរណ៍៖ ខោទឹកនោម Huggies ទំហំ M',
-        placeholderBarcode: 'ស្កេន ឬវាយលេខបាកូដផលិតផល'
+      failSave: 'ការរក្សាទុកការកំណត់បានបរាជ័យ។',
+      auditRoom: 'ការកំណត់ទម្រង់ម៉ាស៊ីន',
+      languageHeader: '🌐 ភាសា / Language',
+      terminalLang: 'ភាសាបង្ហាញរបស់ម៉ាស៊ីន',
+      currencyHeader: '💱 ការកំណត់រូបិយប័ណ្ណ',
+      selectPrimaryCurr: 'ជ្រើសរើសរូបិយប័ណ្ណចម្បងសម្រាប់ទូទាត់ប្រាក់',
+      financialsHeader: '💰 ហិរញ្ញវត្ថុ & អត្រាប្តូរប្រាក់',
+      exchangeRateHelp: 'ប្រើប្រាស់សម្រាប់គណនាការប្តូរប្រាក់រៀលស្វ័យប្រវត្តិនៅពេលទូទាត់ប្រាក់ និងគណនាប្រាក់អាប់ជូនអតិថិជន។',
+      bakongHeader: '📱 គណនី KHQR ផ្ទាល់ខ្លួន',
+      bakongAccountId: 'អត្តសញ្ញាណគណនីបាកុង (Bakong Account ID)',
+      shopNameLabel: 'ឈ្មោះហាងបង្ហាញ',
+      storeCityLabel: 'ទីក្រុងដំណើរការហាង',
+      saveSuccess: 'រក្សាទុកការផ្លាស់ប្តូរដោយជោគជ័យ!',
+      commitSave: 'រក្សាទុកការកំណត់',
+
+      // CRITICAL WARNING LABELS
+      criticalBadge: '⚠️ ប្រុងប្រយ័ត្ន',
+      criticalPopupTitle: 'ព្រមាន៖ ការផ្លាស់ប្តូរព័ត៌មានសំខាន់',
+      criticalPopupBody: 'អ្នកកំពុងកែប្រែទិន្នន័យស្នូលហិរញ្ញវត្ថុ ឬគណនី KHQR ទទួលប្រាក់! ការកំណត់ខុសអាចបណ្តាលឱ្យការទូទាត់ទំនិញរបស់អតិថិជនវង្វេងគណនី បរាជ័យ ឬគណនាខុសភ្លាមៗ។ តើអ្នកពិតជាចង់រក្សាទុកមែនទេ?',
+      popupTitle: 'ការបញ្ជាក់ការរក្សាទុក',
+      popupBody: 'តើអ្នកប្រាកដជាចង់ធ្វើបច្ចុប្បន្នភាព និងរក្សាទុកការកំណត់ប្រព័ន្ធទាំងនេះមែនទេ?',
+      popupCancel: 'បោះបង់',
+      popupConfirm: 'យល់ព្រម'
     }
   },
   en: {
@@ -150,29 +152,31 @@ export const translations = {
       alertUpdateFail: 'Failed to update product details.'
     },
 
+    // SETTINGS SPECIFIC LABELS
     settingsPage: {
-        failSave: 'Failed to save settings configurations',
-        inventoryLedger: 'Inventory Stock Ledger',
-        auditRoom: 'Audit Room',
-        registerNewProduct: '➕ Register New Product',
-        closeDrawer: '🔒 Close Drawer',
-        itemName: 'Item Name',
-        barcodeString: 'Barcode String',
-        retailPriceUsd: 'Retail Price (USD)',
-        initialStockCount: 'Initial Stock Count',
-        saveProductCard: 'Save Product Card to Database',
-        productName: 'Product Name',
-        barcodeKey: 'Barcode Key',
-        unitPrice: 'Unit Price',
-        currentStockLevel: 'Current Stock Level',
-        actions: 'Actions',
-        units: 'units',
-        needsRestock: '⚠️ Needs Restock',
-        editRecord: '✏️ Edit Record',
-        save: 'Save',
-        cancel: 'Cancel',
-        placeholderItemName: 'e.g. Huggies Diapers M-Size',
-        placeholderBarcode: 'Scan or type package barcode'
+      failSave: 'Failed to save settings configurations.',
+      auditRoom: 'Terminal Configuration',
+      languageHeader: '🌐 Language / ភាសា',
+      terminalLang: 'Terminal Display Language',
+      currencyHeader: '💱 Base Currency Configuration',
+      selectPrimaryCurr: 'Select Primary Transactional Currency',
+      financialsHeader: '💰 Financials & Rates',
+      exchangeRateHelp: 'Used to automatically calculate Riel checkout conversions and changes at the physical cash register drawer.',
+      bakongHeader: '📱 Individual KHQR Profile',
+      bakongAccountId: 'Bakong Individual Account ID',
+      shopNameLabel: 'Display Shop Name',
+      storeCityLabel: 'Store Operating City',
+      saveSuccess: 'Changes stored securely!',
+      commitSave: 'Commit Configuration Save',
+      
+      // CRITICAL WARNING LABELS
+      criticalBadge: '⚠️ CRITICAL FIELD',
+      criticalPopupTitle: 'WARNING: Critical System Shift',
+      criticalPopupBody: 'You have altered core financial variables or live merchant KHQR profiles. Saving these changes will instantly affect register math or re-route live digital transaction payment points. Please double check all values!',
+      popupTitle: 'Confirm Settings Change',
+      popupBody: 'Are you sure you want to update and commit these system configuration changes?',
+      popupCancel: 'Cancel',
+      popupConfirm: 'Yes, Save'
     }
   }
 };
