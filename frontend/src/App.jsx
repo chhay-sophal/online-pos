@@ -9,9 +9,7 @@ export default function App() {
   const [amountPaidUsd, setAmountPaidUsd] = useState('');
   const [amountPaidKhr, setAmountPaidKhr] = useState('');
   const [checkoutResult, setCheckoutResult] = useState(null);
-  const [view, setView] = useState('REGISTER'); // Handles 'REGISTER' or 'STOCK' views
-  
-  // Track the generated active QR string metadata from the backend
+  const [view, setView] = useState('REGISTER');
   const [activeKhqr, setActiveKhqr] = useState(null);
   
   const barcodeRef = useRef(null);
@@ -19,10 +17,83 @@ export default function App() {
 
   useEffect(() => {
     focusScanner();
-  }, []);
+  }, [view]);
+
+  // Automated Global Barcode Background Listening Engine
+  useEffect(() => {
+    // Only activate global keyboard intercept when the user is actively inside the REGISTER view
+    if (view !== 'REGISTER') return;
+
+    let keyBuffer = '';
+    let lastTimestamp = Date.now();
+
+    const handleGlobalScanStream = (e) => {
+      const currentTimestamp = Date.now();
+      
+      // Check timing signature: Hardware scanners typically type characters sub-50ms.
+      // If the time between keypresses is long, a human is manually typing. Clear the buffer.
+      if (currentTimestamp - lastTimestamp > 50) {
+        keyBuffer = '';
+      }
+      
+      lastTimestamp = currentTimestamp;
+
+      // Detect the automated carriage return suffix key ('Enter') appended by the scanner gun
+      if (e.key === 'Enter') {
+        const cleanBarcode = keyBuffer.trim();
+        if (cleanBarcode.length > 0) {
+          console.log(`⚡ [GLOBAL BACKGROUND SCANNER] Caught Barcode Sequence: "${cleanBarcode}"`);
+          
+          // Emulate input form dispatch sequence by passing the buffered string straight to our API lookup logic
+          executeDirectBarcodeLookup(cleanBarcode);
+          
+          keyBuffer = ''; // Flush memory array ready for next item check
+        }
+        return;
+      }
+
+      // Capture standard single alphanumeric characters, ignoring structural modifiers like 'Shift' or 'Control'
+      if (e.key.length === 1) {
+        keyBuffer += e.key;
+      }
+    };
+
+    // Helper method matching your existing fetch lookup block architecture
+    const executeDirectBarcodeLookup = async (scannedBarcode) => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/products/barcode/${scannedBarcode}`);
+        if (!response.ok) {
+          alert(`Product with barcode "${scannedBarcode}" not registered yet!`);
+          return;
+        }
+        const product = await response.json();
+        
+        setCart((prevCart) => {
+          const existingItem = prevCart.find((item) => item.id === product.id);
+          if (existingItem) {
+            return prevCart.map((item) =>
+              item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+            );
+          }
+          return [...prevCart, { ...product, quantity: 1 }];
+        });
+        
+        setCheckoutResult(null);
+      } catch (err) {
+        console.error('Error handling direct global barcode query lookup:', err);
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalScanStream);
+    
+    // Cleanup hook to tear down listeners when the component unmounts or view states shift
+    return () => {
+      window.removeEventListener('keydown', handleGlobalScanStream);
+    };
+  }, [view, BACKEND_URL]);
 
   const focusScanner = () => {
-    if (barcodeRef.current) barcodeRef.current.focus();
+    if (view === 'REGISTER' && barcodeRef.current) barcodeRef.current.focus();
   };
 
   // Automated Verification Polling Engine Effect Loop
@@ -37,15 +108,13 @@ export default function App() {
           
           const data = await response.json();
           if (data.status === 'PAID') {
-            clearInterval(pollingInterval); // Stop container requests immediately
-            
-            // Execute automated checkout payload submission
+            clearInterval(pollingInterval);
             await autoCommitKhqrOrder(activeKhqr);
           }
         } catch (err) {
           console.error('Error running automated payment check:', err);
         }
-      }, 3000); // Probe database verification loop every 3 seconds
+      }, 3000);
     }
 
     return () => {
@@ -107,7 +176,7 @@ export default function App() {
         .filter((item) => item.quantity > 0)
     );
     setCheckoutResult(null);
-    setActiveKhqr(null); // Reset layout generation on modifications
+    setActiveKhqr(null);
   };
 
   const removeItem = (id) => {
@@ -119,7 +188,6 @@ export default function App() {
   const totalUsd = cart.reduce((sum, item) => sum + (item.price_usd * item.quantity), 0);
   const totalKhr = totalUsd * 4100;
 
-  // Automated Checkout execution strictly targeted for verified KHQR receipts
   const autoCommitKhqrOrder = async (khqrDetails) => {
     const payload = {
       items: cart,
@@ -131,7 +199,7 @@ export default function App() {
         md5_hash: khqrDetails.md5_hash,
         qr_string: khqrDetails.qr_string,
         currency: 'USD',
-        bank_name: 'Bakong Network Channel'
+        bank_name: 'Bakong Network'
       }
     };
 
@@ -147,14 +215,13 @@ export default function App() {
         setCheckoutResult(data);
         setCart([]);
         setActiveKhqr(null);
-        focusScanner();
+        setPaymentMethod('CASH');
       }
     } catch (err) {
       console.error('Error auto-finalizing transaction process:', err);
     }
   };
 
-  // Traditional manual Cash submission layout handler
   const handleCheckout = async () => {
     if (cart.length === 0) return;
 
@@ -180,7 +247,6 @@ export default function App() {
         setAmountPaidUsd('');
         setAmountPaidKhr('');
         setActiveKhqr(null);
-        focusScanner();
       } else {
         alert(`Checkout Failed: ${data.error}`);
       }
@@ -202,7 +268,6 @@ export default function App() {
             <h1 className="text-lg font-bold text-slate-900 tracking-tight">BABY MART</h1>
             <p className="text-xs font-semibold text-indigo-600 tracking-wider uppercase">In-Store Register</p>
           </div>
-          {/* Add this Switch button block */}
           <button 
             onClick={() => setView('STOCK')}
             className="ml-4 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-bold text-slate-600 transition-colors"
@@ -218,17 +283,15 @@ export default function App() {
       <div className="flex-1 flex overflow-hidden">
         {/* Left Side: Operations */}
         <div className="flex-1 p-6 flex flex-col overflow-y-auto gap-6 max-w-5xl mx-auto w-full">
-          <form onSubmit={handleBarcodeSubmit} className="relative">
-            <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 text-xl">⚡</span>
-            <input
-              ref={barcodeRef}
-              type="text"
-              value={barcodeInput}
-              onChange={(e) => setBarcodeInput(e.target.value)}
-              placeholder="Awaiting hardware barcode scan input..."
-              className="w-full pl-11 pr-4 py-4 bg-white border border-slate-200 rounded-2xl text-lg font-medium shadow-xs focus:outline-hidden focus:border-indigo-500 focus:ring-3 focus:ring-indigo-100 placeholder:text-slate-400"
-            />
-          </form>
+          <div className="bg-indigo-50/50 border border-dashed border-indigo-200 px-6 py-4 rounded-2xl flex items-center justify-between text-indigo-700">
+            <div className="flex items-center gap-3">
+              <span className="text-xl animate-pulse">📡</span>
+              <p className="text-sm font-semibold">
+                Background listener active. You can scan any item barcode at any time to add it to the basket.
+              </p>
+            </div>
+            <span className="text-xs bg-indigo-100 font-bold px-2.5 py-1 rounded-md uppercase tracking-wider">Ready</span>
+          </div>
 
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xs flex-1 flex flex-col overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
@@ -257,7 +320,7 @@ export default function App() {
                           <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 flex items-center justify-center font-bold text-slate-500 hover:bg-slate-50 rounded-md">+</button>
                         </div>
                         <div className="text-right w-24">
-                          <p className="font-bold text-slate-900">${(item.price_usd * item.quantity).toFixed(2)}</p>
+                          <p className="font-bold text-slate-900">${(Number(item.price_usd) * item.quantity).toFixed(2)}</p>
                         </div>
                         <button onClick={() => removeItem(item.id)} className="text-slate-400 hover:text-rose-500 p-1 text-lg">✕</button>
                       </div>

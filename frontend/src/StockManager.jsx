@@ -126,6 +126,7 @@ export default function StockManager({ onBackToRegister }) {
                 value={newProduct.barcode} 
                 onChange={(e) => setNewProduct({...newProduct, barcode: e.target.value})}
                 placeholder="Scan or type package barcode"
+                onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
                 className="w-full mt-1.5 p-2.5 border border-slate-200 bg-slate-50 rounded-lg text-sm font-mono"
               />
             </div>
@@ -195,6 +196,7 @@ export default function StockManager({ onBackToRegister }) {
                             type="text" 
                             value={editForm.barcode} 
                             onChange={(e) => setEditForm({ ...editForm, barcode: e.target.value })}
+                            onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
                             className="p-1.5 border border-slate-300 rounded-md w-full bg-white text-xs"
                           />
                         ) : (
