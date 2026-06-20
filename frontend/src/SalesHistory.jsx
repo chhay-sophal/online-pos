@@ -20,6 +20,9 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
   const [period, setPeriod] = useState('today');
   const [expandedId, setExpandedId] = useState(null);
   const [search, setSearch] = useState('');
+  const [sortCol, setSortCol] = useState('id');
+  const [sortDir, setSortDir] = useState('desc');
+  const [payFilter, setPayFilter] = useState('all');
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -41,18 +44,39 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
+  const toggleSort = (col) => {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortCol(col); setSortDir('asc'); }
+  };
+  const si = (col) => (
+    <span className={sortCol === col ? 'text-indigo-400' : 'text-slate-300'}>
+      {sortCol === col ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ' ↕'}
+    </span>
+  );
+
   const q = search.trim().toLowerCase();
-  const filteredOrders = q
-    ? orders.filter(o => {
-        if (String(o.id).includes(q)) return true;
-        if (o.payment_method.toLowerCase().includes(q)) return true;
-        return (o.items || []).some(i => i.product_name && i.product_name.toLowerCase().includes(q));
-      })
-    : orders;
+  const filteredOrders = [...orders]
+    .filter(o => payFilter === 'all' || o.payment_method === payFilter)
+    .filter(o => !q || String(o.id).includes(q) || o.payment_method.toLowerCase().includes(q) || (o.items || []).some(i => i.product_name && i.product_name.toLowerCase().includes(q)))
+    .sort((a, b) => {
+      const dir = sortDir === 'asc' ? 1 : -1;
+      switch (sortCol) {
+        case 'date':      return dir * (new Date(a.created_at) - new Date(b.created_at));
+        case 'itemCount': {
+          const aC = (a.items || []).filter(i => i.product_name).length;
+          const bC = (b.items || []).filter(i => i.product_name).length;
+          return dir * (aC - bC);
+        }
+        case 'total':   return dir * (parseFloat(a.total_amount) - parseFloat(b.total_amount));
+        case 'payment': return dir * a.payment_method.localeCompare(b.payment_method);
+        default:        return dir * (a.id - b.id);
+      }
+    });
 
   const totalRevenue = filteredOrders.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
-  const cashCount   = filteredOrders.filter(o => o.payment_method === 'CASH').length;
-  const khqrCount   = filteredOrders.filter(o => o.payment_method === 'KHQR').length;
+  // counts from unfiltered orders so payment filter buttons always show full period totals
+  const cashCount = orders.filter(o => o.payment_method === 'CASH').length;
+  const khqrCount = orders.filter(o => o.payment_method === 'KHQR').length;
 
   const formatDateTime = (ts) =>
     new Date(ts).toLocaleString(currentLocale === 'km' ? 'km-KH' : 'en-US', {
@@ -137,26 +161,30 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
 
         <div>
           <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">{s.totalOrders}</p>
-          <p className="text-2xl font-black text-slate-900 font-mono leading-none">{orders.length}</p>
+          <p className="text-2xl font-black text-slate-900 font-mono leading-none">{filteredOrders.length}</p>
         </div>
 
         <div className="h-12 w-px bg-slate-200" />
 
-        <div className="flex gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-base">💵</span>
-            <div>
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{s.cashSales}</p>
-              <p className="text-sm font-black text-slate-700 font-mono">{cashCount}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-base">📱</span>
-            <div>
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{s.khqrSales}</p>
-              <p className="text-sm font-black text-slate-700 font-mono">{khqrCount}</p>
-            </div>
-          </div>
+        <div className="flex gap-2">
+          {[
+            { key: 'CASH', label: s.cashSales, icon: '💵', count: cashCount, activeClass: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
+            { key: 'KHQR', label: s.khqrSales, icon: '📱', count: khqrCount, activeClass: 'bg-rose-50 border-rose-200 text-rose-700' },
+          ].map(({ key, label, icon, count, activeClass }) => (
+            <button
+              key={key}
+              onClick={() => setPayFilter(f => f === key ? 'all' : key)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all ${
+                payFilter === key ? activeClass : 'border-transparent hover:bg-slate-50 text-slate-700'
+              }`}
+            >
+              <span className="text-base">{icon}</span>
+              <div className="text-left">
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{label}</p>
+                <p className="text-sm font-black font-mono">{count}</p>
+              </div>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -178,11 +206,11 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
           <div className="space-y-2 max-w-4xl mx-auto">
             {/* Table header */}
             <div className="grid grid-cols-[56px_1fr_80px_120px_80px_32px] gap-3 px-4 py-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-              <span>{s.orderId}</span>
-              <span>{s.dateTime}</span>
-              <span className="text-center">{s.itemCount}</span>
-              <span className="text-right">{s.total}</span>
-              <span className="text-center">{s.payment}</span>
+              <button className="text-left cursor-pointer hover:text-slate-600 select-none" onClick={() => toggleSort('id')}>{s.orderId}{si('id')}</button>
+              <button className="text-left cursor-pointer hover:text-slate-600 select-none" onClick={() => toggleSort('date')}>{s.dateTime}{si('date')}</button>
+              <button className="text-center cursor-pointer hover:text-slate-600 select-none" onClick={() => toggleSort('itemCount')}>{s.itemCount}{si('itemCount')}</button>
+              <button className="text-right cursor-pointer hover:text-slate-600 select-none" onClick={() => toggleSort('total')}>{s.total}{si('total')}</button>
+              <button className="text-center cursor-pointer hover:text-slate-600 select-none" onClick={() => toggleSort('payment')}>{s.payment}{si('payment')}</button>
               <span />
             </div>
 

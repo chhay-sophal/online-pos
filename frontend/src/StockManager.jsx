@@ -6,6 +6,10 @@ export default function StockManager({ onBackToRegister, currentLocale, mainCurr
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ name: '', barcode: '', price: '', currency: 'USD', stock: '' });
   const [search, setSearch] = useState('');
+  const [sortCol, setSortCol] = useState('id');
+  const [sortDir, setSortDir] = useState('asc');
+  const [currFilter, setCurrFilter] = useState('all');
+  const [lowStock, setLowStock] = useState(false);
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [newProduct, setNewProduct] = useState({ name: '', barcode: '', price: '', currency: 'USD', stock: '' });
@@ -112,12 +116,32 @@ export default function StockManager({ onBackToRegister, currentLocale, mainCurr
     }
   };
 
+  const toggleSort = (col) => {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortCol(col); setSortDir('asc'); }
+  };
+  const si = (col) => (
+    <span className={sortCol === col ? 'text-indigo-400' : 'text-slate-300'}>
+      {sortCol === col ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ' ↕'}
+    </span>
+  );
+
   const q = search.trim().toLowerCase();
-  const filteredProducts = q
-    ? products.filter(p =>
-        p.name.toLowerCase().includes(q) || p.barcode.toLowerCase().includes(q)
-      )
-    : products;
+  const toUsd = (p) => p.currency === 'KHR' ? parseFloat(p.price) / dynamicRate : parseFloat(p.price);
+  const displayed = [...products]
+    .filter(p => !q || p.name.toLowerCase().includes(q) || p.barcode.toLowerCase().includes(q))
+    .filter(p => currFilter === 'all' || p.currency === currFilter)
+    .filter(p => !lowStock || p.stock <= 5)
+    .sort((a, b) => {
+      const dir = sortDir === 'asc' ? 1 : -1;
+      switch (sortCol) {
+        case 'name':    return dir * a.name.localeCompare(b.name);
+        case 'barcode': return dir * a.barcode.localeCompare(b.barcode);
+        case 'price':   return dir * (toUsd(a) - toUsd(b));
+        case 'stock':   return dir * (a.stock - b.stock);
+        default:        return dir * (a.id - b.id);
+      }
+    });
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 antialiased overflow-hidden">
@@ -169,20 +193,46 @@ export default function StockManager({ onBackToRegister, currentLocale, mainCurr
       <div className="flex-1 p-6 max-w-6xl mx-auto w-full overflow-hidden flex flex-col gap-6">
         {/* Data Matrix Grid Table Wrapper */}
         <div className="flex-1 bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden flex flex-col">
-          <div className="flex-1 overflow-x-auto overflow-y-auto max-h-[calc(100vh-140px)]">
+          {/* Filter bar */}
+          <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-3 flex-shrink-0">
+            <div className="flex gap-1">
+              {['all', 'USD', 'KHR'].map(c => (
+                <button
+                  key={c}
+                  onClick={() => setCurrFilter(c)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                    currFilter === c ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                  }`}
+                >
+                  {c === 'all' ? 'All' : c}
+                </button>
+              ))}
+            </div>
+            <div className="h-4 w-px bg-slate-200" />
+            <button
+              onClick={() => setLowStock(v => !v)}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                lowStock ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+              }`}
+            >
+              ⚠ Low Stock
+            </button>
+            <span className="ml-auto text-[11px] text-slate-400 font-mono">{displayed.length} products</span>
+          </div>
+          <div className="flex-1 overflow-x-auto overflow-y-auto max-h-[calc(100vh-185px)]">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase tracking-wider font-display">
-                  <th className="px-6 py-3.5 w-12 text-center">ID</th>
-                  <th className="px-6 py-3.5">{labels.thName || 'Product Name'}</th>
-                  <th className="px-6 py-3.5">{labels.thBarcode || 'Barcode Key'}</th>
-                  <th className="px-6 py-3.5 text-center">{labels.thPrice || 'Unit Price'}</th>
-                  <th className="px-6 py-3.5 w-36">{labels.thStock || 'Current Stock Level'}</th>
+                  <th className="px-6 py-3.5 w-12 text-center cursor-pointer select-none hover:text-slate-600" onClick={() => toggleSort('id')}>ID{si('id')}</th>
+                  <th className="px-6 py-3.5 cursor-pointer select-none hover:text-slate-600" onClick={() => toggleSort('name')}>{labels.thName || 'Product Name'}{si('name')}</th>
+                  <th className="px-6 py-3.5 cursor-pointer select-none hover:text-slate-600" onClick={() => toggleSort('barcode')}>{labels.thBarcode || 'Barcode Key'}{si('barcode')}</th>
+                  <th className="px-6 py-3.5 text-center cursor-pointer select-none hover:text-slate-600" onClick={() => toggleSort('price')}>{labels.thPrice || 'Unit Price'}{si('price')}</th>
+                  <th className="px-6 py-3.5 w-36 cursor-pointer select-none hover:text-slate-600" onClick={() => toggleSort('stock')}>{labels.thStock || 'Current Stock Level'}{si('stock')}</th>
                   <th className="px-6 py-3.5 text-right w-28">{labels.thActions || 'Actions'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm font-medium text-slate-700">
-                {filteredProducts.map((product) => {
+                {displayed.map((product) => {
                   const isEditing = editingId === product.id;
                   const isLowStock = product.stock <= 5;
                   
