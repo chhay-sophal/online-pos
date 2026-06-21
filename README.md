@@ -2,12 +2,15 @@
 
 A Cambodia-specific POS system with dual-currency support (USD + KHR) and Bakong KHQR payment integration.
 
+Runs as a **Docker web app** (for server deployment) or a **Tauri desktop app** (for standalone Windows/Mac/Linux installation).
+
 ## Features
 
 - Barcode scanning (USB scanner or manual entry)
 - Dual-currency pricing — products can be priced in USD or KHR; totals shown in both
 - Cash payment with change calculation (USD + KHR tendering)
 - Bakong KHQR payment with real-time status polling
+- Static QR (printed bank QR codes) with per-bank tracking
 - Stock management — add, edit, and track inventory
 - Sales history with search, filter, sort, and date range
 - Excel export for stock and sales data
@@ -17,14 +20,14 @@ A Cambodia-specific POS system with dual-currency support (USD + KHR) and Bakong
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Frontend | React 19, Vite 8, Tailwind CSS 4 |
-| Backend | Node.js, Express 5 |
-| Database | PostgreSQL 16 |
-| Payments | Bakong KHQR (NBC Cambodia) |
-| Serving | nginx (production) |
-| Container | Docker + Docker Compose |
+| Layer | Docker (server) | Desktop (Tauri) |
+|---|---|---|
+| Frontend | React 19, Vite 8, Tailwind CSS 4 | same |
+| Backend | Node.js, Express 5 | Node.js, Express 5 |
+| Database | PostgreSQL 16 | SQLite (via sql.js) |
+| Payments | Bakong KHQR (NBC Cambodia) | same |
+| Serving | nginx reverse proxy | Tauri sidecar |
+| Container | Docker + Docker Compose | — |
 
 ---
 
@@ -63,6 +66,67 @@ docker compose down
 ```
 
 > **Note:** `docker compose down` keeps your data. To wipe the database too, run `docker compose down -v`.
+
+---
+
+## Desktop App (Tauri)
+
+A self-contained desktop installer — no Docker or server required. Data is stored in a local SQLite database at `~/.soso-babymart-pos/database.sqlite`.
+
+### Prerequisites
+
+- [Rust](https://rustup.rs/) installed (`curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`)
+- Node.js 18+
+
+### Development
+
+```bash
+# Terminal 1 — SQLite backend
+cd backend-desktop && node server.js
+
+# Terminal 2 — Tauri window (hot-reload)
+npx @tauri-apps/cli@2 dev
+```
+
+Or from the project root (starts both together):
+
+```bash
+npm run tauri:dev
+```
+
+The first run compiles Rust dependencies (~5 minutes). Subsequent runs are fast.
+
+### Building a distributable installer
+
+```bash
+# Step 1 — compile the backend into a platform binary
+cd backend-desktop
+npm install
+npm run build          # outputs to src-tauri/binaries/
+
+# Step 2 — build the Tauri installer
+cd ..
+npx @tauri-apps/cli@2 build
+```
+
+Outputs in `src-tauri/target/release/bundle/`:
+
+| Platform | Format |
+|---|---|
+| macOS | `.dmg`, `.app` |
+| Windows | `.exe` (NSIS), `.msi` |
+| Linux | `.deb`, `.AppImage` |
+
+### Desktop database
+
+The SQLite database is created automatically on first launch at:
+
+| Platform | Path |
+|---|---|
+| macOS / Linux | `~/.soso-babymart-pos/database.sqlite` |
+| Windows | `%USERPROFILE%\.soso-babymart-pos\database.sqlite` |
+
+To back it up, just copy that file. To reset all data, delete it.
 
 ---
 
@@ -121,26 +185,35 @@ docker compose push
 
 ```
 online-pos/
-├── backend/
-│   ├── server.js          # Express API
+├── backend/                        # Docker/server backend (PostgreSQL)
+│   ├── server.js
 │   ├── sql/
-│   │   ├── 001_initial_schema.sql   # schema + default settings (run on fresh install)
-│   │   ├── 002_seed_mock_data.sql   # demo data (dev only, do not run in production)
-│   │   └── 003_add_static_qr.sql   # migration: adds STATIC_QR payment type
+│   │   ├── 001_initial_schema.sql  # schema + default settings (auto-run on fresh install)
+│   │   ├── 002_seed_mock_data.sql  # demo data (dev only)
+│   │   └── 003_add_static_qr.sql  # migration: STATIC_QR payment type
 │   ├── .env.example
 │   └── Dockerfile
-├── frontend/
+├── backend-desktop/                # Desktop backend (SQLite, bundled into Tauri sidecar)
+│   ├── server.js
+│   └── package.json
+├── frontend/                       # React/Vite UI (shared by both deployments)
 │   ├── src/
-│   │   ├── App.jsx          # register / checkout
+│   │   ├── App.jsx
 │   │   ├── StockManager.jsx
 │   │   ├── SalesHistory.jsx
 │   │   ├── SettingsManager.jsx
 │   │   ├── Invoice.jsx
-│   │   └── locales.js       # km / en translations
+│   │   └── locales.js              # km / en translations
 │   ├── nginx.conf
 │   └── Dockerfile
+├── src-tauri/                      # Tauri desktop app shell
+│   ├── src/lib.rs                  # spawns backend sidecar on launch
+│   ├── tauri.conf.json
+│   ├── capabilities/
+│   └── icons/
 ├── docker-compose.yml
-└── .env                   # DB_PASSWORD (gitignored)
+├── package.json                    # tauri:dev and tauri:build scripts
+└── .env                            # DB_PASSWORD (gitignored)
 ```
 
 ---

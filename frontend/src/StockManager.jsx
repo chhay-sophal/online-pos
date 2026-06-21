@@ -45,7 +45,7 @@ export default function StockManager({
     setPage(1);
   }, [search, sortCol, sortDir, currFilter, lowStock]);
 
-  const BACKEND_URL = import.meta.env.PROD ? '' : 'http://localhost:5050';
+  const BACKEND_URL = (import.meta.env.PROD && !window.__TAURI__) ? '' : 'http://localhost:5050';
 
   const labels = t[currentLocale]?.stock || t["km"].stock;
 

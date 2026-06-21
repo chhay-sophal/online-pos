@@ -1,0 +1,13 @@
+{
+  "name": "online-pos",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "tauri:placeholder": "mkdir -p src-tauri/binaries && printf '#!/bin/sh\\necho placeholder\\n' > src-tauri/binaries/backend-server-aarch64-apple-darwin && chmod +x src-tauri/binaries/backend-server-aarch64-apple-darwin",
+    "tauri:dev": "npm run tauri:placeholder && node backend-desktop/server.js & npx @tauri-apps/cli@2 dev",
+    "tauri:build": "cd backend-desktop && npm run build && cd .. && npx @tauri-apps/cli@2 build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.3"
+  }
+}
