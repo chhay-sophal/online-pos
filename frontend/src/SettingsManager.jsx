@@ -16,7 +16,8 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showConfirmPopup, setShowConfirmPopup] = useState(false);
   
-  const BACKEND_URL = (import.meta.env.PROD && !window.__TAURI__) ? '' : 'http://localhost:5050';
+  const IS_TAURI = Boolean(window.__TAURI_INTERNALS__ ?? window.__TAURI__);
+  const BACKEND_URL = (import.meta.env.PROD && !IS_TAURI) ? '' : 'http://localhost:5050';
 
   useEffect(() => {
     fetchSettings();

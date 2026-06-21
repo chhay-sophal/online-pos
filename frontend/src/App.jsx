@@ -24,12 +24,13 @@ export default function App() {
   const [backendStatus, setBackendStatus] = useState('loading'); // 'loading' | 'ready' | 'error'
 
   const barcodeRef = useRef(null);
-  const BACKEND_URL = (import.meta.env.PROD && !window.__TAURI__) ? '' : 'http://localhost:5050';
+  const IS_TAURI = Boolean(window.__TAURI_INTERNALS__ ?? window.__TAURI__);
+  const BACKEND_URL = (import.meta.env.PROD && !IS_TAURI) ? '' : 'http://localhost:5050';
 
   // Wait for the sidecar backend to be ready before the app makes any API calls.
   // The sidecar takes a few seconds to extract the WASM, open the DB, and start Express.
   useEffect(() => {
-    if (!window.__TAURI__) { setBackendStatus('ready'); return; }
+    if (!IS_TAURI) { setBackendStatus('ready'); return; }
     let attempts = 0;
     const MAX = 24; // 12 seconds total
     const id = setInterval(async () => {
