@@ -273,10 +273,22 @@ app.get('/api/payments/check-status/:md5_hash', async (req, res) => {
 
 async function start() {
   const initSqlJs = require('sql.js');
-  // locateFile is required when running as a pkg sidecar — pkg embeds the WASM
-  // as a virtual asset and __dirname resolves into the pkg snapshot filesystem.
+
+  // When running as a pkg binary the WASM lives in the virtual snapshot
+  // filesystem, but WebAssembly.instantiate needs a real OS path.
+  // Extract it to the OS temp dir once so the runtime can load it.
+  let wasmDir;
+  if (process.pkg) {
+    const wasmSrc = path.join(__dirname, 'node_modules/sql.js/dist/sql-wasm.wasm');
+    const wasmDest = path.join(os.tmpdir(), 'sql-wasm.wasm');
+    fs.writeFileSync(wasmDest, fs.readFileSync(wasmSrc));
+    wasmDir = os.tmpdir();
+  } else {
+    wasmDir = path.join(__dirname, 'node_modules/sql.js/dist/');
+  }
+
   const SQL = await initSqlJs({
-    locateFile: file => path.join(__dirname, 'node_modules/sql.js/dist/', file)
+    locateFile: file => path.join(wasmDir, file)
   });
 
   if (fs.existsSync(DB_PATH)) {
