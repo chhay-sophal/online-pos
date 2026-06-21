@@ -43,6 +43,7 @@ const SCHEMA = `
     name TEXT NOT NULL,
     barcode TEXT UNIQUE,
     price REAL NOT NULL DEFAULT 0,
+    cost_price REAL NOT NULL DEFAULT 0,
     currency TEXT NOT NULL DEFAULT 'USD',
     stock INTEGER NOT NULL DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now'))
@@ -111,11 +112,11 @@ app.get('/api/products', (req, res) => {
 });
 
 app.post('/api/products', (req, res) => {
-  const { name, barcode, price, currency, stock } = req.body;
+  const { name, barcode, price, cost_price, currency, stock } = req.body;
   try {
     const id = run(
-      'INSERT INTO products (name, barcode, price, currency, stock) VALUES (?, ?, ?, ?, ?)',
-      [name, barcode, parseFloat(price), currency || 'USD', parseInt(stock) || 0]
+      'INSERT INTO products (name, barcode, price, cost_price, currency, stock) VALUES (?, ?, ?, ?, ?, ?)',
+      [name, barcode, parseFloat(price), parseFloat(cost_price || 0), currency || 'USD', parseInt(stock) || 0]
     );
     saveDb();
     res.status(201).json(query('SELECT * FROM products WHERE id = ?', [id])[0]);
@@ -125,10 +126,10 @@ app.post('/api/products', (req, res) => {
 });
 
 app.put('/api/products/:id', (req, res) => {
-  const { name, barcode, price, currency, stock } = req.body;
+  const { name, barcode, price, cost_price, currency, stock } = req.body;
   run(
-    'UPDATE products SET name = ?, barcode = ?, price = ?, currency = ?, stock = ? WHERE id = ?',
-    [name, barcode, parseFloat(price), currency || 'USD', parseInt(stock), req.params.id]
+    'UPDATE products SET name = ?, barcode = ?, price = ?, cost_price = ?, currency = ?, stock = ? WHERE id = ?',
+    [name, barcode, parseFloat(price), parseFloat(cost_price || 0), currency || 'USD', parseInt(stock), req.params.id]
   );
   saveDb();
   const updated = query('SELECT * FROM products WHERE id = ?', [req.params.id])[0];

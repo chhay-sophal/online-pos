@@ -2,16 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { translations as t } from './locales';
 
 export default function SettingsManager({ onBackToRegister, currentLocale, onLocaleChange, mainCurrency, onCurrencyChange }) {
-  const [settings, setSettings] = useState({
+  const DEFAULT_SETTINGS = {
     exchange_rate: '4100',
     bakong_account_id: '',
     bakong_merchant_name: '',
     bakong_merchant_city: '',
     locale: 'km',
     main_currency: 'USD'
-  });
-  
-  const [initialSettings, setInitialSettings] = useState(null);
+  };
+
+  const [settings, setSettings] = useState({ ...DEFAULT_SETTINGS });
+  const [initialSettings, setInitialSettings] = useState({ ...DEFAULT_SETTINGS });
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showConfirmPopup, setShowConfirmPopup] = useState(false);
   
