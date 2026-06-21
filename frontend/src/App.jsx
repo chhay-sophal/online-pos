@@ -19,11 +19,30 @@ export default function App() {
   const [staticQrBank, setStaticQrBank] = useState('');
   const [dynamicRate, setDynamicRate] = useState(4100);
   const [showManualInput, setShowManualInput] = useState(false);
-  const [locale, setLocale] = useState('km'); 
+  const [locale, setLocale] = useState('km');
   const [mainCurrency, setMainCurrency] = useState('USD');
-  
+  const [backendStatus, setBackendStatus] = useState('loading'); // 'loading' | 'ready' | 'error'
+
   const barcodeRef = useRef(null);
   const BACKEND_URL = (import.meta.env.PROD && !window.__TAURI__) ? '' : 'http://localhost:5050';
+
+  // Wait for the sidecar backend to be ready before the app makes any API calls.
+  // The sidecar takes a few seconds to extract the WASM, open the DB, and start Express.
+  useEffect(() => {
+    if (!window.__TAURI__) { setBackendStatus('ready'); return; }
+    let attempts = 0;
+    const MAX = 24; // 12 seconds total
+    const id = setInterval(async () => {
+      attempts++;
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/settings`);
+        if (res.ok) { clearInterval(id); setBackendStatus('ready'); }
+      } catch (_) {
+        if (attempts >= MAX) { clearInterval(id); setBackendStatus('error'); }
+      }
+    }, 500);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     focusScanner();
@@ -302,6 +321,26 @@ export default function App() {
       console.error('Error checking out:', err);
     }
   };
+
+  if (backendStatus === 'loading') {
+    return (
+      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100vh', gap:'16px', fontFamily:'sans-serif' }}>
+        <div style={{ width:'40px', height:'40px', border:'4px solid #ccc', borderTopColor:'#555', borderRadius:'50%', animation:'spin 0.8s linear infinite' }} />
+        <p style={{ color:'#555', margin:0 }}>Starting backend…</p>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  if (backendStatus === 'error') {
+    return (
+      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100vh', gap:'12px', fontFamily:'sans-serif' }}>
+        <p style={{ color:'#c00', fontSize:'18px', margin:0 }}>⚠ Backend failed to start</p>
+        <p style={{ color:'#555', margin:0 }}>The database server did not respond after 12 seconds.</p>
+        <p style={{ color:'#888', fontSize:'13px', margin:0 }}>Try restarting the app. If it keeps failing, reinstall.</p>
+      </div>
+    );
+  }
 
   if (view === 'STOCK') {
     return (
