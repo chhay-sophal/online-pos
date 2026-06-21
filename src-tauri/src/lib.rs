@@ -1,4 +1,7 @@
+use tauri::Manager;
 use tauri_plugin_shell::ShellExt;
+use tauri_plugin_shell::process::CommandChild;
+use std::sync::Mutex;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -11,16 +14,43 @@ pub fn run() {
       )?;
 
       if !cfg!(debug_assertions) {
-        // In release builds, spawn the bundled backend sidecar and pipe its output to the log.
+        // Kill any stale backend-server left over from a previous crash or session.
+        #[cfg(target_os = "windows")]
+        let _ = std::process::Command::new("taskkill")
+          .args(["/F", "/IM", "backend-server-x86_64-pc-windows-msvc.exe"])
+          .output();
+        #[cfg(target_os = "macos")]
+        let _ = std::process::Command::new("pkill")
+          .args(["-f", "backend-server-aarch64-apple-darwin"])
+          .output();
+        #[cfg(target_os = "linux")]
+        let _ = std::process::Command::new("pkill")
+          .args(["-f", "backend-server-x86_64-unknown-linux-gnu"])
+          .output();
+
         let shell = app.shell();
-        let (_rx, _child) = shell
+        let (_rx, child) = shell
           .sidecar("backend-server")
           .expect("backend-server sidecar not found")
           .spawn()
           .expect("failed to spawn backend-server");
+
+        // Store the child handle so we can kill it cleanly when the window closes.
+        app.manage(Mutex::new(Some(child)));
       }
 
       Ok(())
+    })
+    .on_window_event(|window, event| {
+      if let tauri::WindowEvent::Destroyed = event {
+        if let Some(state) = window.app_handle().try_state::<Mutex<Option<CommandChild>>>() {
+          if let Ok(mut guard) = state.lock() {
+            if let Some(child) = guard.take() {
+              let _ = child.kill();
+            }
+          }
+        }
+      }
     })
     .plugin(tauri_plugin_shell::init())
     .run(tauri::generate_context!())
