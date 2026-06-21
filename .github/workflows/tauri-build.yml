@@ -23,10 +23,6 @@ jobs:
             pkg-target: node20-win-x64
             sidecar-name: backend-server-x86_64-pc-windows-msvc.exe
             rust-target: ''
-          - platform: ubuntu-22.04
-            pkg-target: node20-linux-x64
-            sidecar-name: backend-server-x86_64-unknown-linux-gnu
-            rust-target: ''
 
     runs-on: ${{ matrix.platform }}
 
