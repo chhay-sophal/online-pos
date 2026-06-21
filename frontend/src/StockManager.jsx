@@ -26,6 +26,7 @@ export default function StockManager({
   const [lowStock, setLowStock] = useState(false);
   const [page, setPage] = useState(1);
 
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportScope, setExportScope] = useState("filtered");
@@ -112,6 +113,16 @@ export default function StockManager({
       }
     } catch (err) {
       console.error("Error modifying product asset rows:", err);
+    }
+  };
+
+  const handleDeleteProduct = async (id) => {
+    try {
+      await fetch(`${BACKEND_URL}/api/products/${id}`, { method: 'DELETE' });
+      setDeleteConfirmId(null);
+      fetchInventory();
+    } catch (err) {
+      console.error('Error deleting product:', err);
     }
   };
 
@@ -564,12 +575,18 @@ export default function StockManager({
                           </button>
                         </div>
                       ) : (
-                        <div className="flex justify-end">
+                        <div className="flex justify-end gap-1.5">
                           <button
                             onClick={() => handleEditClick(product)}
                             className="text-indigo-600 hover:text-indigo-900 text-xs font-bold bg-indigo-50/60 hover:bg-indigo-100 px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
                           >
                             {labels.editBtn}
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirmId(product.id)}
+                            className="text-red-500 hover:text-red-700 text-xs font-bold bg-red-50/60 hover:bg-red-100 px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
+                          >
+                            {labels.deleteBtn || 'Delete'}
                           </button>
                         </div>
                       )}
@@ -835,6 +852,41 @@ export default function StockManager({
           </div>
         </div>
       )}
+
+      {/* Product delete confirmation modal */}
+      {deleteConfirmId !== null && (() => {
+        const product = products.find(p => p.id === deleteConfirmId);
+        return (
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl border border-red-200 shadow-xl max-w-sm w-full p-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🗑️</span>
+                <h3 className="text-base font-bold text-slate-900 font-display">
+                  {labels.deleteWarningTitle || 'Remove Product?'}
+                </h3>
+              </div>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                <span className="font-bold text-slate-800">{product?.name}</span>
+                {' '}{labels.deleteWarningBody || 'will be hidden from the register and stock list. Past sales records are unaffected.'}
+              </p>
+              <div className="flex justify-end gap-2 pt-1">
+                <button
+                  onClick={() => setDeleteConfirmId(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                >
+                  {labels.cancelBtn || 'Cancel'}
+                </button>
+                <button
+                  onClick={() => handleDeleteProduct(deleteConfirmId)}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                >
+                  {labels.deleteConfirmBtn || 'Yes, Remove'}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

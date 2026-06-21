@@ -100,7 +100,7 @@ app.use(express.json({ limit: '10mb' }));
 
 app.get('/api/products/barcode/:barcode', (req, res) => {
   const rows = query(
-    'SELECT id, name, barcode, price, currency, stock FROM products WHERE barcode = ?',
+    'SELECT id, name, barcode, price, currency, stock FROM products WHERE barcode = ? AND is_deleted = 0',
     [req.params.barcode]
   );
   if (!rows.length) return res.status(404).json({ message: 'Barcode not registered in system' });
@@ -108,7 +108,13 @@ app.get('/api/products/barcode/:barcode', (req, res) => {
 });
 
 app.get('/api/products', (req, res) => {
-  res.json(query('SELECT * FROM products ORDER BY name ASC'));
+  res.json(query('SELECT * FROM products WHERE is_deleted = 0 ORDER BY name ASC'));
+});
+
+app.delete('/api/products/:id', (req, res) => {
+  run('UPDATE products SET is_deleted = 1 WHERE id = ?', [req.params.id]);
+  saveDb();
+  res.json({ message: 'Product removed' });
 });
 
 app.post('/api/products', (req, res) => {
@@ -198,6 +204,7 @@ app.get('/api/orders', (req, res) => {
   const conditions = [];
   const params = [];
 
+  conditions.push('is_deleted = 0');
   if (date_from) { conditions.push('created_at >= ?'); params.push(date_from); }
   if (date_to)   { conditions.push('created_at < ?');  params.push(date_to); }
   if (payment_method && payment_method !== 'ALL') {
@@ -205,7 +212,7 @@ app.get('/api/orders', (req, res) => {
     params.push(payment_method);
   }
 
-  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  const where = `WHERE ${conditions.join(' AND ')}`;
   const orders = query(`SELECT * FROM orders ${where} ORDER BY created_at DESC LIMIT 200`, params);
 
   const withItems = orders.map(order => {
@@ -219,6 +226,12 @@ app.get('/api/orders', (req, res) => {
   });
 
   res.json(withItems);
+});
+
+app.delete('/api/orders/:id', (req, res) => {
+  run('UPDATE orders SET is_deleted = 1 WHERE id = ?', [req.params.id]);
+  saveDb();
+  res.json({ message: 'Order voided' });
 });
 
 app.post('/api/payments/khqr', async (req, res) => {
@@ -301,6 +314,20 @@ async function start() {
   }
 
   db.run(SCHEMA);
+
+  // Idempotent migrations — add columns that may not exist in older databases.
+  const tableInfo = (table) => query(`PRAGMA table_info(${table})`).map(c => c.name);
+  const productCols = tableInfo('products');
+  if (!productCols.includes('cost_price')) {
+    db.run('ALTER TABLE products ADD COLUMN cost_price REAL NOT NULL DEFAULT 0');
+  }
+  if (!productCols.includes('is_deleted')) {
+    db.run('ALTER TABLE products ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0');
+  }
+  if (!tableInfo('orders').includes('is_deleted')) {
+    db.run('ALTER TABLE orders ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0');
+  }
+
   saveDb();
 
   const server = app.listen(PORT, '127.0.0.1', () => {

@@ -30,6 +30,7 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
   const [page, setPage] = useState(1);
 
   const [invoiceModal, setInvoiceModal] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [showExportModal, setShowExportModal] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportDateFrom, setExportDateFrom] = useState(() => {
@@ -116,6 +117,17 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
     new Date(ts).toLocaleString(currentLocale === 'km' ? 'km-KH' : 'en-US', {
       month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit',
     });
+
+  const handleDeleteOrder = async (id) => {
+    try {
+      await fetch(`${BACKEND_URL}/api/orders/${id}`, { method: 'DELETE' });
+      setDeleteConfirmId(null);
+      setExpandedId(null);
+      fetchOrders();
+    } catch (err) {
+      console.error('Error voiding order:', err);
+    }
+  };
 
   const openInvoice = (order) => {
     setInvoiceModal({
@@ -347,6 +359,7 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
                   expanded={expandedId === order.id}
                   onToggle={() => setExpandedId(expandedId === order.id ? null : order.id)}
                   onInvoice={() => openInvoice(order)}
+                  onDelete={() => setDeleteConfirmId(order.id)}
                   formatDateTime={formatDateTime}
                 />
               ))}
@@ -379,6 +392,42 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
           onClose={() => setInvoiceModal(null)}
         />
       )}
+
+      {/* Order void confirmation modal */}
+      {deleteConfirmId !== null && (() => {
+        const order = orders.find(o => o.id === deleteConfirmId);
+        return (
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl border border-red-200 shadow-xl max-w-sm w-full p-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">⚠️</span>
+                <h3 className="text-base font-bold text-slate-900 font-display">
+                  {s.voidWarningTitle || 'Void This Order?'}
+                </h3>
+              </div>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                {s.voidWarningBody || 'Order'}{' '}
+                <span className="font-bold font-mono text-slate-800">#{String(deleteConfirmId).padStart(4, '0')}</span>
+                {' '}{s.voidWarningBody2 || 'will be removed from the sales history and excluded from revenue totals. This cannot be undone.'}
+              </p>
+              <div className="flex justify-end gap-2 pt-1">
+                <button
+                  onClick={() => setDeleteConfirmId(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                >
+                  {s.cancel || 'Cancel'}
+                </button>
+                <button
+                  onClick={() => handleDeleteOrder(deleteConfirmId)}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                >
+                  {s.voidConfirmBtn || 'Void Order'}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* EXPORT MODAL */}
       {showExportModal && (
@@ -516,7 +565,7 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
   );
 }
 
-function OrderRow({ order, s, dynamicRate, mainCurrency, locale, expanded, onToggle, onInvoice, formatDateTime }) {
+function OrderRow({ order, s, dynamicRate, mainCurrency, locale, expanded, onToggle, onInvoice, onDelete, formatDateTime }) {
   const itemCount = (order.items || []).filter(i => i.product_name).length;
   const totalUsd = parseFloat(order.total_amount);
   const totalKhr = Math.round(totalUsd * dynamicRate);
@@ -638,8 +687,14 @@ function OrderRow({ order, s, dynamicRate, mainCurrency, locale, expanded, onTog
             )}
           </div>
 
-          {/* Invoice action */}
-          <div className="mt-3 flex justify-end">
+          {/* Actions */}
+          <div className="mt-3 flex justify-between items-center">
+            <button
+              onClick={onDelete}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-xl text-xs transition-colors cursor-pointer"
+            >
+              🗑️ {s.voidOrder || 'Void Order'}
+            </button>
             <button
               onClick={onInvoice}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
