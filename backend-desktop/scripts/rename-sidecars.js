@@ -9,9 +9,9 @@ const DIST = path.join(__dirname, '..', 'dist');
 const OUT  = path.join(__dirname, '..', '..', 'src-tauri', 'binaries');
 
 const MAP = [
-  ['backend-server-macos',   'backend-server-aarch64-apple-darwin'],
-  ['backend-server-win.exe', 'backend-server-x86_64-pc-windows-msvc.exe'],
-  ['backend-server-linux',   'backend-server-x86_64-unknown-linux-gnu'],
+  ['backend-server-macos-arm64',   'backend-server-aarch64-apple-darwin'],
+  ['backend-server-win-x64.exe',   'backend-server-x86_64-pc-windows-msvc.exe'],
+  ['backend-server-linux-x64',     'backend-server-x86_64-unknown-linux-gnu'],
 ];
 
 MAP.forEach(([src, dst]) => {
