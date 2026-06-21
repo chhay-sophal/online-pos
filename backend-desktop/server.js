@@ -272,7 +272,11 @@ app.get('/api/payments/check-status/:md5_hash', async (req, res) => {
 
 async function start() {
   const initSqlJs = require('sql.js');
-  const SQL = await initSqlJs();
+  // locateFile is required when running as a pkg sidecar — pkg embeds the WASM
+  // as a virtual asset and __dirname resolves into the pkg snapshot filesystem.
+  const SQL = await initSqlJs({
+    locateFile: file => path.join(__dirname, 'node_modules/sql.js/dist/', file)
+  });
 
   if (fs.existsSync(DB_PATH)) {
     const fileBuffer = fs.readFileSync(DB_PATH);

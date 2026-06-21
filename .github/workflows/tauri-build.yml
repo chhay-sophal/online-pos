@@ -6,6 +6,9 @@ on:
       - 'v*'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy:
@@ -13,15 +16,15 @@ jobs:
       matrix:
         include:
           - platform: macos-latest
-            pkg-target: node18-macos-arm64
+            pkg-target: node20-macos-arm64
             sidecar-name: backend-server-aarch64-apple-darwin
             rust-target: aarch64-apple-darwin
           - platform: windows-latest
-            pkg-target: node18-win-x64
+            pkg-target: node20-win-x64
             sidecar-name: backend-server-x86_64-pc-windows-msvc.exe
             rust-target: ''
           - platform: ubuntu-22.04
-            pkg-target: node18-linux-x64
+            pkg-target: node20-linux-x64
             sidecar-name: backend-server-x86_64-unknown-linux-gnu
             rust-target: ''
 
@@ -56,6 +59,10 @@ jobs:
 
       - name: Build backend sidecar binary
         shell: bash
+        # CI=false prevents pkg-fetch's progress bar from hitting a CI-environment
+        # assertion bug that causes it to crash when building from source.
+        env:
+          CI: false
         run: |
           mkdir -p src-tauri/binaries
           cd backend-desktop
