@@ -1,6 +1,6 @@
 use tauri::Manager;
 use tauri_plugin_shell::ShellExt;
-use tauri_plugin_shell::process::CommandChild;
+use tauri_plugin_shell::process::{CommandChild, CommandEvent};
 use std::sync::Mutex;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -29,11 +29,26 @@ pub fn run() {
           .output();
 
         let shell = app.shell();
-        let (_rx, child) = shell
+        let (mut rx, child) = shell
           .sidecar("backend-server")
           .expect("backend-server sidecar not found")
           .spawn()
           .expect("failed to spawn backend-server");
+
+        // Forward sidecar stdout/stderr to the main process output.
+        tauri::async_runtime::spawn(async move {
+          while let Some(event) = rx.recv().await {
+            match event {
+              CommandEvent::Stdout(line) => {
+                print!("[backend] {}", String::from_utf8_lossy(&line));
+              }
+              CommandEvent::Stderr(line) => {
+                eprint!("[backend] {}", String::from_utf8_lossy(&line));
+              }
+              _ => {}
+            }
+          }
+        });
 
         // Store the child handle so we can kill it cleanly when the window closes.
         app.manage(Mutex::new(Some(child)));
