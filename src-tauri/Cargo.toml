@@ -1,6 +1,6 @@
 [package]
 name = "app"
-version = "0.1.9"
+version = "0.1.8"
 description = "SOSO Baby Mart POS Desktop App"
 authors = ["Chhay Sophal"]
 license = ""
