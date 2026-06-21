@@ -21,6 +21,8 @@ export default function App() {
   const [showManualInput, setShowManualInput] = useState(false);
   const [locale, setLocale] = useState('km');
   const [mainCurrency, setMainCurrency] = useState('USD');
+  const [storeName, setStoreName] = useState('');
+  const [storeIcon, setStoreIcon] = useState('');
   const [backendStatus, setBackendStatus] = useState('loading'); // 'loading' | 'ready' | 'error'
 
   const barcodeRef = useRef(null);
@@ -151,8 +153,10 @@ export default function App() {
       .then(res => res.json())
       .then(data => {
         if (data.exchange_rate) setDynamicRate(Number(data.exchange_rate));
-        if (data.locale) setLocale(data.locale); 
-        if (data.main_currency) setMainCurrency(data.main_currency); // Add this line
+        if (data.locale) setLocale(data.locale);
+        if (data.main_currency) setMainCurrency(data.main_currency);
+        if (data.store_name) setStoreName(data.store_name);
+        if (data.store_icon !== undefined) setStoreIcon(data.store_icon || '');
       })
       .catch(err => console.error("Could not sync app settings configuration", err));
   }, [view]);
@@ -384,9 +388,13 @@ export default function App() {
       {/* Structural Header Grid */}
       <header className="bg-white border-b border-slate-200 px-6 py-3.5 flex justify-between items-center shadow-xs flex-shrink-0">
         <div className="flex items-center gap-3.5">
-          <div className="w-10 h-10 flex items-center justify-center text-4xl">🏬</div>
+          <div className="w-10 h-10 flex items-center justify-center text-4xl flex-shrink-0">
+            {storeIcon
+              ? <img src={storeIcon} alt="store" className="w-10 h-10 rounded-xl object-cover" />
+              : '🏬'}
+          </div>
           <div>
-            <h1 className="text-base font-bold text-slate-900 tracking-tight font-display">{t[locale].shopName}</h1>
+            <h1 className="text-base font-bold text-slate-900 tracking-tight font-display">{storeName || t[locale].shopName}</h1>
             <p className="text-[11px] font-bold text-indigo-600 tracking-wider uppercase">{t[locale].register}</p>
           </div>
           <div className="h-6 w-px bg-slate-200 ml-2"></div>

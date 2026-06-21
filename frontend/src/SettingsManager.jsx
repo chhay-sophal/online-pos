@@ -3,6 +3,8 @@ import { translations as t } from './locales';
 
 export default function SettingsManager({ onBackToRegister, currentLocale, onLocaleChange, mainCurrency, onCurrencyChange }) {
   const DEFAULT_SETTINGS = {
+    store_name: '',
+    store_icon: '',
     exchange_rate: '4100',
     bakong_account_id: '',
     bakong_merchant_name: '',
@@ -64,10 +66,11 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
     }
   };
 
-  // General dirty form change tracker
-  const hasChanges = initialSettings 
-    ? Object.keys(settings).some(key => String(settings[key]) !== String(initialSettings[key]))
-    : false;
+  // General dirty form change tracker — use ?? '' so keys missing from the API
+  // response (e.g. store_name before first save) don't cause a permanent dirty state.
+  const hasChanges = Object.keys(settings).some(
+    key => String(settings[key] ?? '') !== String(initialSettings[key] ?? '')
+  );
 
   // Evaluation conditions for core financial changes
   const isCurrencyChanged = initialSettings && String(settings.main_currency) !== String(initialSettings.main_currency);
@@ -111,7 +114,64 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
         >
           {/* Scrollable body partition block */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin">
-            
+
+            {/* Section: Store Profile */}
+            <div>
+              <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 mb-4 font-display">
+                {s.storeProfileHeader || '🏪 Store Profile'}
+              </h2>
+              <div className="flex gap-4 items-start">
+                {/* Icon upload */}
+                <div className="flex flex-col items-center gap-2 flex-shrink-0">
+                  <div className="w-16 h-16 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center bg-slate-50 overflow-hidden">
+                    {settings.store_icon
+                      ? <img src={settings.store_icon} alt="store icon" className="w-full h-full object-cover" />
+                      : <span className="text-2xl">🏬</span>}
+                  </div>
+                  <label className="text-[10px] font-bold text-indigo-600 uppercase tracking-wide cursor-pointer hover:text-indigo-800 transition-colors">
+                    {s.uploadIcon || 'Upload'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (ev) => setSettings({ ...settings, store_icon: ev.target.result });
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                  </label>
+                  {settings.store_icon && (
+                    <button
+                      type="button"
+                      onClick={() => setSettings({ ...settings, store_icon: '' })}
+                      className="text-[10px] font-bold text-slate-400 hover:text-red-500 uppercase tracking-wide transition-colors cursor-pointer"
+                    >
+                      {s.removeIcon || 'Remove'}
+                    </button>
+                  )}
+                </div>
+                {/* Store name */}
+                <div className="flex-1">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide font-display">
+                    {s.storeNameLabel || 'Store Display Name'}
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.store_name}
+                    onChange={(e) => setSettings({ ...settings, store_name: e.target.value })}
+                    className="w-full mt-1.5 p-2.5 border border-slate-200 bg-slate-50 rounded-lg text-sm font-bold text-slate-700 focus:outline-none focus:border-indigo-500"
+                    placeholder={s.storeNamePlaceholder || 'My Store'}
+                  />
+                  <p className="text-xs text-slate-400 mt-1 font-display">
+                    {s.storeNameHelp || 'Shown in the top-left corner of the register.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Section: Language Selection */}
             <div>
               <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 mb-4 font-display">
