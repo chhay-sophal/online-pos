@@ -3,8 +3,8 @@ name: Build Desktop App
 on:
   push:
     tags:
-      - 'v*'           # triggers on version tags: v1.0.0, v1.2.3, etc.
-  workflow_dispatch:   # allows manual trigger from GitHub UI
+      - 'v*'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -12,12 +12,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: macos-latest   # produces .dmg
-            args: '--target aarch64-apple-darwin'
-          - platform: windows-latest # produces .exe / .msi
-            args: ''
-          - platform: ubuntu-22.04   # produces .deb / .AppImage
-            args: ''
+          - platform: macos-latest
+            pkg-target: node18-macos-arm64
+            sidecar-name: backend-server-aarch64-apple-darwin
+            rust-target: aarch64-apple-darwin
+          - platform: windows-latest
+            pkg-target: node18-win-x64
+            sidecar-name: backend-server-x86_64-pc-windows-msvc.exe
+            rust-target: ''
+          - platform: ubuntu-22.04
+            pkg-target: node18-linux-x64
+            sidecar-name: backend-server-x86_64-unknown-linux-gnu
+            rust-target: ''
 
     runs-on: ${{ matrix.platform }}
 
@@ -32,9 +38,9 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-apple-darwin
+          targets: ${{ matrix.rust-target }}
 
-      - name: Install Linux dependencies
+      - name: Install Linux system dependencies
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
@@ -48,9 +54,19 @@ jobs:
         run: npm ci
         working-directory: backend-desktop
 
-      - name: Build backend sidecar
-        run: npm run build
-        working-directory: backend-desktop
+      - name: Build backend sidecar binary
+        shell: bash
+        run: |
+          mkdir -p src-tauri/binaries
+          cd backend-desktop
+          npx @yao-pkg/pkg server.js \
+            --targets ${{ matrix.pkg-target }} \
+            --output dist/sidecar \
+            --no-bytecode --public-packages '*' --public
+          # pkg appends .exe on windows automatically
+          SRC=$(ls dist/sidecar* 2>/dev/null | head -1)
+          cp "$SRC" ../src-tauri/binaries/${{ matrix.sidecar-name }}
+          chmod +x ../src-tauri/binaries/${{ matrix.sidecar-name }} || true
 
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
@@ -62,4 +78,5 @@ jobs:
           releaseBody: 'Download the installer for your platform below.'
           releaseDraft: true
           prerelease: false
-          args: ${{ matrix.args }}
+          tauriScript: npx @tauri-apps/cli@2
+          args: ${{ matrix.rust-target != '' && format('--target {0}', matrix.rust-target) || '' }}
