@@ -92,4 +92,6 @@ jobs:
         with:
           releaseId: ${{ needs.create-release.outputs.release_id }}
           tauriScript: npx @tauri-apps/cli@2
-          args: ${{ matrix.rust-target != '' && format('--target {0}', matrix.rust-target) || '' }}
+          args: >-
+            --bundles ${{ matrix.platform == 'windows-latest' && 'nsis' || 'dmg' }}
+            ${{ matrix.rust-target != '' && format('--target {0}', matrix.rust-target) || '' }}
