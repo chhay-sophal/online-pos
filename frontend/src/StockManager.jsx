@@ -37,7 +37,7 @@ export default function StockManager({
     name: "",
     barcode: "",
     price: "",
-    currency: "USD",
+    currency: mainCurrency,
     stock: "",
   });
 
@@ -143,7 +143,7 @@ export default function StockManager({
           name: "",
           barcode: "",
           price: "",
-          currency: "USD",
+          currency: mainCurrency,
           stock: "",
         });
         setShowAddForm(false);
@@ -769,16 +769,6 @@ export default function StockManager({
                   {labels.retailPrice || "Price"}
                 </label>
                 <div className="flex gap-2 mt-1.5">
-                  <input
-                    type="number"
-                    step={newProduct.currency === "USD" ? "0.01" : "100"}
-                    placeholder={newProduct.currency === "USD" ? "0.00" : "0"}
-                    value={newProduct.price}
-                    onChange={(e) =>
-                      setNewProduct({ ...newProduct, price: e.target.value })
-                    }
-                    className="flex-1 p-2.5 border border-slate-200 bg-slate-50 rounded-lg text-sm font-mono font-bold text-indigo-600 focus:outline-none focus:border-indigo-500"
-                  />
                   <select
                     value={newProduct.currency}
                     onChange={(e) =>
@@ -793,6 +783,16 @@ export default function StockManager({
                     <option value="USD">USD</option>
                     <option value="KHR">KHR</option>
                   </select>
+                  <input
+                    type="number"
+                    step={newProduct.currency === "USD" ? "0.01" : "100"}
+                    placeholder={newProduct.currency === "USD" ? "0.00" : "0"}
+                    value={newProduct.price}
+                    onChange={(e) =>
+                      setNewProduct({ ...newProduct, price: e.target.value })
+                    }
+                    className="flex-1 p-2.5 border border-slate-200 bg-slate-50 rounded-lg text-sm font-mono font-bold text-indigo-600 focus:outline-none focus:border-indigo-500"
+                  />
                 </div>
                 {newProduct.price && (
                   <p className="text-[11px] text-slate-400 font-mono mt-1">
