@@ -1,7 +1,7 @@
 {
   "name": "backend-desktop",
   "version": "1.0.0",
-  "description": "Desktop backend for SOSO Baby Mart POS (SQLite)",
+  "description": "Desktop backend for SOSO POS (SQLite)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

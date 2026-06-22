@@ -366,7 +366,7 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
         </form>
         {appVersion && (
           <p className="text-center text-[11px] text-slate-400 mt-3">
-            SOSO Baby Mart POS v{appVersion}
+            SOSO POS v{appVersion}
           </p>
         )}
       </div>
