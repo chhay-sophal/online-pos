@@ -5,6 +5,7 @@ import SettingsManager from './SettingsManager';
 import SalesHistory from './SalesHistory';
 import Invoice from './Invoice';
 import { translations as t } from './locales';
+import UpdateChecker from './UpdateChecker';
 
 export default function App() {
   const [cart, setCart] = useState([]);
@@ -417,8 +418,11 @@ export default function App() {
             ⚙️ {t[locale].settings}
           </button>
         </div>
-        <div className="bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600">
-          {t[locale].exchangeRate}: <span className="font-bold text-slate-900 font-mono ml-1">$1 = {dynamicRate.toLocaleString()} ៛</span>
+        <div className="flex items-center gap-2">
+          <UpdateChecker />
+          <div className="bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600">
+            {t[locale].exchangeRate}: <span className="font-bold text-slate-900 font-mono ml-1">$1 = {dynamicRate.toLocaleString()} ៛</span>
+          </div>
         </div>
       </header>
 

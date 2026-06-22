@@ -25,6 +25,14 @@
       "csp": null
     }
   },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDVGMDEyNjE0NjQwMDU1NUEKUldSYVZRQmtGQ1lCWCtWTTVKVVRhTVQ2NDNsMHVnb25xVXlsSzRUVEdRNVc0Wk9LTGlsVDFsTmwK",
+      "endpoints": [
+        "https://github.com/chhay-sophal/online-pos/releases/latest/download/latest.json"
+      ]
+    }
+  },
   "bundle": {
     "active": true,
     "targets": "all",

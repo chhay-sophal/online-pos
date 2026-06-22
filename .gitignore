@@ -45,3 +45,7 @@ backend-desktop/dist/
 
 # Rust
 *.pdb
+
+# Tauri signing keys (never commit these)
+~/.tauri/
+~\.tauri\
