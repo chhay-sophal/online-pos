@@ -17,13 +17,22 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
   const [initialSettings, setInitialSettings] = useState({ ...DEFAULT_SETTINGS });
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showConfirmPopup, setShowConfirmPopup] = useState(false);
-  
+  const [appVersion, setAppVersion] = useState('');
+
   const IS_TAURI = Boolean(window.__TAURI_INTERNALS__ ?? window.__TAURI__);
   const BACKEND_URL = (import.meta.env.PROD && !IS_TAURI) ? '' : 'http://localhost:5050';
 
   useEffect(() => {
     fetchSettings();
   }, []);
+
+  useEffect(() => {
+    if (!IS_TAURI) return;
+    import('@tauri-apps/api/app')
+      .then(({ getVersion }) => getVersion())
+      .then(setAppVersion)
+      .catch(() => {});
+  }, [IS_TAURI]);
 
   const fetchSettings = async () => {
     try {
@@ -355,6 +364,11 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
             </div>
           )}
         </form>
+        {appVersion && (
+          <p className="text-center text-[11px] text-slate-400 mt-3">
+            SOSO Baby Mart POS v{appVersion}
+          </p>
+        )}
       </div>
 
       {/* SECURE POPUP DIALOG WITH INTEGRATED RISK WARNER FOR MERCHANT PROFILES */}
