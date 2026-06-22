@@ -63,7 +63,7 @@ jobs:
           targets: ${{ matrix.rust-target }}
 
       - name: Install frontend dependencies
-        run: npm ci
+        run: npm install
         working-directory: frontend
 
       - name: Install backend-desktop dependencies
