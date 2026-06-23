@@ -7,7 +7,7 @@ const path = require('path');
 const fs = require('fs');
 
 const EXCHANGE_RATE = 4100;
-const PORT = process.env.PORT || 5050;
+const PORT = process.env.PORT ? Number(process.env.PORT) : 0;
 
 // --- DATABASE SETUP ---
 
@@ -331,13 +331,15 @@ async function start() {
   saveDb();
 
   const server = app.listen(PORT, '127.0.0.1', () => {
-    console.log(`✅ Desktop backend running on port ${PORT}`);
+    const actualPort = server.address().port;
+    console.log(`PORT:${actualPort}`);
+    console.log(`✅ Desktop backend running on port ${actualPort}`);
     console.log(`📁 Data: ${DB_PATH}`);
   });
 
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
-      console.error(`❌ Port ${PORT} is already in use. Kill the existing process with:\n   lsof -ti :${PORT} | xargs kill -9`);
+      console.error(`❌ Port ${PORT} is already in use.`);
       process.exit(1);
     } else {
       throw err;

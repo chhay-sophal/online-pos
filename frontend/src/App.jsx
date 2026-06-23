@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Store, Package, FolderOpen, Settings, ShoppingCart, X, CheckCircle2, AlertTriangle, Keyboard, Lock, History, Sun, Moon } from 'lucide-react';
 import { useDarkMode } from './hooks/useDarkMode';
@@ -31,24 +32,47 @@ export default function App() {
 
   const barcodeRef = useRef(null);
   const IS_TAURI = Boolean(window.__TAURI_INTERNALS__ ?? window.__TAURI__);
-  const BACKEND_URL = (import.meta.env.PROD && !IS_TAURI) ? '' : 'http://localhost:5050';
+  const backendPortRef = useRef(5050);
+  const BACKEND_URL = IS_TAURI ? `http://localhost:${backendPortRef.current}` : (import.meta.env.PROD ? '' : 'http://localhost:5050');
 
-  // Wait for the sidecar backend to be ready before the app makes any API calls.
-  // The sidecar takes a few seconds to extract the WASM, open the DB, and start Express.
+  // In production Tauri builds, discover the actual port the sidecar bound to,
+  // then poll until the backend is ready.
   useEffect(() => {
     if (!IS_TAURI) { setBackendStatus('ready'); return; }
-    let attempts = 0;
-    const MAX = 24; // 12 seconds total
-    const id = setInterval(async () => {
-      attempts++;
-      try {
-        const res = await fetch(`${BACKEND_URL}/api/settings`);
-        if (res.ok) { clearInterval(id); setBackendStatus('ready'); }
-      } catch (_) {
-        if (attempts >= MAX) { clearInterval(id); setBackendStatus('error'); }
+
+    let cancelled = false;
+    let healthId = null;
+
+    async function discoverAndWait() {
+      // Poll invoke until the Rust side has parsed the PORT line from sidecar stdout.
+      if (import.meta.env.PROD) {
+        for (let i = 0; i < 40; i++) {
+          if (cancelled) return;
+          try {
+            const port = await invoke('get_backend_port');
+            if (port) { backendPortRef.current = port; break; }
+          } catch (_) {}
+          await new Promise(r => setTimeout(r, 250));
+        }
       }
-    }, 500);
-    return () => clearInterval(id);
+
+      let attempts = 0;
+      const MAX = 24; // 12 seconds total
+      const url = `http://localhost:${backendPortRef.current}/api/settings`;
+      healthId = setInterval(async () => {
+        if (cancelled) { clearInterval(healthId); return; }
+        attempts++;
+        try {
+          const res = await fetch(url);
+          if (res.ok) { clearInterval(healthId); setBackendStatus('ready'); }
+        } catch (_) {
+          if (attempts >= MAX) { clearInterval(healthId); setBackendStatus('error'); }
+        }
+      }, 500);
+    }
+
+    discoverAndWait();
+    return () => { cancelled = true; if (healthId) clearInterval(healthId); };
   }, []);
 
   useEffect(() => {
