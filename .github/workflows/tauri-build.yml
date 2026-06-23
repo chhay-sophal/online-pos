@@ -67,7 +67,7 @@ jobs:
         working-directory: frontend
 
       - name: Install backend-desktop dependencies
-        run: npm ci
+        run: npm install
         working-directory: backend-desktop
 
       - name: Build backend sidecar binary
