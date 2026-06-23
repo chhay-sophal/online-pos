@@ -277,22 +277,6 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
       {/* Summary bar */}
       <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4 flex items-center gap-8 flex-shrink-0">
         <div>
-          <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">{s.totalRevenue}</p>
-          <p className="text-2xl font-black text-slate-900 dark:text-white leading-none">
-            {mainCurrency === 'USD'
-              ? `$${totalRevenue.toFixed(2)}`
-              : `${Math.round(totalRevenue * dynamicRate).toLocaleString()} ៛`}
-          </p>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-            {mainCurrency === 'USD'
-              ? `${Math.round(totalRevenue * dynamicRate).toLocaleString()} ៛`
-              : `$${totalRevenue.toFixed(2)}`}
-          </p>
-        </div>
-
-        <div className="h-12 w-px bg-slate-200 dark:bg-slate-700" />
-
-        <div>
           <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">{s.totalOrders}</p>
           <p className="text-2xl font-black text-slate-900 dark:text-white leading-none">{filteredOrders.length}</p>
         </div>
@@ -319,6 +303,20 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
               </div>
             </button>
           ))}
+        </div>
+
+        <div className='ml-auto'>
+          <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">{s.totalRevenue}</p>
+          <p className="text-2xl font-black text-slate-900 dark:text-white leading-none">
+            {mainCurrency === 'USD'
+              ? `$${totalRevenue.toFixed(2)}`
+              : `${Math.round(totalRevenue * dynamicRate).toLocaleString()} ៛`}
+          </p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+            {mainCurrency === 'USD'
+              ? `${Math.round(totalRevenue * dynamicRate).toLocaleString()} ៛`
+              : `$${totalRevenue.toFixed(2)}`}
+          </p>
         </div>
       </div>
 
