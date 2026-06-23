@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import * as XLSX from 'xlsx';
+import { ArrowLeft, X, Download, Banknote, Smartphone, Building2, FolderOpen, Search, ChevronLeft, ChevronRight, AlertTriangle, Trash2, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import Invoice from './Invoice';
 import { translations as t } from './locales';
 
@@ -71,8 +72,8 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
     else { setSortCol(col); setSortDir('asc'); }
   };
   const si = (col) => (
-    <span className={sortCol === col ? 'text-indigo-400' : 'text-slate-300'}>
-      {sortCol === col ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ' ↕'}
+    <span className={`inline-flex items-center ml-1 ${sortCol === col ? 'text-indigo-400' : 'text-slate-300'}`}>
+      {sortCol === col ? (sortDir === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />) : <ChevronsUpDown size={11} />}
     </span>
   );
 
@@ -219,7 +220,7 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
             onClick={onBackToRegister}
             className="px-3.5 py-1.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-all flex items-center gap-1.5"
           >
-            ← {s.backBtn}
+            <ArrowLeft size={14} />
           </button>
           <div className="h-6 w-px bg-slate-200" />
           <div>
@@ -243,8 +244,8 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
             {search && (
               <button
                 onClick={() => { setSearch(''); setExpandedId(null); }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
-              >✕</button>
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              ><X size={12} /></button>
             )}
           </div>
         </div>
@@ -254,7 +255,7 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
           disabled={orders.length === 0}
           className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 flex-shrink-0"
         >
-          ↓ Excel
+          <Download size={14} /> Excel
         </button>
 
         {/* Period tabs */}
@@ -277,12 +278,12 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
       <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center gap-8 flex-shrink-0">
         <div>
           <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">{s.totalRevenue}</p>
-          <p className="text-2xl font-black text-slate-900 font-mono leading-none">
+          <p className="text-2xl font-black text-slate-900 leading-none">
             {mainCurrency === 'USD'
               ? `$${totalRevenue.toFixed(2)}`
               : `${Math.round(totalRevenue * dynamicRate).toLocaleString()} ៛`}
           </p>
-          <p className="text-xs text-slate-400 font-mono mt-0.5">
+          <p className="text-xs text-slate-400 mt-0.5">
             {mainCurrency === 'USD'
               ? `${Math.round(totalRevenue * dynamicRate).toLocaleString()} ៛`
               : `$${totalRevenue.toFixed(2)}`}
@@ -293,17 +294,17 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
 
         <div>
           <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">{s.totalOrders}</p>
-          <p className="text-2xl font-black text-slate-900 font-mono leading-none">{filteredOrders.length}</p>
+          <p className="text-2xl font-black text-slate-900 leading-none">{filteredOrders.length}</p>
         </div>
 
         <div className="h-12 w-px bg-slate-200" />
 
         <div className="flex gap-2">
           {[
-            { key: 'CASH',       label: s.cashSales,     icon: '💵', count: cashCount,     activeClass: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
-            { key: 'KHQR',       label: s.khqrSales,     icon: '📱', count: khqrCount,     activeClass: 'bg-rose-50 border-rose-200 text-rose-700' },
-            { key: 'STATIC_QR',  label: s.staticQrSales, icon: '🏦', count: staticQrCount, activeClass: 'bg-amber-50 border-amber-200 text-amber-700' },
-          ].map(({ key, label, icon, count, activeClass }) => (
+            { key: 'CASH',       label: s.cashSales,     Icon: Banknote,   count: cashCount,     activeClass: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
+            { key: 'KHQR',       label: s.khqrSales,     Icon: Smartphone, count: khqrCount,     activeClass: 'bg-rose-50 border-rose-200 text-rose-700' },
+            { key: 'STATIC_QR',  label: s.staticQrSales, Icon: Building2,  count: staticQrCount, activeClass: 'bg-amber-50 border-amber-200 text-amber-700' },
+          ].map(({ key, label, Icon, count, activeClass }) => (
             <button
               key={key}
               onClick={() => setPayFilter(f => f === key ? 'all' : key)}
@@ -311,10 +312,10 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
                 payFilter === key ? activeClass : 'border-transparent hover:bg-slate-50 text-slate-700'
               }`}
             >
-              <span className="text-base">{icon}</span>
+              <Icon size={18} />
               <div className="text-left">
                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{label}</p>
-                <p className="text-sm font-black font-mono">{count}</p>
+                <p className="text-sm font-black">{count}</p>
               </div>
             </button>
           ))}
@@ -328,12 +329,12 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
             <div className="flex items-center justify-center h-full text-slate-400 text-sm font-bold">{s.loading}</div>
           ) : orders.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400">
-              <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-2xl">🗂️</div>
+              <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400"><FolderOpen size={28} /></div>
               <p className="text-sm font-semibold">{s.noOrders}</p>
             </div>
           ) : filteredOrders.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400">
-              <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-2xl">🔍</div>
+              <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400"><Search size={28} /></div>
               <p className="text-sm font-semibold">{s.noResults}</p>
             </div>
           ) : (
@@ -374,12 +375,12 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
               {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filteredOrders.length)} of {filteredOrders.length}
             </span>
             <div className="flex items-center gap-1">
-              <button onClick={() => setPage(p => p - 1)} disabled={page === 1} className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all">←</button>
+              <button onClick={() => setPage(p => p - 1)} disabled={page === 1} className="px-2.5 py-1.5 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center"><ChevronLeft size={14} /></button>
               {pageNums.map((n, i) => n === '...'
                 ? <span key={`e${i}`} className="px-1 text-slate-300 text-xs">…</span>
                 : <button key={n} onClick={() => setPage(n)} className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${page === n ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}>{n}</button>
               )}
-              <button onClick={() => setPage(p => p + 1)} disabled={page === totalPages} className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all">→</button>
+              <button onClick={() => setPage(p => p + 1)} disabled={page === totalPages} className="px-2.5 py-1.5 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center"><ChevronRight size={14} /></button>
             </div>
           </div>
         )}
@@ -400,14 +401,14 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl border border-red-200 shadow-xl max-w-sm w-full p-6 space-y-4">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">⚠️</span>
+                <AlertTriangle size={24} className="text-amber-500 flex-shrink-0" />
                 <h3 className="text-base font-bold text-slate-900 font-display">
                   {s.voidWarningTitle || 'Void This Order?'}
                 </h3>
               </div>
               <p className="text-sm text-slate-600 leading-relaxed">
                 {s.voidWarningBody || 'Order'}{' '}
-                <span className="font-bold font-mono text-slate-800">#{String(deleteConfirmId).padStart(4, '0')}</span>
+                <span className="font-bold text-slate-800">#{String(deleteConfirmId).padStart(4, '0')}</span>
                 {' '}{s.voidWarningBody2 || 'will be removed from the sales history and excluded from revenue totals. This cannot be undone.'}
               </p>
               <div className="flex justify-end gap-2 pt-1">
@@ -439,7 +440,7 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
                 <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Export Sales to Excel</h3>
                 <p className="text-[11px] text-slate-400 mt-0.5">Choose a date range and columns</p>
               </div>
-              <button onClick={() => setShowExportModal(false)} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer">✕</button>
+              <button onClick={() => setShowExportModal(false)} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"><X size={14} /></button>
             </div>
 
             <div className="px-5 py-4 space-y-5 overflow-y-auto max-h-[70vh]">
@@ -473,7 +474,7 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
                       value={exportDateFrom}
                       onChange={e => setExportDateFrom(e.target.value)}
                       max={exportDateTo || undefined}
-                      className="w-full px-2.5 py-1.5 border border-slate-200 rounded-xl text-xs font-mono text-slate-700 outline-none focus:border-indigo-300 bg-slate-50"
+                      className="w-full px-2.5 py-1.5 border border-slate-200 rounded-xl text-xs text-slate-700 outline-none focus:border-indigo-300 bg-slate-50"
                     />
                   </div>
                   <div>
@@ -483,7 +484,7 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
                       value={exportDateTo}
                       onChange={e => setExportDateTo(e.target.value)}
                       min={exportDateFrom || undefined}
-                      className="w-full px-2.5 py-1.5 border border-slate-200 rounded-xl text-xs font-mono text-slate-700 outline-none focus:border-indigo-300 bg-slate-50"
+                      className="w-full px-2.5 py-1.5 border border-slate-200 rounded-xl text-xs text-slate-700 outline-none focus:border-indigo-300 bg-slate-50"
                     />
                   </div>
                 </div>
@@ -498,9 +499,9 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
                 <div className="flex gap-1.5">
                   {[
                     { value: 'all',  label: 'All' },
-                    { value: 'CASH',      label: '💵 Cash' },
-                    { value: 'KHQR',      label: '📱 KHQR' },
-                    { value: 'STATIC_QR', label: '🏦 Bank QR' },
+                    { value: 'CASH',      label: 'Cash' },
+                    { value: 'KHQR',      label: 'KHQR' },
+                    { value: 'STATIC_QR', label: 'Bank QR' },
                   ].map(({ value, label }) => (
                     <button
                       key={value}
@@ -541,7 +542,7 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
 
             {/* Footer */}
             <div className="px-5 py-3.5 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
-              <span className="text-[11px] text-slate-400 font-mono">
+              <span className="text-[11px] text-slate-400">
                 {Object.values(exportCols).filter(Boolean).length} cols
                 {exportDateFrom && exportDateTo ? ` · ${exportDateFrom} → ${exportDateTo}` : ' · all time'}
               </span>
@@ -554,7 +555,7 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
                   disabled={exporting || Object.values(exportCols).every(v => !v)}
                   className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold rounded-xl text-xs cursor-pointer transition-colors flex items-center gap-1.5"
                 >
-                  {exporting ? '...' : '↓ Export'}
+                  {exporting ? '...' : <><Download size={14} /> Export</>}
                 </button>
               </div>
             </div>
@@ -577,19 +578,19 @@ function OrderRow({ order, s, dynamicRate, mainCurrency, locale, expanded, onTog
         onClick={onToggle}
         className="w-full grid grid-cols-[56px_1fr_80px_120px_80px_32px] gap-3 px-4 py-3.5 items-center text-left"
       >
-        <span className="font-black text-sm text-indigo-600 font-mono">#{String(order.id).padStart(4, '0')}</span>
+        <span className="font-black text-sm text-indigo-600">#{String(order.id).padStart(4, '0')}</span>
 
         <span className="text-sm text-slate-700 font-medium truncate">{formatDateTime(order.created_at)}</span>
 
-        <span className="text-sm text-slate-600 font-bold font-mono text-center">
+        <span className="text-sm text-slate-600 font-bold text-center">
           {itemCount}
         </span>
 
         <div className="text-right">
-          <p className="text-sm font-black text-slate-900 font-mono">
+          <p className="text-sm font-black text-slate-900">
             {mainCurrency === 'USD' ? `$${totalUsd.toFixed(2)}` : `${totalKhr.toLocaleString()} ៛`}
           </p>
-          <p className="text-[10px] text-slate-400 font-mono">
+          <p className="text-[10px] text-slate-400">
             {mainCurrency === 'USD' ? `${totalKhr.toLocaleString()} ៛` : `$${totalUsd.toFixed(2)}`}
           </p>
         </div>
@@ -607,7 +608,7 @@ function OrderRow({ order, s, dynamicRate, mainCurrency, locale, expanded, onTog
               : order.payment_method === 'KHQR'
               ? s.khqr
               : order.bank_name
-              ? `🏦 ${order.bank_name}`
+              ? <span className="flex items-center gap-1"><Building2 size={10} />{order.bank_name}</span>
               : s.staticQr}
           </span>
         </div>
@@ -630,13 +631,13 @@ function OrderRow({ order, s, dynamicRate, mainCurrency, locale, expanded, onTog
               {(order.items || []).filter(i => i.product_name).map((item, idx) => (
                 <div key={idx} className="grid grid-cols-[1fr_48px_80px_80px] gap-2 text-xs px-1 py-0.5">
                   <span className="text-slate-800 font-medium truncate">{item.product_name}</span>
-                  <span className="text-center text-slate-600 font-mono font-bold">{item.quantity}</span>
-                  <span className="text-right text-slate-600 font-mono">
+                  <span className="text-center text-slate-600 font-bold">{item.quantity}</span>
+                  <span className="text-right text-slate-600">
                     {item.currency === 'KHR'
                       ? `${parseFloat(item.price).toLocaleString()} ៛`
                       : `$${parseFloat(item.price).toFixed(2)}`}
                   </span>
-                  <span className="text-right text-slate-900 font-mono font-bold">
+                  <span className="text-right text-slate-900 font-bold">
                     {item.currency === 'KHR'
                       ? `${(parseFloat(item.price) * item.quantity).toLocaleString()} ៛`
                       : `$${(parseFloat(item.price) * item.quantity).toFixed(2)}`}
@@ -650,10 +651,10 @@ function OrderRow({ order, s, dynamicRate, mainCurrency, locale, expanded, onTog
           <div className="border-t-2 border-dashed border-slate-200 pt-2.5 mb-2.5 flex justify-between items-baseline">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">{s.total}</span>
             <div className="text-right">
-              <p className="text-sm font-black text-slate-900 font-mono">
+              <p className="text-sm font-black text-slate-900">
                 {mainCurrency === 'USD' ? `$${totalUsd.toFixed(2)}` : `${totalKhr.toLocaleString()} ៛`}
               </p>
-              <p className="text-[10px] text-slate-400 font-mono">
+              <p className="text-[10px] text-slate-400">
                 {mainCurrency === 'USD' ? `${totalKhr.toLocaleString()} ៛` : `$${totalUsd.toFixed(2)}`}
               </p>
             </div>
@@ -664,25 +665,25 @@ function OrderRow({ order, s, dynamicRate, mainCurrency, locale, expanded, onTog
             {mainCurrency === 'KHR' && parseFloat(order.amount_paid_khr) > 0 && (
               <div className="flex justify-between text-slate-500">
                 <span>{s.paidKhr}</span>
-                <span className="font-mono">{parseFloat(order.amount_paid_khr).toLocaleString()} ៛</span>
+                <span>{parseFloat(order.amount_paid_khr).toLocaleString()} ៛</span>
               </div>
             )}
             {parseFloat(order.amount_paid_usd) > 0 && (
               <div className="flex justify-between text-slate-500">
                 <span>{s.paidUsd}</span>
-                <span className="font-mono">${parseFloat(order.amount_paid_usd).toFixed(2)}</span>
+                <span>${parseFloat(order.amount_paid_usd).toFixed(2)}</span>
               </div>
             )}
             {mainCurrency === 'USD' && parseFloat(order.amount_paid_khr) > 0 && (
               <div className="flex justify-between text-slate-500">
                 <span>{s.paidKhr}</span>
-                <span className="font-mono">{parseFloat(order.amount_paid_khr).toLocaleString()} ៛</span>
+                <span>{parseFloat(order.amount_paid_khr).toLocaleString()} ៛</span>
               </div>
             )}
             {parseFloat(order.change_given_khr) > 0 && (
               <div className="flex justify-between font-bold text-emerald-700">
                 <span>{s.change}</span>
-                <span className="font-mono">{parseFloat(order.change_given_khr).toLocaleString()} ៛</span>
+                <span>{parseFloat(order.change_given_khr).toLocaleString()} ៛</span>
               </div>
             )}
           </div>
@@ -693,7 +694,7 @@ function OrderRow({ order, s, dynamicRate, mainCurrency, locale, expanded, onTog
               onClick={onDelete}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-xl text-xs transition-colors cursor-pointer"
             >
-              🗑️ {s.voidOrder || 'Void Order'}
+              <Trash2 size={14} /> {s.voidOrder || 'Void Order'}
             </button>
             <button
               onClick={onInvoice}

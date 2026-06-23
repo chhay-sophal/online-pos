@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import * as XLSX from "xlsx";
+import { ArrowLeft, X, Download, AlertTriangle, Package, Search, ChevronLeft, ChevronRight, Trash2, ChevronUp, ChevronDown, ChevronsUpDown, Pencil, Delete, Trash, Save, Plus } from 'lucide-react';
 import { translations as t } from "./locales";
 
 const PAGE_SIZE = 15;
@@ -178,8 +179,8 @@ export default function StockManager({
     }
   };
   const si = (col) => (
-    <span className={sortCol === col ? "text-indigo-400" : "text-slate-300"}>
-      {sortCol === col ? (sortDir === "asc" ? " ↑" : " ↓") : " ↕"}
+    <span className={`inline-flex items-center ml-1 ${sortCol === col ? "text-indigo-400" : "text-slate-300"}`}>
+      {sortCol === col ? (sortDir === "asc" ? <ChevronUp size={11} /> : <ChevronDown size={11} />) : <ChevronsUpDown size={11} />}
     </span>
   );
 
@@ -272,7 +273,7 @@ export default function StockManager({
             onClick={onBackToRegister}
             className="px-3.5 py-1.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-all flex items-center gap-1.5 cursor-pointer"
           >
-            ← {t[currentLocale]?.register || "Register"}
+            <ArrowLeft size={14} />
           </button>
           <div className="h-6 w-px bg-slate-200" />
           <div>
@@ -313,9 +314,9 @@ export default function StockManager({
             {search && (
               <button
                 onClick={() => setSearch("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
               >
-                ✕
+                <X size={12} />
               </button>
             )}
           </div>
@@ -327,13 +328,13 @@ export default function StockManager({
             disabled={products.length === 0}
             className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold rounded-xl text-xs shadow-sm transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
           >
-            ↓ Excel
+            <Download size={14} /> Excel
           </button>
           <button
             onClick={() => setShowAddForm(true)}
             className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-sm transition-all flex items-center gap-2 cursor-pointer active:scale-95"
           >
-            {labels.registerNewProduct || "Register New Product"}
+            <Plus size={14} />{labels.registerNew || "Register New Product"}
           </button>
         </div>
       </header>
@@ -366,9 +367,9 @@ export default function StockManager({
                 : "bg-slate-100 text-slate-500 hover:bg-slate-200"
             }`}
           >
-            ⚠ {labels.lowStock || "Low Stock"}
+            <AlertTriangle size={12} /> {labels.lowStock || "Low Stock"}
           </button>
-          <span className="ml-auto text-[11px] text-slate-400 font-mono">
+          <span className="ml-auto text-[11px] text-slate-400">
             {displayed.length} products
           </span>
         </div>
@@ -376,8 +377,8 @@ export default function StockManager({
         <div className="flex-1 overflow-y-auto p-5">
           {products.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400">
-              <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-2xl">
-                📦
+              <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400">
+                <Package size={28} />
               </div>
               <p className="text-sm font-semibold">
                 {labels.noProducts || "No products yet"}
@@ -385,8 +386,8 @@ export default function StockManager({
             </div>
           ) : displayed.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400">
-              <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-2xl">
-                🔍
+              <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400">
+                <Search size={28} />
               </div>
               <p className="text-sm font-semibold">
                 {labels.noResults || "No matching products"}
@@ -450,7 +451,7 @@ export default function StockManager({
                   >
                     <div className="grid grid-cols-[44px_1fr_150px_150px_110px_100px] gap-3 px-4 py-3.5 items-center">
                       {/* ID */}
-                      <span className="font-black text-sm text-indigo-600 font-mono">
+                      <span className="font-black text-sm text-indigo-600">
                         #{String(product.id).padStart(3, "0")}
                       </span>
 
@@ -481,10 +482,10 @@ export default function StockManager({
                               barcode: e.target.value,
                             })
                           }
-                          className="px-2.5 py-1.5 border border-slate-200 rounded-xl bg-white w-full font-mono text-xs outline-none focus:border-indigo-300"
+                          className="px-2.5 py-1.5 border border-slate-200 rounded-xl bg-white w-full text-xs outline-none focus:border-indigo-300"
                         />
                       ) : (
-                        <span className="font-mono text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded-lg font-bold truncate inline-block max-w-full">
+                        <span className="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded-lg font-bold truncate inline-block max-w-full">
                           {product.barcode}
                         </span>
                       )}
@@ -520,12 +521,12 @@ export default function StockManager({
                         </div>
                       ) : (
                         <div className="text-center">
-                          <p className="text-sm font-black text-slate-900 font-mono">
+                          <p className="text-sm font-black text-slate-900">
                             {product.currency === "KHR"
                               ? `${parseFloat(product.price).toLocaleString()} ៛`
                               : `$${parseFloat(product.price).toFixed(2)}`}
                           </p>
-                          <p className="text-[10px] text-slate-400 font-mono mt-0.5">
+                          <p className="text-[10px] text-slate-400 mt-0.5">
                             {product.currency === "KHR"
                               ? `≈ $${(parseFloat(product.price) / dynamicRate).toFixed(2)}`
                               : `≈ ${Math.round(parseFloat(product.price) * dynamicRate).toLocaleString()} ៛`}
@@ -546,7 +547,7 @@ export default function StockManager({
                       ) : (
                         <div className="flex items-center gap-1.5">
                           <span
-                            className={`px-2.5 py-1 rounded-lg text-xs font-bold font-mono ${isLowStock ? "bg-amber-50 text-amber-700 border border-amber-200" : "bg-slate-100 text-slate-700"}`}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold ${isLowStock ? "bg-amber-50 text-amber-700 border border-amber-200" : "bg-slate-100 text-slate-700"}`}
                           >
                             {product.stock}
                           </span>
@@ -563,30 +564,30 @@ export default function StockManager({
                         <div className="flex justify-end gap-1.5">
                           <button
                             onClick={() => handleSaveEdit(product.id)}
-                            className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold cursor-pointer transition-colors"
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold cursor-pointer transition-colors truncate"
                           >
-                            {labels.saveBtn}
+                            <Save size={12}/>
                           </button>
                           <button
                             onClick={() => setEditingId(null)}
-                            className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg text-xs font-bold cursor-pointer transition-colors"
+                            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg text-xs font-bold cursor-pointer transition-colors truncate"
                           >
-                            {labels.cancelBtn}
+                            <X size={12}/>
                           </button>
                         </div>
                       ) : (
                         <div className="flex justify-end gap-1.5">
                           <button
                             onClick={() => handleEditClick(product)}
-                            className="text-indigo-600 hover:text-indigo-900 text-xs font-bold bg-indigo-50/60 hover:bg-indigo-100 px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
+                            className="text-indigo-600 hover:text-indigo-900 text-xs font-bold bg-indigo-50/60 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer truncate"
                           >
-                            {labels.editBtn}
+                            <Pencil size={12} />
                           </button>
                           <button
                             onClick={() => setDeleteConfirmId(product.id)}
-                            className="text-red-500 hover:text-red-700 text-xs font-bold bg-red-50/60 hover:bg-red-100 px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
+                            className="text-red-500 hover:text-red-700 text-xs font-bold bg-red-50/60 hover:bg-red-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer truncate"
                           >
-                            {labels.deleteBtn || 'Delete'}
+                            <Trash size={12} />
                           </button>
                         </div>
                       )}
@@ -612,7 +613,7 @@ export default function StockManager({
               disabled={page === 1}
               className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
-              ←
+              <ChevronLeft size={14} />
             </button>
             {pageNums.map((n, i) =>
               n === "..." ? (
@@ -634,7 +635,7 @@ export default function StockManager({
               disabled={page === totalPages}
               className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
-              →
+              <ChevronRight size={14} />
             </button>
           </div>
         </div>
@@ -653,7 +654,7 @@ export default function StockManager({
               <button
                 onClick={() => setShowExportModal(false)}
                 className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-              >✕</button>
+              ><X size={14} /></button>
             </div>
 
             <div className="px-5 py-4 space-y-5">
@@ -675,7 +676,7 @@ export default function StockManager({
                         className="accent-indigo-600"
                       />
                       <span className="text-xs font-bold text-slate-700 flex-1">{label}</span>
-                      <span className="text-[11px] font-mono font-bold text-slate-400">{count} rows</span>
+                      <span className="text-[11px] font-bold text-slate-400">{count} rows</span>
                     </label>
                   ))}
                 </div>
@@ -709,7 +710,7 @@ export default function StockManager({
 
             {/* Footer */}
             <div className="px-5 py-3.5 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
-              <span className="text-[11px] text-slate-400 font-mono">
+              <span className="text-[11px] text-slate-400">
                 {Object.values(exportCols).filter(Boolean).length} cols · {exportScope === "all" ? products.length : displayed.length} rows
               </span>
               <div className="flex gap-2">
@@ -724,7 +725,7 @@ export default function StockManager({
                   disabled={Object.values(exportCols).every(v => !v)}
                   className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold rounded-xl text-xs cursor-pointer transition-colors"
                 >
-                  ↓ Export
+                  <Download size={14} /> Export
                 </button>
               </div>
             </div>
@@ -738,13 +739,13 @@ export default function StockManager({
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xl max-w-md w-full overflow-hidden flex flex-col space-y-4 transform scale-100 transition-all">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-black text-slate-800 uppercase tracking-wider font-display">
-                {labels.registerNewProduct || "Register New Product"}
+                {labels.registerNew || "Register New Product"}
               </h3>
               <button
                 onClick={() => setShowAddForm(false)}
                 className="text-slate-400 hover:text-slate-600 font-bold text-sm p-1 hover:bg-slate-100 rounded-lg cursor-pointer transition-colors"
               >
-                ✕
+                <X size={14} />
               </button>
             </div>
 
@@ -777,7 +778,7 @@ export default function StockManager({
                   onChange={(e) =>
                     setNewProduct({ ...newProduct, barcode: e.target.value })
                   }
-                  className="w-full mt-1.5 p-2.5 border border-slate-200 bg-slate-50 rounded-lg text-sm font-mono text-slate-700 focus:outline-none focus:border-indigo-500"
+                  className="w-full mt-1.5 p-2.5 border border-slate-200 bg-slate-50 rounded-lg text-sm text-slate-700 focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
@@ -808,11 +809,11 @@ export default function StockManager({
                     onChange={(e) =>
                       setNewProduct({ ...newProduct, price: e.target.value })
                     }
-                    className="flex-1 p-2.5 border border-slate-200 bg-slate-50 rounded-lg text-sm font-mono font-bold text-indigo-600 focus:outline-none focus:border-indigo-500"
+                    className="flex-1 p-2.5 border border-slate-200 bg-slate-50 rounded-lg text-sm font-bold text-indigo-600 focus:outline-none focus:border-indigo-500"
                   />
                 </div>
                 {newProduct.price && (
-                  <p className="text-[11px] text-slate-400 font-mono mt-1">
+                  <p className="text-[11px] text-slate-400 mt-1">
                     {priceEquivalent(newProduct)}
                   </p>
                 )}
@@ -829,7 +830,7 @@ export default function StockManager({
                   onChange={(e) =>
                     setNewProduct({ ...newProduct, stock: e.target.value })
                   }
-                  className="w-full mt-1.5 p-2.5 border border-slate-200 bg-slate-50 rounded-lg text-sm font-mono font-bold text-indigo-600 focus:outline-none focus:border-indigo-500"
+                  className="w-full mt-1.5 p-2.5 border border-slate-200 bg-slate-50 rounded-lg text-sm font-bold text-indigo-600 focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
@@ -860,7 +861,7 @@ export default function StockManager({
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl border border-red-200 shadow-xl max-w-sm w-full p-6 space-y-4">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">🗑️</span>
+                <Trash2 size={24} className="text-red-500" />
                 <h3 className="text-base font-bold text-slate-900 font-display">
                   {labels.deleteWarningTitle || 'Remove Product?'}
                 </h3>

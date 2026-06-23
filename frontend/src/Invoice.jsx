@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { jsPDF } from 'jspdf';
+import { Printer } from 'lucide-react';
 import { translations as t } from './locales';
 
 export default function Invoice({ invoiceData, locale, onClose }) {
@@ -232,9 +233,9 @@ export default function Invoice({ invoiceData, locale, onClose }) {
           <button
             onClick={handlePrint}
             disabled={printing}
-            className="flex-1 py-2.5 bg-indigo-600 text-white font-bold rounded-xl text-xs hover:bg-indigo-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            className="flex-1 py-2.5 bg-indigo-600 text-white font-bold rounded-xl text-xs hover:bg-indigo-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
           >
-            {printing ? '⏳ ...' : inv.printBtn}
+            {printing ? '...' : <><Printer size={13} /> {inv.printBtn}</>}
           </button>
           <button
             onClick={onClose}
@@ -246,7 +247,7 @@ export default function Invoice({ invoiceData, locale, onClose }) {
         </div>
 
         {/* Receipt preview */}
-        <div id="invoice-content" className="p-5 font-mono text-slate-900 max-h-[70vh] overflow-y-auto">
+        <div id="invoice-content" className="p-5 text-slate-900 max-h-[70vh] overflow-y-auto">
           <div className="text-center mb-4">
             <p className="text-base font-black tracking-tight">{t[locale].shopName}</p>
             <p className="text-[11px] text-slate-500 mt-0.5">{inv.receiptTitle}</p>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
+import { Store, Package, FolderOpen, Settings, ShoppingCart, X, CheckCircle2, AlertTriangle, Keyboard, Lock, History } from 'lucide-react';
 import StockManager from './StockManager';
 import SettingsManager from './SettingsManager';
 import SalesHistory from './SalesHistory';
@@ -341,7 +342,7 @@ export default function App() {
   if (backendStatus === 'error') {
     return (
       <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100vh', gap:'12px', fontFamily:'sans-serif' }}>
-        <p style={{ color:'#c00', fontSize:'18px', margin:0 }}>⚠ Backend failed to start</p>
+        <p style={{ color:'#c00', fontSize:'18px', margin:0, display:'flex', alignItems:'center', gap:'8px' }}><AlertTriangle size={18} />Backend failed to start</p>
         <p style={{ color:'#555', margin:0 }}>The database server did not respond after 12 seconds.</p>
         <p style={{ color:'#888', fontSize:'13px', margin:0 }}>Try restarting the app. If it keeps failing, reinstall.</p>
       </div>
@@ -392,7 +393,7 @@ export default function App() {
           <div className="w-10 h-10 flex items-center justify-center text-4xl flex-shrink-0">
             {storeIcon
               ? <img src={storeIcon} alt="store" className="w-10 h-10 rounded-xl object-cover" />
-              : '🏬'}
+              : <Store size={20} className="text-slate-400" />}
           </div>
           <div>
             <h1 className="text-base font-bold text-slate-900 tracking-tight font-display">{storeName || t[locale].shopName}</h1>
@@ -403,25 +404,25 @@ export default function App() {
             onClick={() => setView('STOCK')}
             className="px-3.5 py-1.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-all flex items-center gap-1.5"
           >
-            📦 {t[locale].manageInventory}
+            <Package size={14} /> {t[locale].manageInventory}
           </button>
           <button
             onClick={() => setView('HISTORY')}
             className="px-3.5 py-1.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-all flex items-center gap-1.5"
           >
-            🗂️ {t[locale].salesHistory.title}
+            <History size={14} /> {t[locale].salesHistory.title}
           </button>
           <button
             onClick={() => setView('SETTINGS')}
             className="px-3.5 py-1.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-all flex items-center gap-1.5"
           >
-            ⚙️ {t[locale].settings}
+            <Settings size={14} /> {t[locale].settings}
           </button>
         </div>
         <div className="flex items-center gap-2">
           <UpdateChecker />
           <div className="bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600">
-            {t[locale].exchangeRate}: <span className="font-bold text-slate-900 font-mono ml-1">$1 = {dynamicRate.toLocaleString()} ៛</span>
+            {t[locale].exchangeRate}: <span className="font-bold text-slate-900 ml-1">$1 = {dynamicRate.toLocaleString()} ៛</span>
           </div>
         </div>
       </header>
@@ -443,7 +444,9 @@ export default function App() {
                 }}
                 className={`text-xs font-bold px-3 py-2 rounded-xl transition-all ${showManualInput ? 'bg-slate-100 text-slate-700' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'}`}
               >
-                {showManualInput ? t[locale].closeManual : t[locale].typeManual}
+                {showManualInput
+                  ? <><Lock size={13} /> {t[locale].closeManual}</>
+                  : <><Keyboard size={13} /> {t[locale].typeManual}</>}
               </button>
             </div>
 
@@ -454,7 +457,7 @@ export default function App() {
                   value={barcodeInput}
                   onChange={(e) => setBarcodeInput(e.target.value)}
                   placeholder={t[locale].placeholderManual}
-                  className="flex-1 h-11 px-4 bg-slate-50 border border-slate-200 focus:bg-white text-slate-800 rounded-xl text-sm font-mono focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-50"
+                  className="flex-1 h-11 px-4 bg-slate-50 border border-slate-200 focus:bg-white text-slate-800 rounded-xl text-sm focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-50"
                   autoFocus
                 />
                 <button
@@ -471,7 +474,7 @@ export default function App() {
           <div className="bg-white rounded-2xl border border-slate-200/80 flex-1 flex flex-col overflow-hidden shadow-xs">
             <div className="px-5 py-3.5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center flex-shrink-0">
               <h2 className="text-sm font-bold text-slate-800 tracking-tight font-display">{t[locale].currentBasket}</h2>
-              <span className="text-xs bg-slate-200/80 text-slate-700 font-bold px-3 py-1 rounded-full font-mono">
+              <span className="text-xs bg-slate-200/80 text-slate-700 font-bold px-3 py-1 rounded-full">
                 {cart.reduce((a, b) => a + b.quantity, 0)} {t[locale].itemsCount}
               </span>
             </div>
@@ -479,7 +482,7 @@ export default function App() {
             <div className="flex-1 overflow-y-auto p-4 content-start">
               {cart.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-3 py-12">
-                  <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-2xl border border-slate-100">🛒</div>
+                  <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100 text-slate-300"><ShoppingCart size={28} /></div>
                   <p className="text-sm font-semibold text-slate-400 font-display">{t[locale].basketEmpty}</p>
                 </div>
               ) : (
@@ -488,22 +491,22 @@ export default function App() {
                     <div key={item.id} className="flex items-center justify-between p-3.5 bg-slate-50/60 hover:bg-slate-50 rounded-xl border border-slate-100/80 transition-colors">
                       <div className="flex-1 min-w-0 pr-4">
                         <h3 className="font-bold text-sm text-slate-900 truncate">{item.name}</h3>
-                        <p className="text-[11px] text-slate-400 font-mono tracking-wider mt-0.5">#{item.barcode}</p>
+                        <p className="text-[11px] text-slate-400 tracking-wider mt-0.5">#{item.barcode}</p>
                       </div>
                       <div className="flex items-center gap-5">
                         <div className="flex items-center border border-slate-200 bg-white rounded-xl p-0.5 shadow-2xs">
                           <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 flex items-center justify-center font-bold text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">&minus;</button>
-                          <span className="w-9 text-center font-bold text-sm text-slate-800 font-mono">{item.quantity}</span>
+                          <span className="w-9 text-center font-bold text-sm text-slate-800">{item.quantity}</span>
                           <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 flex items-center justify-center font-bold text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">+</button>
                         </div>
                         <div className="text-right w-24">
-                          <p className="font-bold text-sm text-slate-900 font-mono">
+                          <p className="font-bold text-sm text-slate-900">
                           {item.currency === 'KHR'
                             ? `${(item.price * item.quantity).toLocaleString()} ៛`
                             : `$${(Number(item.price) * item.quantity).toFixed(2)}`}
                         </p>
                         </div>
-                        <button onClick={() => removeItem(item.id)} className="text-slate-300 hover:text-rose-500 hover:bg-rose-50 w-8 h-8 rounded-lg transition-all text-xs flex items-center justify-center">✕</button>
+                        <button onClick={() => removeItem(item.id)} className="text-slate-300 hover:text-rose-500 hover:bg-rose-50 w-8 h-8 rounded-lg transition-all flex items-center justify-center"><X size={14} /></button>
                       </div>
                     </div>
                   ))}
@@ -524,7 +527,7 @@ export default function App() {
                   <span className="text-xs font-medium text-slate-400 font-display">
                     {mainCurrency === 'USD' ? t[locale].totalUsd : t[locale].totalKhr}
                   </span>
-                  <span className="text-3xl font-black tracking-tight font-mono">
+                  <span className="text-3xl font-black tracking-tight">
                     {mainCurrency === 'USD' ? `$${totalUsd.toFixed(2)}` : `${Math.round(totalKhr).toLocaleString()} ៛`}
                   </span>
                 </div>
@@ -532,7 +535,7 @@ export default function App() {
                   <span className="text-xs font-medium text-slate-400 font-display">
                     {mainCurrency === 'USD' ? t[locale].totalKhr : t[locale].totalUsd}
                   </span>
-                  <span className="text-base font-bold text-emerald-400 font-mono">
+                  <span className="text-base font-bold text-emerald-400">
                     {mainCurrency === 'USD' ? `${Math.round(totalKhr).toLocaleString()} ៛` : `$${totalUsd.toFixed(2)}`}
                   </span>
                 </div>
@@ -572,7 +575,7 @@ export default function App() {
                       type="number" 
                       value={amountPaidKhr} 
                       onChange={(e) => { setAmountPaidKhr(e.target.value); setCheckoutResult(null); }} 
-                      className="w-full mt-1.5 h-10 px-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-800 font-mono text-sm focus:ring-2 focus:ring-indigo-50 focus:outline-hidden focus:border-indigo-500" 
+                      className="w-full mt-1.5 h-10 px-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-800 text-sm focus:ring-2 focus:ring-indigo-50 focus:outline-hidden focus:border-indigo-500" 
                       placeholder="0" 
                       step="100"
                       min="0"
@@ -584,7 +587,7 @@ export default function App() {
                       type="number" 
                       value={amountPaidUsd} 
                       onChange={(e) => { setAmountPaidUsd(e.target.value); setCheckoutResult(null); }} 
-                      className="w-full mt-1.5 h-10 px-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-800 font-mono text-sm focus:ring-2 focus:ring-indigo-50 focus:outline-hidden focus:border-indigo-500" 
+                      className="w-full mt-1.5 h-10 px-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-800 text-sm focus:ring-2 focus:ring-indigo-50 focus:outline-hidden focus:border-indigo-500" 
                       placeholder="0.00" 
                       step="0.01"
                       min="0.00"
@@ -598,14 +601,14 @@ export default function App() {
                       <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide font-display">
                         {changeDueUsd >= 0 ? t[locale].changeDue : t[locale].shortage}
                       </span>
-                      <span className={`text-lg font-black font-mono ${changeDueUsd >= 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                      <span className={`text-lg font-black ${changeDueUsd >= 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
                         {mainCurrency === 'USD'
                           ? changeDueUsd >= 0 ? `$${changeDueUsd.toFixed(2)}` : `$${Math.abs(changeDueUsd).toFixed(2)}`
                           : changeDueUsd >= 0 ? `${Math.round(changeDueUsd * dynamicRate).toLocaleString()} ៛` : `${Math.round(Math.abs(changeDueUsd) * dynamicRate).toLocaleString()} ៛`
                         }
                       </span>
                     </div>
-                    <p className="text-[10px] font-bold font-mono text-right mt-0.5 text-slate-400">
+                    <p className="text-[10px] font-bold text-right mt-0.5 text-slate-400">
                       {mainCurrency === 'USD' 
                         ? `${Math.round(changeDueUsd * dynamicRate).toLocaleString()} ៛` 
                         : `$${changeDueUsd.toFixed(2)} USD`
@@ -646,7 +649,7 @@ export default function App() {
                     </div>
                     <div className="text-center">
                       <p className="font-bold text-xs text-slate-800 font-display">{t[locale].scanToPay}</p>
-                      <p className="text-[10px] text-rose-500 font-bold font-mono mt-0.5">{t[locale].ref}: {activeKhqr.md5_hash.substring(0, 8).toUpperCase()}</p>
+                      <p className="text-[10px] text-rose-500 font-bold mt-0.5">{t[locale].ref}: {activeKhqr.md5_hash.substring(0, 8).toUpperCase()}</p>
                       <p className="text-[9px] text-slate-400 mt-2 font-display animate-pulse">{t[locale].waitingPayment}</p>
                     </div>
                   </>
@@ -660,11 +663,11 @@ export default function App() {
           <div className="mt-5 space-y-3 flex-shrink-0">
             {checkoutResult && (
               <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 p-3.5 rounded-xl flex items-start gap-2.5">
-                <span className="text-base">✅</span>
+                <CheckCircle2 size={16} className="text-emerald-600 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <p className="font-bold text-xs text-emerald-900 font-display">{t[locale].orderSaved}</p>
                   {checkoutResult.change_due_khr > 0 && (
-                    <p className="text-base font-black text-emerald-600 font-mono mt-0.5">{checkoutResult.change_due_khr.toLocaleString()} ៛</p>
+                    <p className="text-base font-black text-emerald-600 mt-0.5">{checkoutResult.change_due_khr.toLocaleString()} ៛</p>
                   )}
                 </div>
               </div>

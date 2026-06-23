@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Store, Globe, ArrowLeftRight, Wallet, Smartphone, Banknote, CheckCircle2, AlertTriangle, AlertOctagon } from 'lucide-react';
 import { translations as t } from './locales';
 
 export default function SettingsManager({ onBackToRegister, currentLocale, onLocaleChange, mainCurrency, onCurrencyChange }) {
@@ -103,7 +104,7 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
           onClick={onBackToRegister}
           className="px-3.5 py-1.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-all flex items-center gap-1.5 cursor-pointer"
         >
-          ← {currentTranslations.register || 'Register'}
+          <ArrowLeft size={14} />
         </button>
         <div>
           <h1 className="text-xl font-bold text-slate-900 tracking-tight font-display">
@@ -126,8 +127,8 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
 
             {/* Section: Store Profile */}
             <div>
-              <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 mb-4 font-display">
-                {s.storeProfileHeader || '🏪 Store Profile'}
+              <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 mb-4 font-display flex items-center gap-1.5">
+                <Store size={14} />{s.storeProfileHeader || 'Store Profile'}
               </h2>
               <div className="flex gap-4 items-start">
                 {/* Icon upload */}
@@ -135,7 +136,7 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
                   <div className="w-16 h-16 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center bg-slate-50 overflow-hidden">
                     {settings.store_icon
                       ? <img src={settings.store_icon} alt="store icon" className="w-full h-full object-cover" />
-                      : <span className="text-2xl">🏬</span>}
+                      : <Store size={24} className="text-slate-400" />}
                   </div>
                   <label className="text-[10px] font-bold text-indigo-600 uppercase tracking-wide cursor-pointer hover:text-indigo-800 transition-colors">
                     {s.uploadIcon || 'Upload'}
@@ -183,8 +184,8 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
 
             {/* Section: Language Selection */}
             <div>
-              <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 mb-4 font-display">
-                {s.languageHeader || '🌐 Language'}
+              <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 mb-4 font-display flex items-center gap-1.5">
+                <Globe size={14} />{s.languageHeader || 'Language'}
               </h2>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide font-display">
                 {s.terminalLang || 'Terminal Display Language'}
@@ -218,12 +219,12 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
             {/* Section: Base Currency Configuration (CRITICAL FIELD) */}
             <div className={`p-4 rounded-xl transition-all duration-300 ${isCurrencyChanged ? 'bg-amber-50/70 border border-amber-200' : ''}`}>
               <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-4">
-                <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider font-display">
-                  {s.currencyHeader || '💱 Currency'}
+                <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider font-display flex items-center gap-1.5">
+                  <ArrowLeftRight size={14} />{s.currencyHeader || 'Currency'}
                 </h2>
                 {isCurrencyChanged && (
                   <span className="px-2.5 py-0.5 bg-amber-500 text-[10px] font-black text-white rounded-md tracking-wider uppercase animate-pulse">
-                    {s.criticalBadge || '⚠️ CRITICAL CHANGE'}
+                    <AlertTriangle size={10} className="inline mr-1" />{s.criticalBadge || 'CRITICAL CHANGE'}
                   </span>
                 )}
               </div>
@@ -240,7 +241,7 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
                       : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                   }`}
                 >
-                  💵 {currentTranslations.mainCurrencyUsd || 'US Dollar (USD)'}
+                  <Banknote size={16} /> {currentTranslations.mainCurrencyUsd || 'US Dollar (USD)'}
                 </button>
                 <button
                   type="button"
@@ -259,12 +260,12 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
             {/* Section: Financial Parameters (CRITICAL FIELD) */}
             <div className={`p-4 rounded-xl transition-all duration-300 ${isExchangeRateChanged ? 'bg-amber-50/70 border border-amber-200' : ''}`}>
               <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-4">
-                <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider font-display">
-                  {s.financialsHeader || '💰 Financials'}
+                <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider font-display flex items-center gap-1.5">
+                  <Wallet size={14} />{s.financialsHeader || 'Financials'}
                 </h2>
                 {isExchangeRateChanged && (
                   <span className="px-2.5 py-0.5 bg-amber-500 text-[10px] font-black text-white rounded-md tracking-wider uppercase animate-pulse">
-                    {s.criticalBadge || '⚠️ CRITICAL CHANGE'}
+                    <AlertTriangle size={10} className="inline mr-1" />{s.criticalBadge || 'CRITICAL CHANGE'}
                   </span>
                 )}
               </div>
@@ -276,7 +277,7 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
                   type="number"
                   value={settings.exchange_rate}
                   onChange={(e) => setSettings({...settings, exchange_rate: e.target.value})}
-                  className="w-full mt-1.5 p-2.5 border border-slate-200 bg-slate-50 rounded-lg text-sm font-bold tracking-wide font-mono focus:outline-none focus:border-indigo-500"
+                  className="w-full mt-1.5 p-2.5 border border-slate-200 bg-slate-50 rounded-lg text-sm font-bold tracking-wide focus:outline-none focus:border-indigo-500"
                   placeholder="4100"
                 />
                 <p className="text-xs text-slate-400 mt-1 font-display">
@@ -288,12 +289,12 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
             {/* Section: KHQR Profiles (WHOLE SEGMENT MARKED AS CRITICAL RE-ROUTING LAYER) */}
             <div className={`p-4 rounded-xl transition-all duration-300 ${hasKhqrChanges ? 'bg-amber-50/70 border border-amber-200' : ''}`}>
               <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-4">
-                <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider font-display">
-                  {s.bakongHeader || '📱 KHQR Profile'}
+                <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider font-display flex items-center gap-1.5">
+                  <Smartphone size={14} />{s.bakongHeader || 'KHQR Profile'}
                 </h2>
                 {hasKhqrChanges && (
                   <span className="px-2.5 py-0.5 bg-amber-500 text-[10px] font-black text-white rounded-md tracking-wider uppercase animate-pulse">
-                    {s.criticalBadge || '⚠️ CRITICAL CHANGE'}
+                    <AlertTriangle size={10} className="inline mr-1" />{s.criticalBadge || 'CRITICAL CHANGE'}
                   </span>
                 )}
               </div>
@@ -309,7 +310,7 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
                     type="text"
                     value={settings.bakong_account_id}
                     onChange={(e) => setSettings({...settings, bakong_account_id: e.target.value})}
-                    className={`w-full mt-1.5 p-2.5 border bg-slate-50 rounded-lg text-sm font-mono text-indigo-600 focus:outline-none focus:border-indigo-500 ${isBakongAccountIdChanged ? 'border-amber-300 ring-2 ring-amber-100/50' : 'border-slate-200'}`}
+                    className={`w-full mt-1.5 p-2.5 border bg-slate-50 rounded-lg text-sm text-indigo-600 focus:outline-none focus:border-indigo-500 ${isBakongAccountIdChanged ? 'border-amber-300 ring-2 ring-amber-100/50' : 'border-slate-200'}`}
                     placeholder="store_account@abaa"
                   />
                 </div>
@@ -349,7 +350,7 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
             <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between flex-shrink-0 animate-fadeIn">
               {saveSuccess ? (
                 <span className="text-emerald-600 text-sm font-bold flex items-center gap-1.5 font-display">
-                  ✅ {s.saveSuccess || 'Changes stored securely!'}
+                  <CheckCircle2 size={16} /> {s.saveSuccess || 'Changes stored securely!'}
                 </span>
               ) : <div />}
               
@@ -376,7 +377,7 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fadeIn">
           <div className={`bg-white rounded-2xl border shadow-xl max-w-sm w-full overflow-hidden p-6 space-y-4 transform scale-100 transition-all ${hasCriticalChanges ? 'border-amber-300 ring-4 ring-amber-50' : 'border-slate-200'}`}>
             <div className={`flex items-center gap-3 ${hasCriticalChanges ? 'text-red-500' : 'text-amber-500'}`}>
-              <span className="text-2xl">{hasCriticalChanges ? '🚨' : '⚠️'}</span>
+              {hasCriticalChanges ? <AlertOctagon size={24} /> : <AlertTriangle size={24} />}
               <h3 className="text-base font-bold text-slate-900 font-display">
                 {hasCriticalChanges 
                   ? (s.criticalPopupTitle || 'WARNING: Critical Shift')
