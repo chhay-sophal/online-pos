@@ -361,7 +361,7 @@ export default function StockManager({
           <div className="h-4 w-px bg-slate-200" />
           <button
             onClick={() => setLowStock((v) => !v)}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 ${
               lowStock
                 ? "bg-amber-500 text-white"
                 : "bg-slate-100 text-slate-500 hover:bg-slate-200"
@@ -370,7 +370,7 @@ export default function StockManager({
             <AlertTriangle size={12} /> {labels.lowStock || "Low Stock"}
           </button>
           <span className="ml-auto text-[11px] text-slate-400">
-            {displayed.length} products
+            {displayed.length} {labels.products || "products"}
           </span>
         </div>
 

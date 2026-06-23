@@ -141,6 +141,8 @@ export const translations = {
       inventoryLedger: 'សៀវភៅបញ្ជីស្តុកទំនិញ',
       lowStock: 'ស្តុកទំនិញនៅកម្រិតទាប',
       noProducts: 'មិនមានទំនិញណាមួយនៅឡើយទេ។ សូមបញ្ចូលទំនិញថ្មីដើម្បីចាប់ផ្តើមការលក់។',
+      noResults: 'គ្មានផលិតផលដែលកំពុងស្វែងរក',
+      products: 'ផលិតផល',
     },
 
     // SETTINGS SPECIFIC LABELS
@@ -315,6 +317,8 @@ export const translations = {
       inventoryLedger: 'Inventory Stock Ledger',
       lowStock: 'Low Stock',
       noProducts: 'No products in inventory yet. Please register new products to start selling.',
+      noResults: 'No matching products',
+      products: 'products',
     },
 
     // SETTINGS SPECIFIC LABELS

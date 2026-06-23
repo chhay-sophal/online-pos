@@ -442,7 +442,7 @@ export default function App() {
                   setShowManualInput(!showManualInput);
                   setBarcodeInput('');
                 }}
-                className={`text-xs font-bold px-3 py-2 rounded-xl transition-all ${showManualInput ? 'bg-slate-100 text-slate-700' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'}`}
+                className={`text-xs font-bold px-3 py-2 rounded-xl transition-all flex items-center gap-1 ${showManualInput ? 'bg-slate-100 text-slate-700' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'}`}
               >
                 {showManualInput
                   ? <><Lock size={13} /> {t[locale].closeManual}</>
