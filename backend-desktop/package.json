@@ -18,6 +18,9 @@
   "devDependencies": {
     "@yao-pkg/pkg": "^5.12.0"
   },
+  "overrides": {
+    "forwarded": "0.2.0"
+  },
   "pkg": {
     "assets": [
       "node_modules/sql.js/dist/sql-wasm.wasm"
