@@ -72,7 +72,7 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
     else { setSortCol(col); setSortDir('asc'); }
   };
   const si = (col) => (
-    <span className={`inline-flex items-center ml-1 ${sortCol === col ? 'text-indigo-400' : 'text-slate-300'}`}>
+    <span className={`inline-flex items-center ml-1 ${sortCol === col ? 'text-indigo-400' : 'text-slate-300 dark:text-slate-600'}`}>
       {sortCol === col ? (sortDir === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />) : <ChevronsUpDown size={11} />}
     </span>
   );
@@ -211,27 +211,27 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
   const PERIODS = ['today', 'week', 'month', 'all'];
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-slate-50 flex flex-col font-sans text-slate-900 antialiased">
+    <div className="h-screen w-screen overflow-hidden bg-slate-50 dark:bg-slate-900 flex flex-col font-sans text-slate-900 dark:text-white antialiased">
 
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-6 py-3.5 flex justify-between items-center shadow-xs flex-shrink-0">
+      <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-3.5 flex justify-between items-center shadow-xs flex-shrink-0">
         <div className="flex items-center gap-3.5">
           <button
             onClick={onBackToRegister}
-            className="px-3.5 py-1.5 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-all flex items-center gap-1.5"
+            className="px-3.5 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 border border-transparent hover:border-slate-200 dark:hover:border-slate-600 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 transition-all flex items-center gap-1.5"
           >
             <ArrowLeft size={14} />
           </button>
-          <div className="h-6 w-px bg-slate-200" />
+          <div className="h-6 w-px bg-slate-200 dark:bg-slate-700" />
           <div>
-            <h1 className="text-base font-bold text-slate-900 tracking-tight">{s.title}</h1>
-            <p className="text-[11px] font-bold text-indigo-600 tracking-wider uppercase">{s.subtitle}</p>
+            <h1 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">{s.title}</h1>
+            <p className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 tracking-wider uppercase">{s.subtitle}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-3 flex-1 mx-6">
           <div className="relative flex-1 max-w-sm">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
             </svg>
             <input
@@ -239,12 +239,12 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
               value={search}
               onChange={e => { setSearch(e.target.value); setExpandedId(null); }}
               placeholder={s.searchPlaceholder}
-              className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-100 border border-transparent focus:border-indigo-300 focus:bg-white rounded-xl outline-none transition-all placeholder:text-slate-400 font-medium"
+              className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-700 border border-transparent focus:border-indigo-300 dark:focus:border-indigo-600 focus:bg-white dark:focus:bg-slate-900 rounded-xl outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium text-slate-900 dark:text-slate-200"
             />
             {search && (
               <button
                 onClick={() => { setSearch(''); setExpandedId(null); }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
               ><X size={12} /></button>
             )}
           </div>
@@ -253,19 +253,19 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
         <button
           onClick={() => setShowExportModal(true)}
           disabled={orders.length === 0}
-          className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 flex-shrink-0"
+          className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-100 dark:disabled:bg-slate-700 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 flex-shrink-0 mr-1"
         >
           <Download size={14} /> Excel
         </button>
 
         {/* Period tabs */}
-        <div className="flex gap-1 bg-slate-100 p-1 rounded-xl flex-shrink-0">
+        <div className="flex gap-1 bg-slate-100 dark:bg-slate-700 p-1 rounded-xl flex-shrink-0">
           {PERIODS.map(p => (
             <button
               key={p}
               onClick={() => { setPeriod(p); setExpandedId(null); }}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                period === p ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-700'
+                period === p ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
               }`}
             >
               {s[p]}
@@ -275,46 +275,46 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
       </header>
 
       {/* Summary bar */}
-      <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center gap-8 flex-shrink-0">
+      <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4 flex items-center gap-8 flex-shrink-0">
         <div>
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">{s.totalRevenue}</p>
-          <p className="text-2xl font-black text-slate-900 leading-none">
+          <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">{s.totalRevenue}</p>
+          <p className="text-2xl font-black text-slate-900 dark:text-white leading-none">
             {mainCurrency === 'USD'
               ? `$${totalRevenue.toFixed(2)}`
               : `${Math.round(totalRevenue * dynamicRate).toLocaleString()} ៛`}
           </p>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
             {mainCurrency === 'USD'
               ? `${Math.round(totalRevenue * dynamicRate).toLocaleString()} ៛`
               : `$${totalRevenue.toFixed(2)}`}
           </p>
         </div>
 
-        <div className="h-12 w-px bg-slate-200" />
+        <div className="h-12 w-px bg-slate-200 dark:bg-slate-700" />
 
         <div>
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">{s.totalOrders}</p>
-          <p className="text-2xl font-black text-slate-900 leading-none">{filteredOrders.length}</p>
+          <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">{s.totalOrders}</p>
+          <p className="text-2xl font-black text-slate-900 dark:text-white leading-none">{filteredOrders.length}</p>
         </div>
 
-        <div className="h-12 w-px bg-slate-200" />
+        <div className="h-12 w-px bg-slate-200 dark:bg-slate-700" />
 
         <div className="flex gap-2">
           {[
-            { key: 'CASH',       label: s.cashSales,     Icon: Banknote,   count: cashCount,     activeClass: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
-            { key: 'KHQR',       label: s.khqrSales,     Icon: Smartphone, count: khqrCount,     activeClass: 'bg-rose-50 border-rose-200 text-rose-700' },
-            { key: 'STATIC_QR',  label: s.staticQrSales, Icon: Building2,  count: staticQrCount, activeClass: 'bg-amber-50 border-amber-200 text-amber-700' },
+            { key: 'CASH',       label: s.cashSales,     Icon: Banknote,   count: cashCount,     activeClass: 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400' },
+            { key: 'KHQR',       label: s.khqrSales,     Icon: Smartphone, count: khqrCount,     activeClass: 'bg-rose-50 dark:bg-red-950/40 border-rose-200 dark:border-rose-800 text-rose-700' },
+            { key: 'STATIC_QR',  label: s.staticQrSales, Icon: Building2,  count: staticQrCount, activeClass: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 text-amber-700' },
           ].map(({ key, label, Icon, count, activeClass }) => (
             <button
               key={key}
               onClick={() => setPayFilter(f => f === key ? 'all' : key)}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all ${
-                payFilter === key ? activeClass : 'border-transparent hover:bg-slate-50 text-slate-700'
+                payFilter === key ? activeClass : 'border-transparent hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200'
               }`}
             >
               <Icon size={18} />
               <div className="text-left">
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{label}</p>
+                <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{label}</p>
                 <p className="text-sm font-black">{count}</p>
               </div>
             </button>
@@ -326,26 +326,26 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
       <div className="flex-1 overflow-hidden flex flex-col">
         <div className="flex-1 overflow-y-auto p-5">
           {loading ? (
-            <div className="flex items-center justify-center h-full text-slate-400 text-sm font-bold">{s.loading}</div>
+            <div className="flex items-center justify-center h-full text-slate-400 dark:text-slate-500 text-sm font-bold">{s.loading}</div>
           ) : orders.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400">
-              <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400"><FolderOpen size={28} /></div>
+            <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400 dark:text-slate-500">
+              <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center text-slate-400 dark:text-slate-500"><FolderOpen size={28} /></div>
               <p className="text-sm font-semibold">{s.noOrders}</p>
             </div>
           ) : filteredOrders.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400">
-              <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400"><Search size={28} /></div>
+            <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400 dark:text-slate-500">
+              <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center text-slate-400 dark:text-slate-500"><Search size={28} /></div>
               <p className="text-sm font-semibold">{s.noResults}</p>
             </div>
           ) : (
             <div className="space-y-2 max-w-4xl mx-auto">
               {/* Table header */}
-              <div className="grid grid-cols-[56px_1fr_80px_120px_80px_32px] gap-3 px-4 py-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                <button className="text-left cursor-pointer hover:text-slate-600 select-none" onClick={() => toggleSort('id')}>{s.orderId}{si('id')}</button>
-                <button className="text-left cursor-pointer hover:text-slate-600 select-none" onClick={() => toggleSort('date')}>{s.dateTime}{si('date')}</button>
-                <button className="text-center cursor-pointer hover:text-slate-600 select-none" onClick={() => toggleSort('itemCount')}>{s.itemCount}{si('itemCount')}</button>
-                <button className="text-right cursor-pointer hover:text-slate-600 select-none" onClick={() => toggleSort('total')}>{s.total}{si('total')}</button>
-                <button className="text-center cursor-pointer hover:text-slate-600 select-none" onClick={() => toggleSort('payment')}>{s.payment}{si('payment')}</button>
+              <div className="grid grid-cols-[56px_1fr_80px_120px_80px_32px] gap-3 px-4 py-2 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                <button className="text-left cursor-pointer hover:text-slate-600 dark:hover:text-slate-300 select-none" onClick={() => toggleSort('id')}>{s.orderId}{si('id')}</button>
+                <button className="text-left cursor-pointer hover:text-slate-600 dark:hover:text-slate-300 select-none" onClick={() => toggleSort('date')}>{s.dateTime}{si('date')}</button>
+                <button className="text-center cursor-pointer hover:text-slate-600 dark:hover:text-slate-300 select-none" onClick={() => toggleSort('itemCount')}>{s.itemCount}{si('itemCount')}</button>
+                <button className="text-right cursor-pointer hover:text-slate-600 dark:hover:text-slate-300 select-none" onClick={() => toggleSort('total')}>{s.total}{si('total')}</button>
+                <button className="text-center cursor-pointer hover:text-slate-600 dark:hover:text-slate-300 select-none" onClick={() => toggleSort('payment')}>{s.payment}{si('payment')}</button>
                 <span />
               </div>
 
@@ -370,17 +370,17 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
 
         {/* Pagination footer — always visible at the bottom */}
         {!loading && totalPages > 1 && (
-          <div className="bg-white border-t border-slate-200 px-6 py-3 flex items-center justify-between flex-shrink-0">
-            <span className="text-xs text-slate-400 font-medium">
+          <div className="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 px-6 py-3 flex items-center justify-between flex-shrink-0">
+            <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
               {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filteredOrders.length)} of {filteredOrders.length}
             </span>
             <div className="flex items-center gap-1">
-              <button onClick={() => setPage(p => p - 1)} disabled={page === 1} className="px-2.5 py-1.5 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center"><ChevronLeft size={14} /></button>
+              <button onClick={() => setPage(p => p - 1)} disabled={page === 1} className="px-2.5 py-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center"><ChevronLeft size={14} /></button>
               {pageNums.map((n, i) => n === '...'
-                ? <span key={`e${i}`} className="px-1 text-slate-300 text-xs">…</span>
-                : <button key={n} onClick={() => setPage(n)} className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${page === n ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}>{n}</button>
+                ? <span key={`e${i}`} className="px-1 text-slate-300 dark:text-slate-600 text-xs">…</span>
+                : <button key={n} onClick={() => setPage(n)} className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${page === n ? 'bg-indigo-600 text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>{n}</button>
               )}
-              <button onClick={() => setPage(p => p + 1)} disabled={page === totalPages} className="px-2.5 py-1.5 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center"><ChevronRight size={14} /></button>
+              <button onClick={() => setPage(p => p + 1)} disabled={page === totalPages} className="px-2.5 py-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center"><ChevronRight size={14} /></button>
             </div>
           </div>
         )}
@@ -398,23 +398,23 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
       {deleteConfirmId !== null && (() => {
         const order = orders.find(o => o.id === deleteConfirmId);
         return (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl border border-red-200 shadow-xl max-w-sm w-full p-6 space-y-4">
+          <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-red-200 dark:border-red-800 shadow-xl max-w-sm w-full p-6 space-y-4">
               <div className="flex items-center gap-3">
                 <AlertTriangle size={24} className="text-amber-500 flex-shrink-0" />
-                <h3 className="text-base font-bold text-slate-900 font-display">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white font-display">
                   {s.voidWarningTitle || 'Void This Order?'}
                 </h3>
               </div>
-              <p className="text-sm text-slate-600 leading-relaxed">
+              <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
                 {s.voidWarningBody || 'Order'}{' '}
-                <span className="font-bold text-slate-800">#{String(deleteConfirmId).padStart(4, '0')}</span>
+                <span className="font-bold text-slate-800 dark:text-slate-100">#{String(deleteConfirmId).padStart(4, '0')}</span>
                 {' '}{s.voidWarningBody2 || 'will be removed from the sales history and excluded from revenue totals. This cannot be undone.'}
               </p>
               <div className="flex justify-end gap-2 pt-1">
                 <button
                   onClick={() => setDeleteConfirmId(null)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                  className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold transition-colors cursor-pointer"
                 >
                   {s.cancel || 'Cancel'}
                 </button>
@@ -432,21 +432,21 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
 
       {/* EXPORT MODAL */}
       {showExportModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-xl w-full max-w-sm flex flex-col overflow-hidden">
+        <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl w-full max-w-sm flex flex-col overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-700/50">
               <div>
-                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Export Sales to Excel</h3>
-                <p className="text-[11px] text-slate-400 mt-0.5">Choose a date range and columns</p>
+                <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">Export Sales to Excel</h3>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Choose a date range and columns</p>
               </div>
-              <button onClick={() => setShowExportModal(false)} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"><X size={14} /></button>
+              <button onClick={() => setShowExportModal(false)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"><X size={14} /></button>
             </div>
 
             <div className="px-5 py-4 space-y-5 overflow-y-auto max-h-[70vh]">
               {/* Date range */}
               <div>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Date Range</p>
+                <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Date Range</p>
                 {/* Quick presets */}
                 <div className="flex flex-wrap gap-1.5 mb-3">
                   {[
@@ -459,7 +459,7 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
                     <button
                       key={preset}
                       onClick={() => applyExportPreset(preset)}
-                      className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 transition-all cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 hover:text-indigo-700 dark:hover:text-indigo-300 transition-all cursor-pointer"
                     >
                       {label}
                     </button>
@@ -468,23 +468,23 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
                 {/* Date inputs */}
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">From</label>
+                    <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1">From</label>
                     <input
                       type="date"
                       value={exportDateFrom}
                       onChange={e => setExportDateFrom(e.target.value)}
                       max={exportDateTo || undefined}
-                      className="w-full px-2.5 py-1.5 border border-slate-200 rounded-xl text-xs text-slate-700 outline-none focus:border-indigo-300 bg-slate-50"
+                      className="w-full px-2.5 py-1.5 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-200 outline-none focus:border-indigo-300 dark:focus:border-indigo-600 bg-slate-50 dark:bg-slate-800"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">To</label>
+                    <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1">To</label>
                     <input
                       type="date"
                       value={exportDateTo}
                       onChange={e => setExportDateTo(e.target.value)}
                       min={exportDateFrom || undefined}
-                      className="w-full px-2.5 py-1.5 border border-slate-200 rounded-xl text-xs text-slate-700 outline-none focus:border-indigo-300 bg-slate-50"
+                      className="w-full px-2.5 py-1.5 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-200 outline-none focus:border-indigo-300 dark:focus:border-indigo-600 bg-slate-50 dark:bg-slate-800"
                     />
                   </div>
                 </div>
@@ -495,7 +495,7 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
 
               {/* Payment filter */}
               <div>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Payment</p>
+                <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Payment</p>
                 <div className="flex gap-1.5">
                   {[
                     { value: 'all',  label: 'All' },
@@ -506,7 +506,7 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
                     <button
                       key={value}
                       onClick={() => setExportPayment(value)}
-                      className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${exportPayment === value ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                      className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${exportPayment === value ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'}`}
                     >
                       {label}
                     </button>
@@ -517,23 +517,23 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
               {/* Columns */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Columns</p>
+                  <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Columns</p>
                   <div className="flex gap-2">
-                    <button onClick={() => setExportCols(Object.fromEntries(EXPORT_COL_DEFS.map(c => [c.key, true])))} className="text-[11px] font-bold text-indigo-500 hover:text-indigo-700 cursor-pointer">All</button>
-                    <span className="text-slate-200">|</span>
-                    <button onClick={() => setExportCols(Object.fromEntries(EXPORT_COL_DEFS.map(c => [c.key, false])))} className="text-[11px] font-bold text-slate-400 hover:text-slate-600 cursor-pointer">None</button>
+                    <button onClick={() => setExportCols(Object.fromEntries(EXPORT_COL_DEFS.map(c => [c.key, true])))} className="text-[11px] font-bold text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-300 cursor-pointer">All</button>
+                    <span className="text-slate-200 dark:text-slate-600">|</span>
+                    <button onClick={() => setExportCols(Object.fromEntries(EXPORT_COL_DEFS.map(c => [c.key, false])))} className="text-[11px] font-bold text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer">None</button>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-1.5">
                   {EXPORT_COL_DEFS.map(({ key, header }) => (
-                    <label key={key} className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer transition-all ${exportCols[key] ? 'border-indigo-300 bg-indigo-50' : 'border-slate-200 hover:border-slate-300'}`}>
+                    <label key={key} className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer transition-all ${exportCols[key] ? 'border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-950/40' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'}`}>
                       <input
                         type="checkbox"
                         checked={exportCols[key]}
                         onChange={() => setExportCols(prev => ({ ...prev, [key]: !prev[key] }))}
                         className="accent-indigo-600"
                       />
-                      <span className="text-xs font-semibold text-slate-700">{header}</span>
+                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">{header}</span>
                     </label>
                   ))}
                 </div>
@@ -541,19 +541,19 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
             </div>
 
             {/* Footer */}
-            <div className="px-5 py-3.5 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
-              <span className="text-[11px] text-slate-400">
+            <div className="px-5 py-3.5 border-t border-slate-100 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-between">
+              <span className="text-[11px] text-slate-400 dark:text-slate-500">
                 {Object.values(exportCols).filter(Boolean).length} cols
                 {exportDateFrom && exportDateTo ? ` · ${exportDateFrom} → ${exportDateTo}` : ' · all time'}
               </span>
               <div className="flex gap-2">
-                <button onClick={() => setShowExportModal(false)} className="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 font-bold rounded-xl text-xs cursor-pointer transition-colors">
+                <button onClick={() => setShowExportModal(false)} className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl text-xs cursor-pointer transition-colors">
                   Cancel
                 </button>
                 <button
                   onClick={exportOrders}
                   disabled={exporting || Object.values(exportCols).every(v => !v)}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold rounded-xl text-xs cursor-pointer transition-colors flex items-center gap-1.5"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 dark:disabled:bg-slate-700 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold rounded-xl text-xs cursor-pointer transition-colors flex items-center gap-1.5"
                 >
                   {exporting ? '...' : <><Download size={14} /> Export</>}
                 </button>
@@ -572,25 +572,25 @@ function OrderRow({ order, s, dynamicRate, mainCurrency, locale, expanded, onTog
   const totalKhr = Math.round(totalUsd * dynamicRate);
 
   return (
-    <div className={`bg-white rounded-2xl border transition-all overflow-hidden ${expanded ? 'border-indigo-200 shadow-sm' : 'border-slate-200/80 hover:border-slate-300'}`}>
+    <div className={`bg-white dark:bg-slate-800 rounded-2xl border transition-all overflow-hidden ${expanded ? 'border-indigo-200 dark:border-indigo-800 shadow-sm' : 'border-slate-200/80 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600'}`}>
       {/* Row summary */}
       <button
         onClick={onToggle}
         className="w-full grid grid-cols-[56px_1fr_80px_120px_80px_32px] gap-3 px-4 py-3.5 items-center text-left"
       >
-        <span className="font-black text-sm text-indigo-600">#{String(order.id).padStart(4, '0')}</span>
+        <span className="font-black text-sm text-indigo-600 dark:text-indigo-400">#{String(order.id).padStart(4, '0')}</span>
 
-        <span className="text-sm text-slate-700 font-medium truncate">{formatDateTime(order.created_at)}</span>
+        <span className="text-sm text-slate-700 dark:text-slate-200 font-medium truncate">{formatDateTime(order.created_at)}</span>
 
-        <span className="text-sm text-slate-600 font-bold text-center">
+        <span className="text-sm text-slate-600 dark:text-slate-300 font-bold text-center">
           {itemCount}
         </span>
 
         <div className="text-right">
-          <p className="text-sm font-black text-slate-900">
+          <p className="text-sm font-black text-slate-900 dark:text-white">
             {mainCurrency === 'USD' ? `$${totalUsd.toFixed(2)}` : `${totalKhr.toLocaleString()} ៛`}
           </p>
-          <p className="text-[10px] text-slate-400">
+          <p className="text-[10px] text-slate-400 dark:text-slate-500">
             {mainCurrency === 'USD' ? `${totalKhr.toLocaleString()} ៛` : `$${totalUsd.toFixed(2)}`}
           </p>
         </div>
@@ -598,10 +598,10 @@ function OrderRow({ order, s, dynamicRate, mainCurrency, locale, expanded, onTog
         <div className="flex justify-center">
           <span className={`px-2 py-1 rounded-lg text-[10px] font-bold ${
             order.payment_method === 'CASH'
-              ? 'bg-emerald-50 text-emerald-700'
+              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400'
               : order.payment_method === 'KHQR'
-              ? 'bg-rose-50 text-rose-700'
-              : 'bg-amber-50 text-amber-700'
+              ? 'bg-rose-50 dark:bg-red-950/40 text-rose-700'
+              : 'bg-amber-50 dark:bg-amber-950/30 text-amber-700'
           }`}>
             {order.payment_method === 'CASH'
               ? s.cash
@@ -613,15 +613,15 @@ function OrderRow({ order, s, dynamicRate, mainCurrency, locale, expanded, onTog
           </span>
         </div>
 
-        <span className={`inline-block w-2 h-2 border-r-2 border-b-2 border-slate-400 transition-transform ${expanded ? 'rotate-45' : '-rotate-45'}`} />
+        <span className={`inline-block w-2 h-2 border-r-2 border-b-2 border-slate-400 dark:border-slate-500 transition-transform ${expanded ? 'rotate-45' : '-rotate-45'}`} />
       </button>
 
       {/* Expanded item details */}
       {expanded && (
-        <div className="border-t border-slate-100 px-4 pb-4 pt-3 bg-slate-50/50">
+        <div className="border-t border-slate-100 dark:border-slate-700/50 px-4 pb-4 pt-3 bg-slate-50/50 dark:bg-slate-900/50">
           {/* Items table */}
           <div className="mb-3">
-            <div className="grid grid-cols-[1fr_48px_80px_80px] gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1.5 px-1">
+            <div className="grid grid-cols-[1fr_48px_80px_80px] gap-2 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1.5 px-1">
               <span>{s.item}</span>
               <span className="text-center">{s.qty}</span>
               <span className="text-right">{s.unitPrice}</span>
@@ -630,14 +630,14 @@ function OrderRow({ order, s, dynamicRate, mainCurrency, locale, expanded, onTog
             <div className="space-y-1">
               {(order.items || []).filter(i => i.product_name).map((item, idx) => (
                 <div key={idx} className="grid grid-cols-[1fr_48px_80px_80px] gap-2 text-xs px-1 py-0.5">
-                  <span className="text-slate-800 font-medium truncate">{item.product_name}</span>
-                  <span className="text-center text-slate-600 font-bold">{item.quantity}</span>
-                  <span className="text-right text-slate-600">
+                  <span className="text-slate-800 dark:text-slate-100 font-medium truncate">{item.product_name}</span>
+                  <span className="text-center text-slate-600 dark:text-slate-300 font-bold">{item.quantity}</span>
+                  <span className="text-right text-slate-600 dark:text-slate-300">
                     {item.currency === 'KHR'
                       ? `${parseFloat(item.price).toLocaleString()} ៛`
                       : `$${parseFloat(item.price).toFixed(2)}`}
                   </span>
-                  <span className="text-right text-slate-900 font-bold">
+                  <span className="text-right text-slate-900 dark:text-white font-bold">
                     {item.currency === 'KHR'
                       ? `${(parseFloat(item.price) * item.quantity).toLocaleString()} ៛`
                       : `$${(parseFloat(item.price) * item.quantity).toFixed(2)}`}
@@ -648,40 +648,40 @@ function OrderRow({ order, s, dynamicRate, mainCurrency, locale, expanded, onTog
           </div>
 
           {/* Grand total */}
-          <div className="border-t-2 border-dashed border-slate-200 pt-2.5 mb-2.5 flex justify-between items-baseline">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">{s.total}</span>
+          <div className="border-t-2 border-dashed border-slate-200 dark:border-slate-700 pt-2.5 mb-2.5 flex justify-between items-baseline">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{s.total}</span>
             <div className="text-right">
-              <p className="text-sm font-black text-slate-900">
+              <p className="text-sm font-black text-slate-900 dark:text-white">
                 {mainCurrency === 'USD' ? `$${totalUsd.toFixed(2)}` : `${totalKhr.toLocaleString()} ៛`}
               </p>
-              <p className="text-[10px] text-slate-400">
+              <p className="text-[10px] text-slate-400 dark:text-slate-500">
                 {mainCurrency === 'USD' ? `${totalKhr.toLocaleString()} ៛` : `$${totalUsd.toFixed(2)}`}
               </p>
             </div>
           </div>
 
           {/* Payment breakdown */}
-          <div className="border-t border-slate-200 pt-2.5 space-y-1 text-xs">
+          <div className="border-t border-slate-200 dark:border-slate-700 pt-2.5 space-y-1 text-xs">
             {mainCurrency === 'KHR' && parseFloat(order.amount_paid_khr) > 0 && (
-              <div className="flex justify-between text-slate-500">
+              <div className="flex justify-between text-slate-500 dark:text-slate-400">
                 <span>{s.paidKhr}</span>
                 <span>{parseFloat(order.amount_paid_khr).toLocaleString()} ៛</span>
               </div>
             )}
             {parseFloat(order.amount_paid_usd) > 0 && (
-              <div className="flex justify-between text-slate-500">
+              <div className="flex justify-between text-slate-500 dark:text-slate-400">
                 <span>{s.paidUsd}</span>
                 <span>${parseFloat(order.amount_paid_usd).toFixed(2)}</span>
               </div>
             )}
             {mainCurrency === 'USD' && parseFloat(order.amount_paid_khr) > 0 && (
-              <div className="flex justify-between text-slate-500">
+              <div className="flex justify-between text-slate-500 dark:text-slate-400">
                 <span>{s.paidKhr}</span>
                 <span>{parseFloat(order.amount_paid_khr).toLocaleString()} ៛</span>
               </div>
             )}
             {parseFloat(order.change_given_khr) > 0 && (
-              <div className="flex justify-between font-bold text-emerald-700">
+              <div className="flex justify-between font-bold text-emerald-700 dark:text-emerald-400">
                 <span>{s.change}</span>
                 <span>{parseFloat(order.change_given_khr).toLocaleString()} ៛</span>
               </div>
@@ -692,13 +692,13 @@ function OrderRow({ order, s, dynamicRate, mainCurrency, locale, expanded, onTog
           <div className="mt-3 flex justify-between items-center">
             <button
               onClick={onDelete}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-xl text-xs transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 font-bold rounded-xl text-xs transition-colors cursor-pointer"
             >
               <Trash2 size={14} /> {s.voidOrder || 'Void Order'}
             </button>
             <button
               onClick={onInvoice}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 font-bold rounded-xl text-xs transition-colors cursor-pointer"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.75 19.2m.72-5.371L6 13.5m12 .329c.24.03.48.062.72.096m-.72-.096a42.415 42.415 0 0 0-10.56 0m10.56 0L17.25 19.2m-.72-5.371L18 13.5M12 3v9m0 0-3-3m3 3 3-3" />

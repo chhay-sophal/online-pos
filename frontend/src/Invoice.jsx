@@ -225,11 +225,11 @@ export default function Invoice({ invoiceData, locale, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-xs mx-4 overflow-hidden"
+        className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-xs mx-4 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Action bar */}
-        <div className="flex gap-2 p-4 border-b border-slate-100 bg-slate-50">
+        <div className="flex gap-2 p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
           <button
             onClick={handlePrint}
             disabled={printing}
@@ -240,39 +240,39 @@ export default function Invoice({ invoiceData, locale, onClose }) {
           <button
             onClick={onClose}
             disabled={printing}
-            className="px-4 py-2.5 bg-slate-200 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-300 transition-colors disabled:opacity-60"
+            className="px-4 py-2.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl text-xs hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors disabled:opacity-60"
           >
             {inv.closeBtn}
           </button>
         </div>
 
         {/* Receipt preview */}
-        <div id="invoice-content" className="p-5 text-slate-900 max-h-[70vh] overflow-y-auto">
+        <div id="invoice-content" className="p-5 text-slate-900 dark:text-white max-h-[70vh] overflow-y-auto">
           <div className="text-center mb-4">
             <p className="text-base font-black tracking-tight">{t[locale].shopName}</p>
-            <p className="text-[11px] text-slate-500 mt-0.5">{inv.receiptTitle}</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{inv.receiptTitle}</p>
           </div>
 
-          <div className="border-t-2 border-dashed border-slate-300 mb-3" />
+          <div className="border-t-2 border-dashed border-slate-300 dark:border-slate-600 mb-3" />
 
           <div className="text-[11px] space-y-1 mb-3">
             <div className="flex justify-between">
-              <span className="text-slate-500">{inv.orderId}</span>
+              <span className="text-slate-500 dark:text-slate-400">{inv.orderId}</span>
               <span className="font-bold">#{String(order_id).padStart(5, '0')}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500">{inv.date}</span>
+              <span className="text-slate-500 dark:text-slate-400">{inv.date}</span>
               <span>{dateStr}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500">{inv.time}</span>
+              <span className="text-slate-500 dark:text-slate-400">{inv.time}</span>
               <span>{timeStr}</span>
             </div>
           </div>
 
-          <div className="border-t border-dashed border-slate-300 mb-3" />
+          <div className="border-t border-dashed border-slate-300 dark:border-slate-600 mb-3" />
 
-          <div className="flex text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1.5">
+          <div className="flex text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1.5">
             <span className="flex-1">{inv.item}</span>
             <span className="w-6 text-center">{inv.qty}</span>
             <span className="w-20 text-right">{inv.unitPrice || 'Unit'}</span>
@@ -284,7 +284,7 @@ export default function Invoice({ invoiceData, locale, onClose }) {
               <div key={item.id} className="flex items-start text-[11px]">
                 <span className="flex-1 leading-tight pr-2 break-words">{item.name}</span>
                 <span className="w-6 text-center font-bold shrink-0">{item.quantity}</span>
-                <span className="w-20 text-right text-slate-400 shrink-0">
+                <span className="w-20 text-right text-slate-400 dark:text-slate-500 shrink-0">
                   {fmtUnit(item.price, item.currency)}
                 </span>
                 <span className="w-20 text-right font-bold shrink-0">
@@ -294,42 +294,42 @@ export default function Invoice({ invoiceData, locale, onClose }) {
             ))}
           </div>
 
-          <div className="border-t-2 border-dashed border-slate-300 mb-3" />
+          <div className="border-t-2 border-dashed border-slate-300 dark:border-slate-600 mb-3" />
 
           <div className="space-y-1 text-[11px] mb-3">
             <div className="flex justify-between font-black text-sm">
               <span>{inv.total}</span>
               <span>${totalUsd.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-slate-500">
+            <div className="flex justify-between text-slate-500 dark:text-slate-400">
               <span />
               <span>{Math.round(totalKhr).toLocaleString()} ៛</span>
             </div>
           </div>
 
-          <div className="border-t border-dashed border-slate-300 mb-3" />
+          <div className="border-t border-dashed border-slate-300 dark:border-slate-600 mb-3" />
 
           <div className="space-y-1 text-[11px] mb-3">
             <div className="flex justify-between">
-              <span className="text-slate-500">{inv.payment}</span>
+              <span className="text-slate-500 dark:text-slate-400">{inv.payment}</span>
               <span className="font-bold">{paymentMethod === 'CASH' ? inv.cash : paymentMethod === 'KHQR' ? inv.khqr : bankName ? `${inv.staticQr} — ${bankName}` : inv.staticQr}</span>
             </div>
             {paymentMethod === 'CASH' && (
               <>
                 {amountPaidUsd > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-slate-500">{inv.paidUsd}</span>
+                    <span className="text-slate-500 dark:text-slate-400">{inv.paidUsd}</span>
                     <span>${Number(amountPaidUsd).toFixed(2)}</span>
                   </div>
                 )}
                 {amountPaidKhr > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-slate-500">{inv.paidKhr}</span>
+                    <span className="text-slate-500 dark:text-slate-400">{inv.paidKhr}</span>
                     <span>{Number(amountPaidKhr).toLocaleString()} ៛</span>
                   </div>
                 )}
                 {changeDueKhr > 0 && (
-                  <div className="flex justify-between font-bold text-emerald-700">
+                  <div className="flex justify-between font-bold text-emerald-700 dark:text-emerald-400">
                     <span>{inv.change}</span>
                     <span>{changeDueKhr.toLocaleString()} ៛</span>
                   </div>
@@ -338,9 +338,9 @@ export default function Invoice({ invoiceData, locale, onClose }) {
             )}
           </div>
 
-          <div className="border-t-2 border-dashed border-slate-300 mb-4" />
+          <div className="border-t-2 border-dashed border-slate-300 dark:border-slate-600 mb-4" />
 
-          <p className="text-center text-[11px] text-slate-500 font-semibold">{inv.thankYou}</p>
+          <p className="text-center text-[11px] text-slate-500 dark:text-slate-400 font-semibold">{inv.thankYou}</p>
         </div>
       </div>
     </div>
