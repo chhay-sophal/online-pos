@@ -17,6 +17,7 @@ const DB_PATH = path.join(DB_DIR, 'database.sqlite');
 if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR, { recursive: true });
 
 let db;
+let SQL;
 
 function query(sql, params = []) {
   const stmt = db.prepare(sql);
@@ -282,6 +283,94 @@ app.get('/api/payments/check-status/:md5_hash', async (req, res) => {
   }
 });
 
+// --- BACKUP ---
+
+const BACKUP_DIR = path.join(DB_DIR, 'backups');
+const MAX_BACKUPS = 7;
+
+function createBackup() {
+  if (!fs.existsSync(DB_PATH)) return;
+  if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
+
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const stamp = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+  const backupPath = path.join(BACKUP_DIR, `database-${stamp}.sqlite`);
+  fs.copyFileSync(DB_PATH, backupPath);
+  console.log(`💾 Backup saved: ${backupPath}`);
+
+  const backups = fs.readdirSync(BACKUP_DIR)
+    .filter(f => f.startsWith('database-') && f.endsWith('.sqlite'))
+    .sort();
+  if (backups.length > MAX_BACKUPS) {
+    backups.slice(0, backups.length - MAX_BACKUPS).forEach(f => {
+      fs.unlinkSync(path.join(BACKUP_DIR, f));
+    });
+  }
+}
+
+function runMigrations() {
+  db.run(SCHEMA);
+  const tableInfo = (table) => query(`PRAGMA table_info(${table})`).map(c => c.name);
+  const productCols = tableInfo('products');
+  if (!productCols.includes('cost_price')) {
+    db.run('ALTER TABLE products ADD COLUMN cost_price REAL NOT NULL DEFAULT 0');
+  }
+  if (!productCols.includes('is_deleted')) {
+    db.run('ALTER TABLE products ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0');
+  }
+  if (!tableInfo('orders').includes('is_deleted')) {
+    db.run('ALTER TABLE orders ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0');
+  }
+}
+
+// --- BACKUP ROUTES ---
+
+app.get('/api/backup/list', (req, res) => {
+  if (!fs.existsSync(BACKUP_DIR)) return res.json([]);
+  const files = fs.readdirSync(BACKUP_DIR)
+    .filter(f => f.startsWith('database-') && f.endsWith('.sqlite'))
+    .sort()
+    .reverse();
+  const list = files.map(name => {
+    const stats = fs.statSync(path.join(BACKUP_DIR, name));
+    return { name, size: stats.size };
+  });
+  res.json(list);
+});
+
+app.post('/api/backup/now', (req, res) => {
+  try {
+    saveDb();
+    createBackup();
+    res.json({ message: 'Backup created' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/backup/restore', (req, res) => {
+  const { filename } = req.body;
+  if (!filename || !/^database-\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.sqlite$/.test(filename)) {
+    return res.status(400).json({ error: 'Invalid filename' });
+  }
+  const backupPath = path.join(BACKUP_DIR, filename);
+  if (!fs.existsSync(backupPath)) return res.status(404).json({ error: 'Backup not found' });
+
+  try {
+    saveDb();
+    createBackup();
+    const fileBuffer = fs.readFileSync(backupPath);
+    db = new SQL.Database(fileBuffer);
+    runMigrations();
+    saveDb();
+    console.log(`♻️  Database restored from ${filename}`);
+    res.json({ message: 'Database restored successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // --- STARTUP ---
 
 async function start() {
@@ -300,9 +389,11 @@ async function start() {
     wasmDir = path.join(__dirname, 'node_modules/sql.js/dist/');
   }
 
-  const SQL = await initSqlJs({
+  SQL = await initSqlJs({
     locateFile: file => path.join(wasmDir, file)
   });
+
+  createBackup();
 
   if (fs.existsSync(DB_PATH)) {
     const fileBuffer = fs.readFileSync(DB_PATH);
@@ -313,21 +404,7 @@ async function start() {
     console.log(`🆕 Created new database at ${DB_PATH}`);
   }
 
-  db.run(SCHEMA);
-
-  // Idempotent migrations — add columns that may not exist in older databases.
-  const tableInfo = (table) => query(`PRAGMA table_info(${table})`).map(c => c.name);
-  const productCols = tableInfo('products');
-  if (!productCols.includes('cost_price')) {
-    db.run('ALTER TABLE products ADD COLUMN cost_price REAL NOT NULL DEFAULT 0');
-  }
-  if (!productCols.includes('is_deleted')) {
-    db.run('ALTER TABLE products ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0');
-  }
-  if (!tableInfo('orders').includes('is_deleted')) {
-    db.run('ALTER TABLE orders ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0');
-  }
-
+  runMigrations();
   saveDb();
 
   const server = app.listen(PORT, '127.0.0.1', () => {

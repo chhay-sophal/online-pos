@@ -175,7 +175,21 @@ export const translations = {
       popupTitle: 'ការបញ្ជាក់ការរក្សាទុក',
       popupBody: 'តើអ្នកប្រាកដជាចង់ធ្វើបច្ចុប្បន្នភាព និងរក្សាទុកការកំណត់ប្រព័ន្ធទាំងនេះមែនទេ?',
       popupCancel: 'បោះបង់',
-      popupConfirm: 'យល់ព្រម'
+      popupConfirm: 'យល់ព្រម',
+
+      backupSection: {
+        header: 'ការបម្រុងទុកទិន្នន័យ',
+        backupNow: 'បម្រុងទុកឥឡូវ',
+        noBackups: 'មិនទាន់មានការបម្រុងទុកឡើយ។ ការបម្រុងទុកនឹងបង្កើតស្វ័យប្រវត្តិរៀងរាល់ពេលបើកកម្មវិធី។',
+        restore: 'ស្ដារ',
+        restoreConfirmTitle: 'ស្ដារការបម្រុងទុកនេះ?',
+        restoreConfirmBody: 'ទិន្នន័យបច្ចុប្បន្នទាំងអស់នឹងត្រូវបានជំនួសដោយការបម្រុងទុកដែលបានជ្រើស។ សកម្មភាពនេះមិនអាចត្រឡប់វិញបានឡើយ។',
+        restoreConfirmBtn: 'យល់ព្រម ស្ដារ',
+        cancel: 'បោះបង់',
+        backupSuccess: 'បានបម្រុងទុកដោយជោគជ័យ!',
+        restoreSuccess: 'បានស្ដារទិន្នន័យ! សូមបើកកម្មវិធីឡើងវិញ។',
+        reloadBtn: 'បើកឡើងវិញ',
+      }
     }
   },
   en: {
@@ -351,7 +365,21 @@ export const translations = {
       popupTitle: 'Confirm Settings Change',
       popupBody: 'Are you sure you want to update and commit these system configuration changes?',
       popupCancel: 'Cancel',
-      popupConfirm: 'Yes, Save'
+      popupConfirm: 'Yes, Save',
+
+      backupSection: {
+        header: 'Data Backup',
+        backupNow: 'Backup Now',
+        noBackups: 'No backups yet. A backup is created automatically each time the app starts.',
+        restore: 'Restore',
+        restoreConfirmTitle: 'Restore this backup?',
+        restoreConfirmBody: 'All current data will be replaced with the selected backup. This cannot be undone.',
+        restoreConfirmBtn: 'Yes, Restore',
+        cancel: 'Cancel',
+        backupSuccess: 'Backup created successfully!',
+        restoreSuccess: 'Database restored! Please reload the app.',
+        reloadBtn: 'Reload App',
+      }
     }
   }
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Store, Globe, ArrowLeftRight, Wallet, Smartphone, Banknote, CheckCircle2, AlertTriangle, AlertOctagon } from 'lucide-react';
+import { ArrowLeft, Store, Globe, ArrowLeftRight, Wallet, Smartphone, Banknote, CheckCircle2, AlertTriangle, AlertOctagon, HardDrive, RotateCcw } from 'lucide-react';
 import { translations as t } from './locales';
 
 export default function SettingsManager({ onBackToRegister, currentLocale, onLocaleChange, mainCurrency, onCurrencyChange }) {
@@ -20,11 +20,19 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
   const [showConfirmPopup, setShowConfirmPopup] = useState(false);
   const [appVersion, setAppVersion] = useState('');
 
+  const [backups, setBackups] = useState([]);
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [backupSuccess, setBackupSuccess] = useState(false);
+  const [restoreConfirm, setRestoreConfirm] = useState(null);
+  const [restoreLoading, setRestoreLoading] = useState(false);
+  const [restoreSuccess, setRestoreSuccess] = useState(false);
+
   const IS_TAURI = Boolean(window.__TAURI_INTERNALS__ ?? window.__TAURI__);
   const BACKEND_URL = (import.meta.env.PROD && !IS_TAURI) ? '' : 'http://localhost:5050';
 
   useEffect(() => {
     fetchSettings();
+    fetchBackups();
   }, []);
 
   useEffect(() => {
@@ -46,6 +54,51 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
     } catch (err) {
       console.error('Failed to load store settings:', err);
     }
+  };
+
+  const fetchBackups = async () => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/backup/list`);
+      if (res.ok) setBackups(await res.json());
+    } catch {}
+  };
+
+  const handleBackupNow = async () => {
+    setBackupLoading(true);
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/backup/now`, { method: 'POST' });
+      if (res.ok) {
+        setBackupSuccess(true);
+        setTimeout(() => setBackupSuccess(false), 3000);
+        fetchBackups();
+      }
+    } catch {}
+    setBackupLoading(false);
+  };
+
+  const handleConfirmRestore = async () => {
+    if (!restoreConfirm) return;
+    setRestoreLoading(true);
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/backup/restore`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: restoreConfirm }),
+      });
+      if (res.ok) {
+        setRestoreConfirm(null);
+        setRestoreSuccess(true);
+      }
+    } catch {}
+    setRestoreLoading(false);
+  };
+
+  const formatBackupName = (filename) => {
+    const m = filename.match(/database-(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})\.sqlite/);
+    if (!m) return filename;
+    const [, y, mo, d, h, min] = m;
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${months[parseInt(mo, 10) - 1]} ${parseInt(d, 10)}, ${y} · ${h}:${min}`;
   };
 
   const handleSubmitTrigger = (e) => {
@@ -343,6 +396,70 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
                 </div>
               </div>
             </div>
+
+            {/* Section: Data Backup */}
+            <div>
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/50 pb-2 mb-4">
+                <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider font-display flex items-center gap-1.5">
+                  <HardDrive size={14} />{s.backupSection?.header || 'Data Backup'}
+                </h2>
+                <button
+                  type="button"
+                  onClick={handleBackupNow}
+                  disabled={backupLoading}
+                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <HardDrive size={12} />
+                  {backupLoading ? '...' : (s.backupSection?.backupNow || 'Backup Now')}
+                </button>
+              </div>
+
+              {backupSuccess && (
+                <div className="mb-3 p-2.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg text-xs text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1.5">
+                  <CheckCircle2 size={13} />{s.backupSection?.backupSuccess || 'Backup created successfully!'}
+                </div>
+              )}
+
+              {restoreSuccess ? (
+                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-xs text-amber-700 dark:text-amber-400 font-bold flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 size={13} />{s.backupSection?.restoreSuccess || 'Database restored! Please reload the app.'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => window.location.reload()}
+                    className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[10px] font-bold cursor-pointer whitespace-nowrap"
+                  >
+                    {s.backupSection?.reloadBtn || 'Reload App'}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {backups.length === 0 ? (
+                    <p className="text-xs text-slate-400 dark:text-slate-500 text-center py-4 leading-relaxed">
+                      {s.backupSection?.noBackups || 'No backups yet. A backup is created automatically each time the app starts.'}
+                    </p>
+                  ) : (
+                    backups.map(b => (
+                      <div key={b.name} className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-700">
+                        <div>
+                          <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{formatBackupName(b.name)}</p>
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500">{(b.size / 1024).toFixed(1)} KB</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setRestoreConfirm(b.name)}
+                          className="px-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-amber-400 hover:text-amber-600 dark:hover:text-amber-400 text-slate-500 dark:text-slate-400 rounded-lg text-[10px] font-bold transition-colors flex items-center gap-1 cursor-pointer"
+                        >
+                          <RotateCcw size={10} />{s.backupSection?.restore || 'Restore'}
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
           </div>
 
           {/* Fixed Action Control Footer Layout Segment */}
@@ -405,6 +522,44 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
                 className={`px-4 py-2 text-white rounded-xl text-xs font-bold transition-colors shadow-xs ${hasCriticalChanges ? 'bg-amber-500 hover:bg-amber-600' : 'bg-indigo-600 hover:bg-indigo-700'}`}
               >
                 {s.popupConfirm || 'Yes, Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RESTORE CONFIRMATION DIALOG */}
+      {restoreConfirm && (
+        <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-amber-300 dark:border-amber-700 ring-4 ring-amber-50 dark:ring-amber-900/30 shadow-xl max-w-sm w-full p-6 space-y-4">
+            <div className="flex items-center gap-3 text-amber-500">
+              <RotateCcw size={24} />
+              <h3 className="text-base font-bold text-slate-900 dark:text-white font-display">
+                {s.backupSection?.restoreConfirmTitle || 'Restore this backup?'}
+              </h3>
+            </div>
+            <p className="text-sm text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
+              {s.backupSection?.restoreConfirmBody || 'All current data will be replaced with the selected backup. This cannot be undone.'}
+            </p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 font-mono bg-slate-50 dark:bg-slate-900 rounded-lg px-3 py-2 break-all">
+              {formatBackupName(restoreConfirm)}
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setRestoreConfirm(null)}
+                disabled={restoreLoading}
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+              >
+                {s.backupSection?.cancel || 'Cancel'}
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmRestore}
+                disabled={restoreLoading}
+                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-colors shadow-xs cursor-pointer"
+              >
+                {restoreLoading ? '...' : (s.backupSection?.restoreConfirmBtn || 'Yes, Restore')}
               </button>
             </div>
           </div>
