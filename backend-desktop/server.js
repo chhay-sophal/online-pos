@@ -326,6 +326,25 @@ function runMigrations() {
 
 // --- BACKUP ROUTES ---
 
+app.post('/api/backup/export', (req, res) => {
+  const { filename, destPath } = req.body;
+  if (!filename || !/^database-\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.sqlite$/.test(filename)) {
+    return res.status(400).json({ error: 'Invalid filename' });
+  }
+  if (!destPath || typeof destPath !== 'string') {
+    return res.status(400).json({ error: 'Invalid destination path' });
+  }
+  const srcPath = path.join(BACKUP_DIR, filename);
+  if (!fs.existsSync(srcPath)) return res.status(404).json({ error: 'Backup not found' });
+
+  try {
+    fs.copyFileSync(srcPath, destPath);
+    res.json({ message: 'Exported successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/backup/list', (req, res) => {
   if (!fs.existsSync(BACKUP_DIR)) return res.json([]);
   const files = fs.readdirSync(BACKUP_DIR)

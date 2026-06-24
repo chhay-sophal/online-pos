@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Store, Globe, ArrowLeftRight, Wallet, Smartphone, Banknote, CheckCircle2, AlertTriangle, AlertOctagon, HardDrive, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Store, Globe, ArrowLeftRight, Wallet, Smartphone, Banknote, CheckCircle2, AlertTriangle, AlertOctagon, HardDrive, RotateCcw, Download } from 'lucide-react';
 import { translations as t } from './locales';
 
 export default function SettingsManager({ onBackToRegister, currentLocale, onLocaleChange, mainCurrency, onCurrencyChange }) {
@@ -26,6 +26,8 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
   const [restoreConfirm, setRestoreConfirm] = useState(null);
   const [restoreLoading, setRestoreLoading] = useState(false);
   const [restoreSuccess, setRestoreSuccess] = useState(false);
+  const [exportingFile, setExportingFile] = useState(null);
+  const [exportedFile, setExportedFile] = useState(null);
 
   const IS_TAURI = Boolean(window.__TAURI_INTERNALS__ ?? window.__TAURI__);
   const BACKEND_URL = (import.meta.env.PROD && !IS_TAURI) ? '' : 'http://localhost:5050';
@@ -91,6 +93,34 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
       }
     } catch {}
     setRestoreLoading(false);
+  };
+
+  const handleExport = async (filename) => {
+    if (!IS_TAURI) return;
+    setExportingFile(filename);
+    try {
+      const { save } = await import('@tauri-apps/plugin-dialog');
+      const destPath = await save({
+        defaultPath: filename,
+        filters: [{ name: 'SQLite Database', extensions: ['sqlite'] }],
+      });
+      if (!destPath) { setExportingFile(null); return; }
+      const res = await fetch(`${BACKEND_URL}/api/backup/export`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename, destPath }),
+      });
+      if (res.ok) {
+        setExportedFile(filename);
+        setTimeout(() => setExportedFile(null), 3000);
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Export failed');
+      }
+    } catch (err) {
+      alert('Export failed: ' + err.message);
+    }
+    setExportingFile(null);
   };
 
   const formatBackupName = (filename) => {
@@ -446,13 +476,34 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
                           <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{formatBackupName(b.name)}</p>
                           <p className="text-[10px] text-slate-400 dark:text-slate-500">{(b.size / 1024).toFixed(1)} KB</p>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => setRestoreConfirm(b.name)}
-                          className="px-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-amber-400 hover:text-amber-600 dark:hover:text-amber-400 text-slate-500 dark:text-slate-400 rounded-lg text-[10px] font-bold transition-colors flex items-center gap-1 cursor-pointer"
-                        >
-                          <RotateCcw size={10} />{s.backupSection?.restore || 'Restore'}
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          {IS_TAURI && (
+                            <button
+                              type="button"
+                              onClick={() => handleExport(b.name)}
+                              disabled={exportingFile === b.name}
+                              className={`px-2.5 py-1 border rounded-lg text-[10px] font-bold transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 ${
+                                exportedFile === b.name
+                                  ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400'
+                                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 text-slate-500 dark:text-slate-400'
+                              }`}
+                            >
+                              {exportedFile === b.name
+                                ? <><CheckCircle2 size={10} />{s.backupSection?.exportDone || 'Saved!'}</>
+                                : exportingFile === b.name
+                                  ? '...'
+                                  : <><Download size={10} />{s.backupSection?.export || 'Export'}</>
+                              }
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setRestoreConfirm(b.name)}
+                            className="px-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-amber-400 hover:text-amber-600 dark:hover:text-amber-400 text-slate-500 dark:text-slate-400 rounded-lg text-[10px] font-bold transition-colors flex items-center gap-1 cursor-pointer"
+                          >
+                            <RotateCcw size={10} />{s.backupSection?.restore || 'Restore'}
+                          </button>
+                        </div>
                       </div>
                     ))
                   )}
