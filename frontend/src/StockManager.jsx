@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useBackend } from "./BackendContext";
 import * as XLSX from "xlsx";
 import { ArrowLeft, X, Download, AlertTriangle, Package, Search, ChevronLeft, ChevronRight, Trash2, ChevronUp, ChevronDown, ChevronsUpDown, Pencil, Delete, Trash, Save, Plus } from 'lucide-react';
 import { translations as t } from "./locales";
@@ -11,6 +12,7 @@ export default function StockManager({
   mainCurrency = "USD",
   dynamicRate = 4100,
 }) {
+  const BACKEND_URL = useBackend();
   const [products, setProducts] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({
@@ -47,8 +49,6 @@ export default function StockManager({
     setPage(1);
   }, [search, sortCol, sortDir, currFilter, lowStock]);
 
-  const IS_TAURI = Boolean(window.__TAURI_INTERNALS__ ?? window.__TAURI__);
-  const BACKEND_URL = (import.meta.env.PROD && !IS_TAURI) ? '' : 'http://localhost:5050';
 
   const labels = t[currentLocale]?.stock || t["km"].stock;
 

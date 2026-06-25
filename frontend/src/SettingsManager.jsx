@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useBackend } from './BackendContext';
 import { ArrowLeft, Store, Globe, ArrowLeftRight, Wallet, Smartphone, Banknote, CheckCircle2, AlertTriangle, AlertOctagon, HardDrive, RotateCcw, Download, FolderOpen, X } from 'lucide-react';
 import { translations as t } from './locales';
 
 export default function SettingsManager({ onBackToRegister, currentLocale, onLocaleChange, mainCurrency, onCurrencyChange }) {
+  const BACKEND_URL = useBackend();
   const DEFAULT_SETTINGS = {
     store_name: '',
     store_icon: '',
@@ -32,7 +34,6 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
   const [cloudFolderSaving, setCloudFolderSaving] = useState(false);
 
   const IS_TAURI = Boolean(window.__TAURI_INTERNALS__ ?? window.__TAURI__);
-  const BACKEND_URL = (import.meta.env.PROD && !IS_TAURI) ? '' : 'http://localhost:5050';
 
   useEffect(() => {
     fetchSettings();

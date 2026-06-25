@@ -9,6 +9,7 @@ import SalesHistory from './SalesHistory';
 import Invoice from './Invoice';
 import { translations as t } from './locales';
 import UpdateChecker from './UpdateChecker';
+import BackendContext from './BackendContext';
 
 export default function App() {
   const [cart, setCart] = useState([]);
@@ -377,36 +378,41 @@ export default function App() {
 
   if (view === 'STOCK') {
     return (
-      <StockManager
-        onBackToRegister={() => setView('REGISTER')}
-        currentLocale={locale}
-        mainCurrency={mainCurrency}
-        dynamicRate={dynamicRate}
-      />
+      <BackendContext.Provider value={BACKEND_URL}>
+        <StockManager
+          onBackToRegister={() => setView('REGISTER')}
+          currentLocale={locale}
+          mainCurrency={mainCurrency}
+          dynamicRate={dynamicRate}
+        />
+      </BackendContext.Provider>
     );
   }
 
   if (view === 'HISTORY') {
     return (
-      <SalesHistory
-        onBackToRegister={() => setView('REGISTER')}
-        currentLocale={locale}
-        dynamicRate={dynamicRate}
-        mainCurrency={mainCurrency}
-      />
+      <BackendContext.Provider value={BACKEND_URL}>
+        <SalesHistory
+          onBackToRegister={() => setView('REGISTER')}
+          currentLocale={locale}
+          dynamicRate={dynamicRate}
+          mainCurrency={mainCurrency}
+        />
+      </BackendContext.Provider>
     );
   }
 
   if (view === 'SETTINGS') {
     return (
-      <SettingsManager
-        onBackToRegister={() => setView('REGISTER')}
-        currentLocale={locale}
-        onLocaleChange={setLocale}
-        mainCurrency={mainCurrency}
-        onCurrencyChange={setMainCurrency}
-        backendUrl={BACKEND_URL}
-      />
+      <BackendContext.Provider value={BACKEND_URL}>
+        <SettingsManager
+          onBackToRegister={() => setView('REGISTER')}
+          currentLocale={locale}
+          onLocaleChange={setLocale}
+          mainCurrency={mainCurrency}
+          onCurrencyChange={setMainCurrency}
+        />
+      </BackendContext.Provider>
     );
   }
 

@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useBackend } from './BackendContext';
 import * as XLSX from 'xlsx';
 import { ArrowLeft, X, Download, Banknote, Smartphone, Building2, FolderOpen, Search, ChevronLeft, ChevronRight, AlertTriangle, Trash2, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import Invoice from './Invoice';
 import { translations as t } from './locales';
 
 const PAGE_SIZE = 10;
-const IS_TAURI = Boolean(window.__TAURI_INTERNALS__ ?? window.__TAURI__);
-const BACKEND_URL = (import.meta.env.PROD && !IS_TAURI) ? '' : 'http://localhost:5050';
 
 function getPeriodRange(period) {
   const now = new Date();
@@ -18,6 +17,7 @@ function getPeriodRange(period) {
 }
 
 export default function SalesHistory({ onBackToRegister, currentLocale, dynamicRate, mainCurrency }) {
+  const BACKEND_URL = useBackend();
   const s = t[currentLocale].salesHistory;
 
   const [orders, setOrders] = useState([]);
