@@ -191,6 +191,9 @@ export const translations = {
         backupSuccess: 'បានបម្រុងទុកដោយជោគជ័យ!',
         restoreSuccess: 'បានស្ដារទិន្នន័យ! សូមបើកកម្មវិធីឡើងវិញ។',
         reloadBtn: 'បើកឡើងវិញ',
+        cloudFolderLabel: 'ថតឯកសារ Cloud',
+        chooseFolder: 'ជ្រើសរើសថត',
+        cloudFolderHint: 'មិនទាន់កំណត់ទេ។ ជ្រើសរើសថតរបស់ OneDrive, Google Drive ឬ Dropbox ដើម្បីបម្រុងទុកស្វ័យប្រវត្តិ។',
       }
     }
   },
@@ -383,6 +386,9 @@ export const translations = {
         backupSuccess: 'Backup created successfully!',
         restoreSuccess: 'Database restored! Please reload the app.',
         reloadBtn: 'Reload App',
+        cloudFolderLabel: 'Cloud Sync Folder',
+        chooseFolder: 'Choose Folder',
+        cloudFolderHint: 'Not set. Point to your OneDrive, Google Drive, or Dropbox folder to auto-sync backups.',
       }
     }
   }

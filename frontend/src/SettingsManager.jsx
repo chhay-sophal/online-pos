@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Store, Globe, ArrowLeftRight, Wallet, Smartphone, Banknote, CheckCircle2, AlertTriangle, AlertOctagon, HardDrive, RotateCcw, Download } from 'lucide-react';
+import { ArrowLeft, Store, Globe, ArrowLeftRight, Wallet, Smartphone, Banknote, CheckCircle2, AlertTriangle, AlertOctagon, HardDrive, RotateCcw, Download, FolderOpen, X } from 'lucide-react';
 import { translations as t } from './locales';
 
 export default function SettingsManager({ onBackToRegister, currentLocale, onLocaleChange, mainCurrency, onCurrencyChange }) {
@@ -28,6 +28,8 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
   const [restoreSuccess, setRestoreSuccess] = useState(false);
   const [exportingFile, setExportingFile] = useState(null);
   const [exportedFile, setExportedFile] = useState(null);
+  const [cloudFolder, setCloudFolder] = useState('');
+  const [cloudFolderSaving, setCloudFolderSaving] = useState(false);
 
   const IS_TAURI = Boolean(window.__TAURI_INTERNALS__ ?? window.__TAURI__);
   const BACKEND_URL = (import.meta.env.PROD && !IS_TAURI) ? '' : 'http://localhost:5050';
@@ -52,6 +54,7 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
         const data = await response.json();
         setSettings(prev => ({ ...prev, ...data }));
         setInitialSettings(data);
+        setCloudFolder(data.cloud_backup_folder || '');
       }
     } catch (err) {
       console.error('Failed to load store settings:', err);
@@ -121,6 +124,32 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
       alert('Export failed: ' + err.message);
     }
     setExportingFile(null);
+  };
+
+  const saveCloudFolder = async (folder) => {
+    setCloudFolderSaving(true);
+    try {
+      await fetch(`${BACKEND_URL}/api/settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cloud_backup_folder: folder }),
+      });
+      setCloudFolder(folder);
+    } catch {}
+    setCloudFolderSaving(false);
+  };
+
+  const handlePickCloudFolder = async () => {
+    if (!IS_TAURI) return;
+    try {
+      const { open } = await import('@tauri-apps/plugin-dialog');
+      const selected = await open({ directory: true, multiple: false, title: 'Choose cloud backup folder' });
+      if (selected) await saveCloudFolder(selected);
+    } catch {}
+  };
+
+  const handleClearCloudFolder = async () => {
+    await saveCloudFolder('');
   };
 
   const formatBackupName = (filename) => {
@@ -443,6 +472,47 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
                   {backupLoading ? '...' : (s.backupSection?.backupNow || 'Backup Now')}
                 </button>
               </div>
+
+              {/* Cloud backup folder picker */}
+              {IS_TAURI && (
+                <div className="mb-4 p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                      <FolderOpen size={12} />
+                      {s.backupSection?.cloudFolderLabel || 'Cloud Sync Folder'}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {cloudFolder && (
+                        <button
+                          type="button"
+                          onClick={handleClearCloudFolder}
+                          disabled={cloudFolderSaving}
+                          className="p-1 text-slate-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 transition-colors disabled:opacity-50 cursor-pointer"
+                          title="Remove folder"
+                        >
+                          <X size={12} />
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handlePickCloudFolder}
+                        disabled={cloudFolderSaving}
+                        className="px-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 text-slate-500 dark:text-slate-400 rounded-lg text-[10px] font-bold transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                      >
+                        <FolderOpen size={10} />
+                        {cloudFolderSaving ? '...' : (s.backupSection?.chooseFolder || 'Choose Folder')}
+                      </button>
+                    </div>
+                  </div>
+                  {cloudFolder ? (
+                    <p className="mt-1.5 text-[10px] text-indigo-600 dark:text-indigo-400 font-mono break-all leading-relaxed">{cloudFolder}</p>
+                  ) : (
+                    <p className="mt-1.5 text-[10px] text-slate-400 dark:text-slate-500 leading-relaxed">
+                      {s.backupSection?.cloudFolderHint || 'Not set. Point to your OneDrive, Google Drive, or Dropbox folder to auto-sync backups.'}
+                    </p>
+                  )}
+                </div>
+              )}
 
               {backupSuccess && (
                 <div className="mb-3 p-2.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg text-xs text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1.5">

@@ -88,7 +88,8 @@ const SCHEMA = `
   INSERT OR IGNORE INTO store_settings (key, value) VALUES
     ('exchange_rate', '4100'),
     ('locale', 'km'),
-    ('main_currency', 'USD');
+    ('main_currency', 'USD'),
+    ('cloud_backup_folder', '');
 `;
 
 // --- APP SETUP ---
@@ -295,7 +296,8 @@ function createBackup() {
   const now = new Date();
   const pad = n => String(n).padStart(2, '0');
   const stamp = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
-  const backupPath = path.join(BACKUP_DIR, `database-${stamp}.sqlite`);
+  const filename = `database-${stamp}.sqlite`;
+  const backupPath = path.join(BACKUP_DIR, filename);
   fs.copyFileSync(DB_PATH, backupPath);
   console.log(`💾 Backup saved: ${backupPath}`);
 
@@ -306,6 +308,21 @@ function createBackup() {
     backups.slice(0, backups.length - MAX_BACKUPS).forEach(f => {
       fs.unlinkSync(path.join(BACKUP_DIR, f));
     });
+  }
+
+  // Also copy to the user-configured cloud sync folder (e.g. OneDrive, Google Drive).
+  // Only runs after db is initialised (not the very first startup call).
+  if (db) {
+    try {
+      const rows = query("SELECT value FROM store_settings WHERE key = 'cloud_backup_folder'");
+      const cloudFolder = rows[0]?.value;
+      if (cloudFolder && fs.existsSync(cloudFolder)) {
+        fs.copyFileSync(DB_PATH, path.join(cloudFolder, filename));
+        console.log(`☁️  Cloud backup saved: ${path.join(cloudFolder, filename)}`);
+      }
+    } catch (err) {
+      console.error('Cloud backup failed:', err.message);
+    }
   }
 }
 
