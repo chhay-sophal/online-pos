@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 export default function UpdateChecker() {
   const IS_TAURI = Boolean(window.__TAURI_INTERNALS__ ?? window.__TAURI__);
+  const updateRef = useRef(null);
   const [updateInfo, setUpdateInfo] = useState(null);
   const [status, setStatus] = useState('idle'); // idle | available | downloading | installing | error
   const [progress, setProgress] = useState(0);
@@ -18,6 +19,7 @@ export default function UpdateChecker() {
         const { check } = await import('@tauri-apps/plugin-updater');
         const update = await check();
         if (cancelled || !update) return;
+        updateRef.current = update;
         setUpdateInfo({ version: update.version, body: update.body ?? '' });
         setStatus('available');
       } catch (err) {
@@ -36,9 +38,8 @@ export default function UpdateChecker() {
     setErrorMsg('');
 
     try {
-      const { check } = await import('@tauri-apps/plugin-updater');
       const { relaunch } = await import('@tauri-apps/plugin-process');
-      const update = await check();
+      const update = updateRef.current;
       if (!update) { setStatus('idle'); setShowModal(false); return; }
 
       let downloaded = 0;
