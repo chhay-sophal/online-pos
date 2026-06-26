@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useBackend } from './BackendContext';
 import * as XLSX from 'xlsx';
-import { ArrowLeft, X, Download, Banknote, Smartphone, Building2, FolderOpen, Search, ChevronLeft, ChevronRight, AlertTriangle, Trash2, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { ArrowLeft, X, Upload, Download, Banknote, Smartphone, Building2, FolderOpen, Search, ChevronLeft, ChevronRight, AlertTriangle, Trash2, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import Invoice from './Invoice';
 import { translations as t } from './locales';
 
@@ -19,6 +19,7 @@ function getPeriodRange(period) {
 export default function SalesHistory({ onBackToRegister, currentLocale, dynamicRate, mainCurrency }) {
   const BACKEND_URL = useBackend();
   const s = t[currentLocale].salesHistory;
+  const ex = s.export;
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -152,16 +153,16 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
   };
 
   const EXPORT_COL_DEFS = [
-    { key: 'orderId',   header: 'Order #',      wch: 10, val: (o) => o.id },
-    { key: 'date',      header: 'Date',          wch: 14, val: (o) => new Date(o.created_at).toLocaleDateString('en-US') },
-    { key: 'time',      header: 'Time',          wch: 10, val: (o) => new Date(o.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) },
-    { key: 'items',     header: 'Items',         wch: 8,  val: (o) => (o.items || []).filter(i => i.product_name).length },
-    { key: 'totalUsd',  header: 'Total (USD)',   wch: 12, val: (o) => parseFloat(o.total_amount) },
-    { key: 'totalKhr',  header: 'Total (KHR)',   wch: 14, val: (o) => Math.round(parseFloat(o.total_amount) * dynamicRate) },
-    { key: 'payment',   header: 'Payment',       wch: 10, val: (o) => o.payment_method },
-    { key: 'paidUsd',   header: 'Paid (USD)',    wch: 12, val: (o) => parseFloat(o.amount_paid_usd) || 0 },
-    { key: 'paidKhr',   header: 'Paid (KHR)',    wch: 12, val: (o) => parseFloat(o.amount_paid_khr) || 0 },
-    { key: 'changeKhr', header: 'Change (KHR)',  wch: 14, val: (o) => parseFloat(o.change_given_khr) || 0 },
+    { key: 'orderId',   header: 'Order #',      labelKey: 'colOrderId',   wch: 10, val: (o) => o.id },
+    { key: 'date',      header: 'Date',          labelKey: 'colDate',      wch: 14, val: (o) => new Date(o.created_at).toLocaleDateString('en-US') },
+    { key: 'time',      header: 'Time',          labelKey: 'colTime',      wch: 10, val: (o) => new Date(o.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) },
+    { key: 'items',     header: 'Items',         labelKey: 'colItems',     wch: 8,  val: (o) => (o.items || []).filter(i => i.product_name).length },
+    { key: 'totalUsd',  header: 'Total (USD)',   labelKey: 'colTotalUsd',  wch: 12, val: (o) => parseFloat(o.total_amount) },
+    { key: 'totalKhr',  header: 'Total (KHR)',   labelKey: 'colTotalKhr',  wch: 14, val: (o) => Math.round(parseFloat(o.total_amount) * dynamicRate) },
+    { key: 'payment',   header: 'Payment',       labelKey: 'colPayment',   wch: 10, val: (o) => o.payment_method },
+    { key: 'paidUsd',   header: 'Paid (USD)',    labelKey: 'colPaidUsd',   wch: 12, val: (o) => parseFloat(o.amount_paid_usd) || 0 },
+    { key: 'paidKhr',   header: 'Paid (KHR)',    labelKey: 'colPaidKhr',   wch: 12, val: (o) => parseFloat(o.amount_paid_khr) || 0 },
+    { key: 'changeKhr', header: 'Change (KHR)',  labelKey: 'colChangeKhr', wch: 14, val: (o) => parseFloat(o.change_given_khr) || 0 },
   ];
 
   const applyExportPreset = (preset) => {
@@ -255,7 +256,7 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
           disabled={orders.length === 0}
           className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-100 dark:disabled:bg-slate-700 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 flex-shrink-0 mr-1"
         >
-          <Download size={14} /> Excel
+          <Upload size={14} /> {ex.btnLabel}
         </button>
 
         {/* Period tabs */}
@@ -435,8 +436,8 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-700/50">
               <div>
-                <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">Export Sales to Excel</h3>
-                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Choose a date range and columns</p>
+                <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">{ex.title}</h3>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">{ex.subtitle}</p>
               </div>
               <button onClick={() => setShowExportModal(false)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"><X size={14} /></button>
             </div>
@@ -444,15 +445,15 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
             <div className="px-5 py-4 space-y-5 overflow-y-auto max-h-[70vh]">
               {/* Date range */}
               <div>
-                <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Date Range</p>
+                <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">{ex.sectionDateRange}</p>
                 {/* Quick presets */}
                 <div className="flex flex-wrap gap-1.5 mb-3">
                   {[
-                    { label: 'Today',      preset: 'today' },
-                    { label: 'Last 7d',    preset: '7d' },
-                    { label: 'Last 30d',   preset: '30d' },
-                    { label: 'This month', preset: 'month' },
-                    { label: 'All time',   preset: 'all' },
+                    { label: ex.presetToday, preset: 'today' },
+                    { label: ex.preset7d,    preset: '7d' },
+                    { label: ex.preset30d,   preset: '30d' },
+                    { label: ex.presetMonth, preset: 'month' },
+                    { label: ex.presetAll,   preset: 'all' },
                   ].map(({ label, preset }) => (
                     <button
                       key={preset}
@@ -466,7 +467,7 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
                 {/* Date inputs */}
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1">From</label>
+                    <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1">{ex.dateFrom}</label>
                     <input
                       type="date"
                       value={exportDateFrom}
@@ -476,7 +477,7 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1">To</label>
+                    <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1">{ex.dateTo}</label>
                     <input
                       type="date"
                       value={exportDateTo}
@@ -487,19 +488,19 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
                   </div>
                 </div>
                 {(!exportDateFrom && !exportDateTo) && (
-                  <p className="text-[11px] text-amber-600 font-semibold mt-1.5">No date filter — all orders will be exported</p>
+                  <p className="text-[11px] text-amber-600 font-semibold mt-1.5">{ex.noDateFilterWarning}</p>
                 )}
               </div>
 
               {/* Payment filter */}
               <div>
-                <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Payment</p>
+                <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">{ex.sectionPayment}</p>
                 <div className="flex gap-1.5">
                   {[
-                    { value: 'all',  label: 'All' },
-                    { value: 'CASH',      label: 'Cash' },
-                    { value: 'KHQR',      label: 'KHQR' },
-                    { value: 'STATIC_QR', label: 'Bank QR' },
+                    { value: 'all',       label: ex.payAll },
+                    { value: 'CASH',      label: ex.payCash },
+                    { value: 'KHQR',      label: ex.payKhqr },
+                    { value: 'STATIC_QR', label: ex.payBankQr },
                   ].map(({ value, label }) => (
                     <button
                       key={value}
@@ -515,15 +516,15 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
               {/* Columns */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Columns</p>
+                  <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{ex.sectionColumns}</p>
                   <div className="flex gap-2">
-                    <button onClick={() => setExportCols(Object.fromEntries(EXPORT_COL_DEFS.map(c => [c.key, true])))} className="text-[11px] font-bold text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-300 cursor-pointer">All</button>
+                    <button onClick={() => setExportCols(Object.fromEntries(EXPORT_COL_DEFS.map(c => [c.key, true])))} className="text-[11px] font-bold text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-300 cursor-pointer">{ex.selectAll}</button>
                     <span className="text-slate-200 dark:text-slate-600">|</span>
-                    <button onClick={() => setExportCols(Object.fromEntries(EXPORT_COL_DEFS.map(c => [c.key, false])))} className="text-[11px] font-bold text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer">None</button>
+                    <button onClick={() => setExportCols(Object.fromEntries(EXPORT_COL_DEFS.map(c => [c.key, false])))} className="text-[11px] font-bold text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer">{ex.selectNone}</button>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-1.5">
-                  {EXPORT_COL_DEFS.map(({ key, header }) => (
+                  {EXPORT_COL_DEFS.map(({ key, labelKey }) => (
                     <label key={key} className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer transition-all ${exportCols[key] ? 'border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-950/40' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'}`}>
                       <input
                         type="checkbox"
@@ -531,7 +532,7 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
                         onChange={() => setExportCols(prev => ({ ...prev, [key]: !prev[key] }))}
                         className="accent-indigo-600"
                       />
-                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">{header}</span>
+                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">{ex[labelKey]}</span>
                     </label>
                   ))}
                 </div>
@@ -541,19 +542,19 @@ export default function SalesHistory({ onBackToRegister, currentLocale, dynamicR
             {/* Footer */}
             <div className="px-5 py-3.5 border-t border-slate-100 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-between">
               <span className="text-[11px] text-slate-400 dark:text-slate-500">
-                {Object.values(exportCols).filter(Boolean).length} cols
-                {exportDateFrom && exportDateTo ? ` · ${exportDateFrom} → ${exportDateTo}` : ' · all time'}
+                {Object.values(exportCols).filter(Boolean).length} {ex.colsSuffix}
+                {exportDateFrom && exportDateTo ? ` · ${exportDateFrom} → ${exportDateTo}` : ` · ${ex.allTime}`}
               </span>
               <div className="flex gap-2">
                 <button onClick={() => setShowExportModal(false)} className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl text-xs cursor-pointer transition-colors">
-                  Cancel
+                  {ex.cancelBtn}
                 </button>
                 <button
                   onClick={exportOrders}
                   disabled={exporting || Object.values(exportCols).every(v => !v)}
                   className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 dark:disabled:bg-slate-700 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold rounded-xl text-xs cursor-pointer transition-colors flex items-center gap-1.5"
                 >
-                  {exporting ? '...' : <><Download size={14} /> Export</>}
+                  {exporting ? ex.exportingBtn : <><Upload size={14} /> {ex.exportBtn}</>}
                 </button>
               </div>
             </div>

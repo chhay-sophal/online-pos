@@ -95,6 +95,7 @@ export default function StockManager({
 
   const labels = t[currentLocale]?.stock || t["km"].stock;
   const il = labels.import;
+  const el = labels.export;
 
   useEffect(() => {
     fetchInventory();
@@ -277,15 +278,15 @@ export default function StockManager({
   const paged = displayed.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const EXPORT_COL_DEFS = [
-    { key: "id",       header: "ID",           wch: 6,  val: (p) => p.id },
-    { key: "name",     header: "Name",          wch: 36, val: (p) => p.name },
-    { key: "barcode",  header: "Barcode",       wch: 16, val: (p) => p.barcode },
-    { key: "currency", header: "Currency",      wch: 10, val: (p) => p.currency },
-    { key: "price",    header: "Price",         wch: 12, val: (p) => parseFloat(p.price) },
-    { key: "priceUsd", header: "Price (USD)",   wch: 12, val: (p) => p.currency === "KHR" ? parseFloat((parseFloat(p.price) / dynamicRate).toFixed(2)) : parseFloat(p.price) },
-    { key: "priceKhr", header: "Price (KHR)",   wch: 14, val: (p) => p.currency === "KHR" ? parseFloat(p.price) : Math.round(parseFloat(p.price) * dynamicRate) },
-    { key: "stock",    header: "Stock",         wch: 8,  val: (p) => p.stock },
-    { key: "lowStock", header: "Low Stock",     wch: 10, val: (p) => p.stock <= 5 ? "Yes" : "No" },
+    { key: "id",       header: "ID",           labelKey: "colId",       wch: 6,  val: (p) => p.id },
+    { key: "name",     header: "Name",          labelKey: "colName",     wch: 36, val: (p) => p.name },
+    { key: "barcode",  header: "Barcode",       labelKey: "colBarcode",  wch: 16, val: (p) => p.barcode },
+    { key: "currency", header: "Currency",      labelKey: "colCurrency", wch: 10, val: (p) => p.currency },
+    { key: "price",    header: "Price",         labelKey: "colPrice",    wch: 12, val: (p) => parseFloat(p.price) },
+    { key: "priceUsd", header: "Price (USD)",   labelKey: "colPriceUsd", wch: 12, val: (p) => p.currency === "KHR" ? parseFloat((parseFloat(p.price) / dynamicRate).toFixed(2)) : parseFloat(p.price) },
+    { key: "priceKhr", header: "Price (KHR)",   labelKey: "colPriceKhr", wch: 14, val: (p) => p.currency === "KHR" ? parseFloat(p.price) : Math.round(parseFloat(p.price) * dynamicRate) },
+    { key: "stock",    header: "Stock",         labelKey: "colStock",    wch: 8,  val: (p) => p.stock },
+    { key: "lowStock", header: "Low Stock",     labelKey: "colLowStock", wch: 10, val: (p) => p.stock <= 5 ? "Yes" : "No" },
   ];
 
   const closeImport = () => {
@@ -463,7 +464,7 @@ export default function StockManager({
             disabled={products.length === 0}
             className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-100 dark:disabled:bg-slate-700 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold rounded-xl text-xs shadow-sm transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
           >
-            <Download size={14} /> Excel
+            <Upload size={14} /> {el.btnLabel}
           </button>
           <button
             onClick={() => setShowAddForm(true)}
@@ -982,8 +983,8 @@ export default function StockManager({
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-700/50">
               <div>
-                <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">Export to Excel</h3>
-                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Configure your export</p>
+                <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">{el.title}</h3>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">{el.subtitle}</p>
               </div>
               <button
                 onClick={() => setShowExportModal(false)}
@@ -994,11 +995,11 @@ export default function StockManager({
             <div className="px-5 py-4 space-y-5">
               {/* Data scope */}
               <div>
-                <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Data</p>
+                <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">{el.sectionData}</p>
                 <div className="space-y-1.5">
                   {[
-                    { value: "filtered", label: "Current view", count: displayed.length },
-                    { value: "all",      label: "All products",  count: products.length },
+                    { value: "filtered", label: el.scopeCurrentView, count: displayed.length },
+                    { value: "all",      label: el.scopeAllProducts, count: products.length },
                   ].map(({ value, label, count }) => (
                     <label key={value} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border cursor-pointer transition-all ${exportScope === value ? "border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-950/40" : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"}`}>
                       <input
@@ -1010,7 +1011,7 @@ export default function StockManager({
                         className="accent-indigo-600"
                       />
                       <span className="text-xs font-bold text-slate-700 dark:text-slate-200 flex-1">{label}</span>
-                      <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500">{count} rows</span>
+                      <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500">{count} {el.rowsSuffix}</span>
                     </label>
                   ))}
                 </div>
@@ -1019,15 +1020,15 @@ export default function StockManager({
               {/* Column selection */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Columns</p>
+                  <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{el.sectionColumns}</p>
                   <div className="flex gap-2">
-                    <button onClick={() => setExportCols(Object.fromEntries(EXPORT_COL_DEFS.map(c => [c.key, true])))} className="text-[11px] font-bold text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-300 cursor-pointer">All</button>
+                    <button onClick={() => setExportCols(Object.fromEntries(EXPORT_COL_DEFS.map(c => [c.key, true])))} className="text-[11px] font-bold text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-300 cursor-pointer">{el.selectAll}</button>
                     <span className="text-slate-200 dark:text-slate-600">|</span>
-                    <button onClick={() => setExportCols(Object.fromEntries(EXPORT_COL_DEFS.map(c => [c.key, false])))} className="text-[11px] font-bold text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer">None</button>
+                    <button onClick={() => setExportCols(Object.fromEntries(EXPORT_COL_DEFS.map(c => [c.key, false])))} className="text-[11px] font-bold text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer">{el.selectNone}</button>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-1.5">
-                  {EXPORT_COL_DEFS.map(({ key, header }) => (
+                  {EXPORT_COL_DEFS.map(({ key, labelKey }) => (
                     <label key={key} className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer transition-all ${exportCols[key] ? "border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-950/40" : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"}`}>
                       <input
                         type="checkbox"
@@ -1035,7 +1036,7 @@ export default function StockManager({
                         onChange={() => setExportCols(prev => ({ ...prev, [key]: !prev[key] }))}
                         className="accent-indigo-600"
                       />
-                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">{header}</span>
+                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">{el[labelKey]}</span>
                     </label>
                   ))}
                 </div>
@@ -1045,21 +1046,21 @@ export default function StockManager({
             {/* Footer */}
             <div className="px-5 py-3.5 border-t border-slate-100 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900 flex items-center justify-between">
               <span className="text-[11px] text-slate-400 dark:text-slate-500">
-                {Object.values(exportCols).filter(Boolean).length} cols · {exportScope === "all" ? products.length : displayed.length} rows
+                {Object.values(exportCols).filter(Boolean).length} {el.colsSuffix} · {exportScope === "all" ? products.length : displayed.length} {el.rowsSuffix}
               </span>
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowExportModal(false)}
                   className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl text-xs cursor-pointer transition-colors"
                 >
-                  Cancel
+                  {el.cancelBtn}
                 </button>
                 <button
                   onClick={exportToExcel}
                   disabled={Object.values(exportCols).every(v => !v)}
                   className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 dark:disabled:bg-slate-600 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold rounded-xl text-xs cursor-pointer transition-colors"
                 >
-                  <Download size={14} /> Export
+                  <Download size={14} /> {el.exportBtn}
                 </button>
               </div>
             </div>
