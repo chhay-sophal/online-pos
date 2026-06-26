@@ -10,6 +10,11 @@ fn get_backend_port(state: tauri::State<BackendPort>) -> Option<u16> {
   *state.0.lock().unwrap()
 }
 
+#[tauri::command]
+fn read_file_bytes(path: String) -> Result<Vec<u8>, String> {
+  std::fs::read(&path).map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -77,7 +82,7 @@ pub fn run() {
         }
       }
     })
-    .invoke_handler(tauri::generate_handler![get_backend_port])
+    .invoke_handler(tauri::generate_handler![get_backend_port, read_file_bytes])
     .plugin(tauri_plugin_shell::init())
     .plugin(tauri_plugin_updater::Builder::new().build())
     .plugin(tauri_plugin_process::init())

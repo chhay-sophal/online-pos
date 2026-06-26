@@ -1,10 +1,41 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useBackend } from "./BackendContext";
 import * as XLSX from "xlsx";
-import { ArrowLeft, X, Download, AlertTriangle, Package, Search, ChevronLeft, ChevronRight, Trash2, ChevronUp, ChevronDown, ChevronsUpDown, Pencil, Delete, Trash, Save, Plus } from 'lucide-react';
+import { ArrowLeft, X, Download, Upload, AlertTriangle, Package, Search, ChevronLeft, ChevronRight, Trash2, ChevronUp, ChevronDown, ChevronsUpDown, Pencil, Trash, Save, Plus, CheckCircle2 } from 'lucide-react';
 import { translations as t } from "./locales";
 
 const PAGE_SIZE = 15;
+
+const IMPORT_FIELDS = [
+  { key: 'name',       labelKey: 'fieldName',      required: true  },
+  { key: 'price',      labelKey: 'fieldPrice',     required: true  },
+  { key: 'barcode',    labelKey: 'fieldBarcode',   required: false },
+  { key: 'cost_price', labelKey: 'fieldCostPrice', required: false },
+  { key: 'currency',   labelKey: 'fieldCurrency',  required: false },
+  { key: 'stock',      labelKey: 'fieldStock',     required: false },
+];
+
+const IMPORT_HINTS = {
+  name:       ['name', 'productname', 'itemname', 'description', 'product', 'item', 'title'],
+  price:      ['price', 'retailprice', 'sellingprice', 'unitprice', 'saleprice', 'salesprice'],
+  barcode:    ['barcode', 'sku', 'code', 'upc', 'ean', 'isbn', 'productcode'],
+  cost_price: ['cost', 'costprice', 'purchaseprice', 'buyprice', 'wholesale', 'costofgoods'],
+  currency:   ['currency', 'curr', 'unit'],
+  stock:      ['stock', 'qty', 'quantity', 'instock', 'stockcount', 'inventory', 'available'],
+};
+
+function autoDetectMapping(headers) {
+  const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const mapping = Object.fromEntries(IMPORT_FIELDS.map(f => [f.key, '']));
+  const used = new Set();
+  for (const [field, hints] of Object.entries(IMPORT_HINTS)) {
+    for (const hint of hints) {
+      const match = headers.find(h => !used.has(h) && norm(h) === hint);
+      if (match) { mapping[field] = match; used.add(match); break; }
+    }
+  }
+  return mapping;
+}
 
 export default function StockManager({
   onBackToRegister,
@@ -13,6 +44,7 @@ export default function StockManager({
   dynamicRate = 4100,
 }) {
   const BACKEND_URL = useBackend();
+  const IS_TAURI = Boolean(window.__TAURI_INTERNALS__ ?? window.__TAURI__);
   const [products, setProducts] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({
@@ -45,12 +77,24 @@ export default function StockManager({
     stock: "",
   });
 
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importStep, setImportStep] = useState('upload'); // 'upload' | 'map' | 'result'
+  const [importHeaders, setImportHeaders] = useState([]);
+  const [importRows, setImportRows] = useState([]);
+  const [importMapping, setImportMapping] = useState(Object.fromEntries(IMPORT_FIELDS.map(f => [f.key, ''])));
+  const [importUpdateExisting, setImportUpdateExisting] = useState(true);
+  const [importResult, setImportResult] = useState(null);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importDragOver, setImportDragOver] = useState(false);
+  const importFileRef = useRef(null);
+
   useEffect(() => {
     setPage(1);
   }, [search, sortCol, sortDir, currFilter, lowStock]);
 
 
   const labels = t[currentLocale]?.stock || t["km"].stock;
+  const il = labels.import;
 
   useEffect(() => {
     fetchInventory();
@@ -244,6 +288,91 @@ export default function StockManager({
     { key: "lowStock", header: "Low Stock",     wch: 10, val: (p) => p.stock <= 5 ? "Yes" : "No" },
   ];
 
+  const closeImport = () => {
+    setShowImportModal(false);
+    setImportStep('upload');
+    setImportHeaders([]);
+    setImportRows([]);
+    setImportMapping(Object.fromEntries(IMPORT_FIELDS.map(f => [f.key, ''])));
+    setImportResult(null);
+    setImportLoading(false);
+  };
+
+  const processFileBuffer = (buffer) => {
+    try {
+      const wb = XLSX.read(buffer, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      if (raw.length < 2) { alert(il.alertNoRows); return; }
+      const headers = raw[0].map(String).filter(h => h.trim() !== '');
+      const rows = raw.slice(1)
+        .filter(r => r.some(c => String(c).trim() !== ''))
+        .map(r => Object.fromEntries(headers.map((h, i) => [h, r[i] ?? ''])));
+      setImportHeaders(headers);
+      setImportRows(rows);
+      setImportMapping(autoDetectMapping(headers));
+      setImportStep('map');
+    } catch {
+      alert(il.alertBadFile);
+    }
+  };
+
+  const handleImportFile = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => processFileBuffer(e.target.result);
+    reader.readAsArrayBuffer(file);
+  };
+
+  useEffect(() => {
+    if (!IS_TAURI || !showImportModal || importStep !== 'upload') return;
+    let unlisten;
+    (async () => {
+      const { getCurrentWebview } = await import('@tauri-apps/api/webview');
+      const { invoke } = await import('@tauri-apps/api/core');
+      const webview = getCurrentWebview();
+      unlisten = await webview.onDragDropEvent(async (event) => {
+        const { type, paths } = event.payload;
+        if (type === 'enter' || type === 'over') {
+          setImportDragOver(true);
+        } else if (type === 'leave') {
+          setImportDragOver(false);
+        } else if (type === 'drop' && paths?.length > 0) {
+          setImportDragOver(false);
+          try {
+            const bytes = await invoke('read_file_bytes', { path: paths[0] });
+            processFileBuffer(new Uint8Array(bytes));
+          } catch (err) {
+            alert(il.alertDropFailed + err);
+          }
+        }
+      });
+    })();
+    return () => { unlisten?.(); };
+  }, [IS_TAURI, showImportModal, importStep]);
+
+  const handleImportSubmit = async () => {
+    setImportLoading(true);
+    try {
+      const products = importRows.map(row =>
+        Object.fromEntries(IMPORT_FIELDS.map(({ key }) => [key, importMapping[key] ? row[importMapping[key]] : '']))
+      );
+      const res = await fetch(`${BACKEND_URL}/api/products/bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ products, updateExisting: importUpdateExisting }),
+      });
+      const result = await res.json();
+      setImportResult(result);
+      setImportStep('result');
+      fetchInventory();
+    } catch (err) {
+      alert(il.alertImportFailed + err.message);
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
   const exportToExcel = () => {
     const source = exportScope === "all" ? products : displayed;
     const activeCols = EXPORT_COL_DEFS.filter((c) => exportCols[c.key]);
@@ -323,6 +452,12 @@ export default function StockManager({
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={() => { setShowImportModal(true); setImportStep('upload'); }}
+            className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl text-xs shadow-sm transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+          >
+            <Download size={14} /> {il.btnLabel}
+          </button>
           <button
             onClick={() => setShowExportModal(true)}
             disabled={products.length === 0}
@@ -637,6 +772,205 @@ export default function StockManager({
             >
               <ChevronRight size={14} />
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden file input for import */}
+      <input
+        ref={importFileRef}
+        type="file"
+        accept=".xlsx,.xls,.csv"
+        className="hidden"
+        onChange={e => { handleImportFile(e.target.files[0]); e.target.value = ''; }}
+      />
+
+      {/* IMPORT FROM EXCEL MODAL */}
+      {showImportModal && (
+        <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl w-full max-w-xl flex flex-col overflow-hidden">
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-700/50">
+              <div>
+                <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">
+                  {importStep === 'upload' ? il.titleUpload : importStep === 'map' ? il.titleMap : il.titleResult}
+                </h3>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+                  {importStep === 'upload' && il.subtitleUpload}
+                  {importStep === 'map' && `${importRows.length} ${il.subtitleMap}`}
+                  {importStep === 'result' && il.subtitleResult}
+                </p>
+              </div>
+              <button
+                onClick={closeImport}
+                className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
+              ><X size={14} /></button>
+            </div>
+
+            {/* Step 1: Upload */}
+            {importStep === 'upload' && (
+              <>
+                <div className="px-5 py-6">
+                  <div
+                    onDragOver={!IS_TAURI ? e => { e.preventDefault(); setImportDragOver(true); } : undefined}
+                    onDragLeave={!IS_TAURI ? () => setImportDragOver(false) : undefined}
+                    onDrop={!IS_TAURI ? e => { e.preventDefault(); setImportDragOver(false); handleImportFile(e.dataTransfer.files[0]); } : undefined}
+                    onClick={() => importFileRef.current?.click()}
+                    className={`border-2 border-dashed rounded-2xl p-10 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all ${
+                      importDragOver
+                        ? 'border-violet-400 bg-violet-50 dark:bg-violet-950/30'
+                        : 'border-slate-200 dark:border-slate-600 hover:border-violet-300 dark:hover:border-violet-700 hover:bg-slate-50 dark:hover:bg-slate-700/30'
+                    }`}
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-950/50 flex items-center justify-center">
+                      <Upload size={22} className="text-violet-600 dark:text-violet-400" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{il.dropZoneTitle}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{il.dropZoneHint}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="px-5 py-3.5 border-t border-slate-100 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900 flex justify-end">
+                  <button onClick={closeImport} className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl text-xs cursor-pointer transition-colors">
+                    {il.cancelBtn}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* Step 2: Map columns */}
+            {importStep === 'map' && (
+              <>
+                <div className="px-5 py-4 space-y-4 overflow-y-auto max-h-[60vh]">
+                  {/* Mapping grid */}
+                  <div>
+                    <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">{il.sectionMapping}</p>
+                    <div className="space-y-2">
+                      {IMPORT_FIELDS.map(({ key, labelKey, required }) => (
+                        <div key={key} className="flex items-center gap-3">
+                          <div className="w-28 flex-shrink-0 flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{il[labelKey]}</span>
+                            {required && <span className="text-[10px] font-black text-red-400">*</span>}
+                          </div>
+                          <select
+                            value={importMapping[key]}
+                            onChange={e => setImportMapping(prev => ({ ...prev, [key]: e.target.value }))}
+                            className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-xl border outline-none transition-all bg-white dark:bg-slate-900 dark:text-slate-100 ${
+                              required && !importMapping[key]
+                                ? 'border-red-300 dark:border-red-700 focus:border-red-400'
+                                : importMapping[key]
+                                  ? 'border-violet-300 dark:border-violet-700 focus:border-violet-400 bg-violet-50/50 dark:bg-violet-950/20'
+                                  : 'border-slate-200 dark:border-slate-700 focus:border-slate-300 dark:focus:border-slate-600'
+                            }`}
+                          >
+                            <option value="">{il.skipOption}</option>
+                            {importHeaders.map(h => <option key={h} value={h}>{h}</option>)}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Preview */}
+                  {importRows.length > 0 && IMPORT_FIELDS.some(f => importMapping[f.key]) && (
+                    <div>
+                      <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">{il.sectionPreview}</p>
+                      <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="bg-slate-50 dark:bg-slate-900">
+                              {IMPORT_FIELDS.filter(f => importMapping[f.key]).map(f => (
+                                <th key={f.key} className="px-3 py-2 text-left font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">{il[f.labelKey]}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {importRows.slice(0, 3).map((row, i) => (
+                              <tr key={i} className="border-t border-slate-100 dark:border-slate-700/50">
+                                {IMPORT_FIELDS.filter(f => importMapping[f.key]).map(f => (
+                                  <td key={f.key} className="px-3 py-2 text-slate-700 dark:text-slate-300 max-w-[140px] truncate">
+                                    {String(row[importMapping[f.key]] ?? '')}
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Update toggle */}
+                  <label className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border cursor-pointer transition-all ${importUpdateExisting ? 'border-violet-300 dark:border-violet-700 bg-violet-50 dark:bg-violet-950/30' : 'border-slate-200 dark:border-slate-700'}`}>
+                    <input
+                      type="checkbox"
+                      checked={importUpdateExisting}
+                      onChange={e => setImportUpdateExisting(e.target.checked)}
+                      className="accent-violet-600"
+                    />
+                    <div>
+                      <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{il.updateExistingLabel}</p>
+                      <p className="text-[11px] text-slate-400 dark:text-slate-500">{il.updateExistingHint}</p>
+                    </div>
+                  </label>
+                </div>
+
+                <div className="px-5 py-3.5 border-t border-slate-100 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900 flex items-center justify-between flex-shrink-0">
+                  <button
+                    onClick={() => setImportStep('upload')}
+                    className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl text-xs cursor-pointer transition-colors"
+                  >{il.backBtn}</button>
+                  <div className="flex gap-2">
+                    <button onClick={closeImport} className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl text-xs cursor-pointer transition-colors">
+                      {il.cancelBtn}
+                    </button>
+                    <button
+                      onClick={handleImportSubmit}
+                      disabled={importLoading || !importMapping.name || !importMapping.price}
+                      className="px-4 py-2 bg-violet-600 hover:bg-violet-700 disabled:bg-slate-200 dark:disabled:bg-slate-600 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold rounded-xl text-xs cursor-pointer transition-colors flex items-center gap-1.5"
+                    >
+                      {importLoading ? il.importingBtn : `${il.importBtn} ${importRows.length} ${il.rowsSuffix}`}
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Step 3: Result */}
+            {importStep === 'result' && importResult && (
+              <>
+                <div className="px-5 py-6 space-y-3">
+                  <div className="flex items-center gap-3 p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
+                    <CheckCircle2 size={18} className="text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs font-black text-emerald-700 dark:text-emerald-300">{importResult.imported} {il.inserted}</p>
+                    </div>
+                  </div>
+                  {importResult.updated > 0 && (
+                    <div className="flex items-center gap-3 p-3.5 rounded-xl bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800">
+                      <Upload size={18} className="text-violet-600 dark:text-violet-400 flex-shrink-0" />
+                      <p className="text-xs font-black text-violet-700 dark:text-violet-300">{importResult.updated} {il.updated}</p>
+                    </div>
+                  )}
+                  {(importResult.skipped > 0 || importResult.errors > 0) && (
+                    <div className="flex items-center gap-3 p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+                      <AlertTriangle size={18} className="text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                      <p className="text-xs font-black text-amber-700 dark:text-amber-300">
+                        {importResult.skipped + importResult.errors} {il.skipped}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <div className="px-5 py-3.5 border-t border-slate-100 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900 flex justify-end">
+                  <button
+                    onClick={closeImport}
+                    className="px-5 py-2 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl text-xs cursor-pointer transition-colors"
+                  >{il.doneBtn}</button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

@@ -133,6 +133,47 @@ app.post('/api/products', (req, res) => {
   }
 });
 
+app.post('/api/products/bulk', (req, res) => {
+  const { products: rows, updateExisting } = req.body;
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return res.status(400).json({ error: 'No products provided' });
+  }
+
+  let imported = 0, updated = 0, skipped = 0, errorCount = 0;
+
+  for (const row of rows) {
+    const name = String(row.name ?? '').trim();
+    const price = parseFloat(row.price);
+    const barcode = String(row.barcode ?? '').trim() || null;
+    const cost_price = parseFloat(row.cost_price) || 0;
+    const currency = ['USD', 'KHR'].includes(String(row.currency ?? '').toUpperCase())
+      ? String(row.currency).toUpperCase() : 'USD';
+    const stock = parseInt(row.stock) || 0;
+
+    if (!name || isNaN(price) || price < 0) { skipped++; continue; }
+
+    try {
+      if (barcode && updateExisting) {
+        const existing = query('SELECT id FROM products WHERE barcode = ? AND is_deleted = 0', [barcode]);
+        if (existing.length) {
+          run('UPDATE products SET name = ?, price = ?, cost_price = ?, currency = ?, stock = ? WHERE id = ?',
+            [name, price, cost_price, currency, stock, existing[0].id]);
+          updated++;
+          continue;
+        }
+      }
+      run('INSERT INTO products (name, barcode, price, cost_price, currency, stock) VALUES (?, ?, ?, ?, ?, ?)',
+        [name, barcode, price, cost_price, currency, stock]);
+      imported++;
+    } catch (err) {
+      errorCount++;
+    }
+  }
+
+  saveDb();
+  res.json({ imported, updated, skipped, errors: errorCount });
+});
+
 app.put('/api/products/:id', (req, res) => {
   const { name, barcode, price, cost_price, currency, stock } = req.body;
   run(
