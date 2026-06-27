@@ -34,6 +34,8 @@ export default function App() {
   const [isDark, toggleDark] = useDarkMode();
 
   const [customerDisplayOpen, setCustomerDisplayOpen] = useState(false);
+  const [txDiscountType, setTxDiscountType] = useState('pct');
+  const [txDiscountValue, setTxDiscountValue] = useState('');
 
   const barcodeRef = useRef(null);
   const customerWindowRef = useRef(null);
@@ -130,7 +132,7 @@ export default function App() {
               item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
             );
           }
-          return [...prevCart, { ...product, quantity: 1 }];
+          return [...prevCart, { ...product, quantity: 1, discount: 0, discountType: 'pct' }];
         });
 
         setCheckoutResult(null);
@@ -183,6 +185,37 @@ export default function App() {
     }
   };
 
+  const subtotalUsd = cart.reduce((sum, item) => {
+    const base = item.currency === 'KHR' ? item.price / dynamicRate : Number(item.price);
+    let unitPrice = base;
+    if (item.discount > 0) {
+      if (item.discountType === 'fixed') {
+        const discUsd = item.currency === 'KHR' ? item.discount / dynamicRate : item.discount;
+        unitPrice = Math.max(0, base - discUsd);
+      } else {
+        unitPrice = base * (1 - item.discount / 100);
+      }
+    }
+    return sum + unitPrice * item.quantity;
+  }, 0);
+
+  const txDiscountAmt = (() => {
+    const val = parseFloat(txDiscountValue || 0);
+    if (!val) return 0;
+    if (txDiscountType === 'pct') return subtotalUsd * (val / 100);
+    const valUsd = mainCurrency === 'KHR' ? val / dynamicRate : val;
+    return Math.min(valUsd, subtotalUsd);
+  })();
+
+  const totalUsd = Math.max(0, subtotalUsd - txDiscountAmt);
+  const totalKhr = totalUsd * dynamicRate;
+
+  const tenderedUsd = parseFloat(amountPaidUsd || 0);
+  const tenderedKhr = parseFloat(amountPaidKhr || 0);
+  const totalTenderedInUsd = tenderedUsd + (tenderedKhr / dynamicRate);
+  const changeDueUsd = totalTenderedInUsd - totalUsd;
+  const changeDueKhr = changeDueUsd > 0 ? Math.round(changeDueUsd * dynamicRate) : 0;
+
   useEffect(() => {
     if (!IS_TAURI || !customerDisplayOpen) return;
 
@@ -200,6 +233,8 @@ export default function App() {
     emit('customer-display', {
       state: displayState,
       cart,
+      subtotalUsd,
+      txDiscountAmt,
       totalUsd,
       totalKhr,
       mainCurrency,
@@ -212,12 +247,19 @@ export default function App() {
       tenderedUsd: parseFloat(amountPaidUsd || 0),
       tenderedKhr: parseFloat(amountPaidKhr || 0),
       qrString: activeKhqr?.qr_string || null,
+      isDark,
     });
-  }, [cart, checkoutResult, paymentMethod, activeKhqr, customerDisplayOpen, amountPaidUsd, amountPaidKhr]);
+  }, [cart, subtotalUsd, txDiscountAmt, checkoutResult, paymentMethod, activeKhqr, customerDisplayOpen, amountPaidUsd, amountPaidKhr, isDark]);
 
   const focusScanner = () => {
     if (view === 'REGISTER' && barcodeRef.current) barcodeRef.current.focus();
   };
+
+  useEffect(() => {
+    if (paymentMethod === 'KHQR' && !activeKhqr && totalUsd > 0) {
+      fetchKHQRString(totalUsd);
+    }
+  }, [paymentMethod, activeKhqr, totalUsd]);
 
   useEffect(() => {
     let pollingInterval = null;
@@ -277,7 +319,7 @@ export default function App() {
             item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
           );
         }
-        return [...prevCart, { ...product, quantity: 1 }];
+        return [...prevCart, { ...product, quantity: 1, discount: 0, discountType: 'pct' }];
       });
 
       setBarcodeInput('');
@@ -320,17 +362,17 @@ export default function App() {
     setActiveKhqr(null);
   };
 
-  const totalUsd = cart.reduce((sum, item) => {
-    const priceUsd = item.currency === 'KHR' ? item.price / dynamicRate : Number(item.price);
-    return sum + (priceUsd * item.quantity);
-  }, 0);
-  const totalKhr = totalUsd * dynamicRate;
-
-  const tenderedUsd = parseFloat(amountPaidUsd || 0);
-  const tenderedKhr = parseFloat(amountPaidKhr || 0);
-  const totalTenderedInUsd = tenderedUsd + (tenderedKhr / dynamicRate);
-  const changeDueUsd = totalTenderedInUsd - totalUsd;
-  const changeDueKhr = changeDueUsd > 0 ? Math.round(changeDueUsd * dynamicRate) : 0;
+  const setItemDiscount = (id, val, type) => {
+    setCart(prev => prev.map(item => {
+      if (item.id !== id) return item;
+      const update = { ...item };
+      if (type !== undefined) { update.discountType = type; update.discount = 0; }
+      if (val !== undefined) update.discount = val;
+      return update;
+    }));
+    setCheckoutResult(null);
+    setActiveKhqr(null);
+  };
 
   const autoCommitKhqrOrder = async (khqrDetails) => {
     const cartSnapshot = [...cart];
@@ -366,6 +408,8 @@ export default function App() {
         setCart([]);
         setActiveKhqr(null);
         setPaymentMethod('CASH');
+        setTxDiscountValue('');
+        setTxDiscountType('pct');
       }
     } catch (err) {
       console.error('Error auto-finalizing transaction process:', err);
@@ -415,6 +459,8 @@ export default function App() {
         setAmountPaidKhr('');
         setActiveKhqr(null);
         setStaticQrBank('');
+        setTxDiscountValue('');
+        setTxDiscountType('pct');
       } else {
         alert(`Checkout Failed: ${data.error}`);
       }
@@ -603,25 +649,81 @@ export default function App() {
               ) : (
                 <div className="space-y-2">
                   {cart.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-3.5 bg-slate-50/60 dark:bg-slate-900/60 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl border border-slate-100/80 dark:border-slate-700/30 transition-colors">
-                      <div className="flex-1 min-w-0 pr-4">
-                        <h3 className="font-bold text-sm text-slate-900 dark:text-white truncate">{item.name}</h3>
-                        <p className="text-[11px] text-slate-400 dark:text-slate-500 tracking-wider mt-0.5">#{item.barcode}</p>
-                      </div>
-                      <div className="flex items-center gap-5">
-                        <div className="flex items-center border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-700 rounded-xl p-0.5 shadow-2xs">
-                          <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 flex items-center justify-center font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">&minus;</button>
-                          <span className="w-9 text-center font-bold text-sm text-slate-800 dark:text-slate-100">{item.quantity}</span>
-                          <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 flex items-center justify-center font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">+</button>
+                    <div key={item.id} className="p-3.5 bg-slate-50/60 dark:bg-slate-900/60 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl border border-slate-100/80 dark:border-slate-700/30 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0 pr-4">
+                          <h3 className="font-bold text-sm text-slate-900 dark:text-white truncate">{item.name}</h3>
+                          <p className="text-[11px] text-slate-400 dark:text-slate-500 tracking-wider mt-0.5">#{item.barcode}</p>
                         </div>
-                        <div className="text-right w-24">
-                          <p className="font-bold text-sm text-slate-900 dark:text-white">
-                          {item.currency === 'KHR'
-                            ? `${(item.price * item.quantity).toLocaleString()} ៛`
-                            : `$${(Number(item.price) * item.quantity).toFixed(2)}`}
-                        </p>
+                        <div className="flex items-center gap-5">
+                          {/* Discount controls */}
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              min="0"
+                              max={item.discountType !== 'fixed' ? '100' : undefined}
+                              value={item.discount || ''}
+                              onChange={e => {
+                                let v = parseFloat(e.target.value);
+                                if (isNaN(v) || v < 0) v = 0;
+                                if ((item.discountType || 'pct') === 'pct' && v > 100) v = 100;
+                                setItemDiscount(item.id, v === 0 && e.target.value === '' ? 0 : v);
+                              }}
+                              className="w-30 text-center text-xs font-bold border border-slate-200 dark:border-slate-700 rounded-lg px-1.5 py-1 outline-none bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-900/30 focus:border-amber-400 dark:focus:border-amber-600"
+                              placeholder="0"
+                            />
+                            <div className="flex rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
+                              <button
+                                onClick={() => setItemDiscount(item.id, undefined, 'pct')}
+                                className={`px-2 py-1 text-[10px] font-bold transition-all ${
+                                  (item.discountType || 'pct') === 'pct'
+                                    ? 'bg-amber-500 text-white'
+                                    : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700'
+                                }`}
+                              >%</button>
+                              <button
+                                onClick={() => setItemDiscount(item.id, undefined, 'fixed')}
+                                className={`px-2 py-1 text-[10px] font-bold border-l border-slate-200 dark:border-slate-700 transition-all ${
+                                  item.discountType === 'fixed'
+                                    ? 'bg-amber-500 text-white border-amber-500'
+                                    : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700'
+                                }`}
+                              >{item.currency === 'KHR' ? '៛' : '$'}</button>
+                            </div>
+                          </div>
+                          {/* Qty stepper */}
+                          <div className="flex items-center border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-700 rounded-xl p-0.5 shadow-2xs">
+                            <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 flex items-center justify-center font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">&minus;</button>
+                            <span className="w-9 text-center font-bold text-sm text-slate-800 dark:text-slate-100">{item.quantity}</span>
+                            <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 flex items-center justify-center font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">+</button>
+                          </div>
+                          {/* Line total */}
+                          <div className="text-right w-24">
+                            {item.discount > 0 ? (() => {
+                              const base = item.price * item.quantity;
+                              const discounted = item.discountType === 'fixed'
+                                ? Math.max(0, item.price - item.discount) * item.quantity
+                                : item.price * item.quantity * (1 - item.discount / 100);
+                              return (
+                                <>
+                                  <p className="text-[11px] text-slate-400 dark:text-slate-500 line-through">
+                                    {item.currency === 'KHR' ? `${Math.round(base).toLocaleString()} ៛` : `$${Number(base).toFixed(2)}`}
+                                  </p>
+                                  <p className="font-bold text-sm text-amber-600 dark:text-amber-400">
+                                    {item.currency === 'KHR' ? `${Math.round(discounted).toLocaleString()} ៛` : `$${discounted.toFixed(2)}`}
+                                  </p>
+                                </>
+                              );
+                            })() : (
+                              <p className="font-bold text-sm text-slate-900 dark:text-white">
+                                {item.currency === 'KHR'
+                                  ? `${(item.price * item.quantity).toLocaleString()} ៛`
+                                  : `$${(Number(item.price) * item.quantity).toFixed(2)}`}
+                              </p>
+                            )}
+                          </div>
+                          <button onClick={() => removeItem(item.id)} className="text-slate-300 dark:text-slate-600 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 w-8 h-8 rounded-lg transition-all flex items-center justify-center"><X size={14} /></button>
                         </div>
-                        <button onClick={() => removeItem(item.id)} className="text-slate-300 dark:text-slate-600 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 w-8 h-8 rounded-lg transition-all flex items-center justify-center"><X size={14} /></button>
                       </div>
                     </div>
                   ))}
@@ -655,6 +757,64 @@ export default function App() {
                   </span>
                 </div>
               </div>
+            </div>
+
+            {/* Transaction Discount */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <label className="text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase font-display">
+                  {locale === 'km' ? 'បញ្ចុះតម្លៃ' : 'Discount'}
+                </label>
+                <div className="flex ml-auto rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
+                  <button
+                    onClick={() => { setTxDiscountType('pct'); setTxDiscountValue(''); setCheckoutResult(null); setActiveKhqr(null); }}
+                    className={`px-2.5 py-1 text-[10px] font-bold transition-all ${
+                      txDiscountType === 'pct'
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
+                    }`}
+                  >%</button>
+                  <button
+                    onClick={() => { setTxDiscountType('fixed'); setTxDiscountValue(''); setCheckoutResult(null); setActiveKhqr(null); }}
+                    className={`px-2.5 py-1 text-[10px] font-bold border-l border-slate-200 dark:border-slate-700 transition-all ${
+                      txDiscountType === 'fixed'
+                        ? 'bg-amber-500 text-white border-amber-500'
+                        : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
+                    }`}
+                  >{mainCurrency === 'KHR' ? '៛' : '$'}</button>
+                </div>
+              </div>
+              <div className="relative">
+                <input
+                  type="number"
+                  value={txDiscountValue}
+                  onChange={e => {
+                    let v = parseFloat(e.target.value);
+                    if (isNaN(v) || v < 0) v = 0;
+                    if (txDiscountType === 'pct' && v > 100) v = 100;
+                    setTxDiscountValue(v === 0 && e.target.value === '' ? '' : String(v));
+                    setCheckoutResult(null);
+                    setActiveKhqr(null);
+                  }}
+                  min="0"
+                  max={txDiscountType === 'pct' ? '100' : undefined}
+                  placeholder={txDiscountType === 'pct' ? '0' : mainCurrency === 'KHR' ? '0' : '0.00'}
+                  className="w-full h-9 px-3 pr-14 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-800 dark:text-slate-100 text-sm focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-900/30 focus:outline-hidden focus:border-amber-500"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 dark:text-slate-500 pointer-events-none">
+                  {txDiscountType === 'pct' ? '%' : mainCurrency === 'KHR' ? '៛' : 'USD'}
+                </span>
+              </div>
+              {txDiscountAmt > 0 && (
+                <div className="flex justify-between items-center text-xs font-bold text-amber-600 dark:text-amber-500 px-0.5">
+                  <span>{locale === 'km' ? 'បញ្ចុះ' : 'Discount'}</span>
+                  <span>
+                    {mainCurrency === 'KHR'
+                      ? `−${Math.round(txDiscountAmt * dynamicRate).toLocaleString()} ៛`
+                      : `−$${txDiscountAmt.toFixed(2)}`}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div>
