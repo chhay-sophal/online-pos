@@ -3,11 +3,12 @@ import { invoke } from '@tauri-apps/api/core';
 import { emit } from '@tauri-apps/api/event';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { QRCodeCanvas } from 'qrcode.react';
-import { Store, Package, FolderOpen, Settings, ShoppingCart, X, CheckCircle2, AlertTriangle, Keyboard, Lock, History, Sun, Moon, Monitor } from 'lucide-react';
+import { Store, Package, FolderOpen, Settings, ShoppingCart, X, CheckCircle2, AlertTriangle, Keyboard, Lock, History, Sun, Moon, Monitor, BarChart3 } from 'lucide-react';
 import { useDarkMode } from './hooks/useDarkMode';
 import StockManager from './StockManager';
 import SettingsManager from './SettingsManager';
 import SalesHistory from './SalesHistory';
+import DailySummary from './DailySummary';
 import Invoice from './Invoice';
 import { translations as t } from './locales';
 import UpdateChecker from './UpdateChecker';
@@ -515,6 +516,18 @@ export default function App() {
     );
   }
 
+  if (view === 'SUMMARY') {
+    return (
+      <BackendContext.Provider value={BACKEND_URL}>
+        <DailySummary
+          onBackToRegister={() => setView('REGISTER')}
+          currentLocale={locale}
+          dynamicRate={dynamicRate}
+        />
+      </BackendContext.Provider>
+    );
+  }
+
   if (view === 'SETTINGS') {
     return (
       <BackendContext.Provider value={BACKEND_URL}>
@@ -556,6 +569,12 @@ export default function App() {
             className="px-3.5 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 border border-transparent hover:border-slate-200 dark:hover:border-slate-600 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 transition-all flex items-center gap-1.5"
           >
             <History size={14} /> {t[locale].salesHistory.title}
+          </button>
+          <button
+            onClick={() => setView('SUMMARY')}
+            className="px-3.5 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 border border-transparent hover:border-slate-200 dark:hover:border-slate-600 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 transition-all flex items-center gap-1.5"
+          >
+            <BarChart3 size={14} /> {(t[locale].dailySummary || {}).navLabel || 'Daily Summary'}
           </button>
           <button
             onClick={() => setView('SETTINGS')}
