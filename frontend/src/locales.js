@@ -56,6 +56,11 @@ export const translations = {
     mainCurrencyUsd: 'ដុល្លារអាមេរិក (USD)',
     mainCurrencyKhr: 'ប្រាក់រៀល (KHR)',
 
+    lowStockAlert: 'ទំនិញស្តុកទាប',
+    lowStockDismiss: 'បិទ',
+    lowStockViewStock: 'គ្រប់គ្រងស្តុក',
+    lowStockItemsRemaining: 'នៅសល់',
+
     // SALES HISTORY LABELS
     salesHistory: {
       title: 'ប្រវត្តិការលក់',
@@ -385,6 +390,11 @@ export const translations = {
     currencySetting: 'Main Currency Base',
     mainCurrencyUsd: 'US Dollar (USD)',
     mainCurrencyKhr: 'Khmer Riel (KHR)',
+
+    lowStockAlert: 'Low stock',
+    lowStockDismiss: 'Dismiss',
+    lowStockViewStock: 'Manage Stock',
+    lowStockItemsRemaining: 'left',
 
     // SALES HISTORY LABELS
     salesHistory: {

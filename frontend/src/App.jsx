@@ -37,6 +37,8 @@ export default function App() {
   const [customerDisplayOpen, setCustomerDisplayOpen] = useState(false);
   const [txDiscountType, setTxDiscountType] = useState('pct');
   const [txDiscountValue, setTxDiscountValue] = useState('');
+  const [lowStockItems, setLowStockItems] = useState([]);
+  const [lowStockDismissed, setLowStockDismissed] = useState(false);
 
   const barcodeRef = useRef(null);
   const customerWindowRef = useRef(null);
@@ -87,6 +89,14 @@ export default function App() {
   useEffect(() => {
     focusScanner();
   }, [view]);
+
+  useEffect(() => {
+    if (backendStatus !== 'ready' || view !== 'REGISTER') return;
+    fetch(`${BACKEND_URL}/api/products/low-stock`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setLowStockItems(data.items); })
+      .catch(() => {});
+  }, [backendStatus, view]);
 
   useEffect(() => {
     if (view !== 'REGISTER') return;
@@ -494,7 +504,7 @@ export default function App() {
     return (
       <BackendContext.Provider value={BACKEND_URL}>
         <StockManager
-          onBackToRegister={() => setView('REGISTER')}
+          onBackToRegister={() => { setView('REGISTER'); setLowStockDismissed(false); }}
           currentLocale={locale}
           mainCurrency={mainCurrency}
           dynamicRate={dynamicRate}
@@ -563,6 +573,11 @@ export default function App() {
             className="px-3.5 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 border border-transparent hover:border-slate-200 dark:hover:border-slate-600 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 transition-all flex items-center gap-1.5"
           >
             <Package size={14} /> {t[locale].manageInventory}
+            {lowStockItems.length > 0 && (
+              <span className="bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                {lowStockItems.length}
+              </span>
+            )}
           </button>
           <button
             onClick={() => setView('HISTORY')}
@@ -649,6 +664,33 @@ export default function App() {
               </form>
             )}
           </div>
+
+          {/* Low stock alert banner */}
+          {lowStockItems.length > 0 && !lowStockDismissed && (
+            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl px-4 py-3 flex items-start gap-3 flex-shrink-0">
+              <AlertTriangle size={14} className="text-amber-500 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-amber-800 dark:text-amber-300">
+                  {t[locale].lowStockAlert} — {lowStockItems.length} {locale === 'km' ? 'មុខទំនិញ' : 'item(s)'}
+                </p>
+                <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5 truncate">
+                  {lowStockItems.map(i => `${i.name} (${i.stock} ${t[locale].lowStockItemsRemaining})`).join(' · ')}
+                </p>
+              </div>
+              <button
+                onClick={() => setView('STOCK')}
+                className="text-[11px] font-bold text-amber-700 dark:text-amber-300 underline underline-offset-2 shrink-0 cursor-pointer"
+              >
+                {t[locale].lowStockViewStock}
+              </button>
+              <button
+                onClick={() => setLowStockDismissed(true)}
+                className="text-amber-400 hover:text-amber-600 shrink-0 cursor-pointer"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          )}
 
           {/* Master Item Basket View */}
           <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 flex-1 flex flex-col overflow-hidden shadow-xs">

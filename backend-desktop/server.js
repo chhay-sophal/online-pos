@@ -113,6 +113,15 @@ app.get('/api/products', (req, res) => {
   res.json(query('SELECT * FROM products WHERE is_deleted = 0 ORDER BY name ASC'));
 });
 
+app.get('/api/products/low-stock', (req, res) => {
+  const threshold = parseInt(req.query.threshold) || 5;
+  const items = query(
+    'SELECT id, name, stock FROM products WHERE stock <= ? AND is_deleted = 0 ORDER BY stock ASC',
+    [threshold]
+  );
+  res.json({ count: items.length, items });
+});
+
 app.delete('/api/products/:id', (req, res) => {
   run('UPDATE products SET is_deleted = 1 WHERE id = ?', [req.params.id]);
   saveDb();
