@@ -3,10 +3,12 @@
   "identifier": "default",
   "description": "enables the default permissions",
   "windows": [
-    "main"
+    "main",
+    "customer-display"
   ],
   "permissions": [
     "core:default",
+    "core:webview:allow-create-webview-window",
     "shell:allow-execute",
     "shell:allow-spawn",
     "updater:default",

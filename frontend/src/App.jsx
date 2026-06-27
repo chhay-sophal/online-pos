@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { emit } from '@tauri-apps/api/event';
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { QRCodeCanvas } from 'qrcode.react';
-import { Store, Package, FolderOpen, Settings, ShoppingCart, X, CheckCircle2, AlertTriangle, Keyboard, Lock, History, Sun, Moon } from 'lucide-react';
+import { Store, Package, FolderOpen, Settings, ShoppingCart, X, CheckCircle2, AlertTriangle, Keyboard, Lock, History, Sun, Moon, Monitor } from 'lucide-react';
 import { useDarkMode } from './hooks/useDarkMode';
 import StockManager from './StockManager';
 import SettingsManager from './SettingsManager';
@@ -31,7 +33,10 @@ export default function App() {
   const [backendStatus, setBackendStatus] = useState('loading'); // 'loading' | 'ready' | 'error'
   const [isDark, toggleDark] = useDarkMode();
 
+  const [customerDisplayOpen, setCustomerDisplayOpen] = useState(false);
+
   const barcodeRef = useRef(null);
+  const customerWindowRef = useRef(null);
   const IS_TAURI = Boolean(window.__TAURI_INTERNALS__ ?? window.__TAURI__);
   const backendPortRef = useRef(5050);
   const BACKEND_URL = IS_TAURI ? `http://localhost:${backendPortRef.current}` : (import.meta.env.PROD ? '' : 'http://localhost:5050');
@@ -147,6 +152,68 @@ export default function App() {
       })
       .catch(err => console.error("Could not sync app settings configuration", err));
   }, [view]);
+
+  const toggleCustomerDisplay = async () => {
+    if (customerDisplayOpen) {
+      customerWindowRef.current?.close();
+      customerWindowRef.current = null;
+      setCustomerDisplayOpen(false);
+    } else {
+      const win = new WebviewWindow('customer-display', {
+        url: '/?window=customer',
+        title: 'Customer Display',
+        width: 960,
+        height: 680,
+        decorations: true,
+        resizable: true,
+      });
+      win.once('tauri://created', () => {
+        setCustomerDisplayOpen(true);
+      });
+      win.once('tauri://error', (e) => {
+        console.error('Customer display window error:', e);
+        alert('Could not open customer display: ' + (e.payload || e));
+        customerWindowRef.current = null;
+      });
+      win.once('tauri://destroyed', () => {
+        setCustomerDisplayOpen(false);
+        customerWindowRef.current = null;
+      });
+      customerWindowRef.current = win;
+    }
+  };
+
+  useEffect(() => {
+    if (!IS_TAURI || !customerDisplayOpen) return;
+
+    let displayState;
+    if (checkoutResult) {
+      displayState = 'done';
+    } else if ((paymentMethod === 'KHQR' && activeKhqr) || paymentMethod === 'STATIC_QR') {
+      displayState = 'payment';
+    } else if (cart.length > 0) {
+      displayState = 'active';
+    } else {
+      displayState = 'idle';
+    }
+
+    emit('customer-display', {
+      state: displayState,
+      cart,
+      totalUsd,
+      totalKhr,
+      mainCurrency,
+      dynamicRate,
+      storeName,
+      storeIcon,
+      locale,
+      changeDueKhr: checkoutResult ? (checkoutResult.change_due_khr || 0) : changeDueKhr,
+      paymentMethod,
+      tenderedUsd: parseFloat(amountPaidUsd || 0),
+      tenderedKhr: parseFloat(amountPaidKhr || 0),
+      qrString: activeKhqr?.qr_string || null,
+    });
+  }, [cart, checkoutResult, paymentMethod, activeKhqr, customerDisplayOpen, amountPaidUsd, amountPaidKhr]);
 
   const focusScanner = () => {
     if (view === 'REGISTER' && barcodeRef.current) barcodeRef.current.focus();
@@ -452,6 +519,15 @@ export default function App() {
           </button>
         </div>
         <div className="flex items-center gap-2">
+          {IS_TAURI && (
+            <button
+              onClick={toggleCustomerDisplay}
+              className={`p-2 rounded-xl transition-colors ${customerDisplayOpen ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400' : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400'}`}
+              title={customerDisplayOpen ? t[locale].customerDisplay.closeBtn : t[locale].customerDisplay.openBtn}
+            >
+              <Monitor size={16} />
+            </button>
+          )}
           <button
             onClick={toggleDark}
             className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors"

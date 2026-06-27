@@ -9,6 +9,20 @@ export const translations = {
     settings: 'ការកំណត់',
     bgListenerActive: 'ស្កេនបាកូដទំនិញដើម្បីបញ្ចូលទៅកន្ត្រក',
     ready: 'រួចរាល់',
+
+    // CUSTOMER DISPLAY LABELS
+    customerDisplay: {
+      welcome: 'សូមស្វាគមន៍',
+      tagline: 'អរគុណដែលបានអញ្ជើញ',
+      items: 'ទំនិញ',
+      total: 'សរុបថ្លៃទំនិញ',
+      awaitingPayment: 'សូមមេត្តារង់ចាំ...',
+      thankYou: 'អរគុណ!',
+      change: 'ប្រាក់អាប់ជូន',
+      openBtn: 'អេក្រង់អតិថិជន',
+      closeBtn: 'បិទអេក្រង់',
+    },
+
     currentBasket: 'កន្ត្រកទំនិញបច្ចុប្បន្ន',
     itemsCount: 'មុខទំនិញ',
     basketEmpty: 'កន្ត្រកទំនិញបច្ចុប្បន្នទទេគ្មានអ្វីសោះ',
@@ -33,7 +47,7 @@ export const translations = {
     waitingPayment: 'កំពុងរង់ចាំការរកឃើញការទូទាត់របស់អតិថិជន...',
     assemblingPacket: 'កំពុងរៀបចំកញ្ចប់ធនាគារដែលមានសុវត្ថិភាព...',
     orderSaved: 'បានរក្សាទុកការបញ្ជាទិញដោយជោគជ័យ!',
-    finalizeOrder: 'ចេញវិក្កយបត្រលក់ទំនិញ',
+    finalizeOrder: 'បញ្ចប់ការលក់',
     typeManual: 'វាយបាកូដដោយដៃ',
     closeManual: 'បិទការវាយដោយដៃ',
     placeholderManual: 'វាយលេខបាកូដដោយដៃ (ឧទាហរណ៍៖ 8904...)',
@@ -301,6 +315,20 @@ export const translations = {
     settings: 'Settings',
     bgListenerActive: 'Scan any item barcode to add to basket.',
     ready: 'Ready',
+
+    // CUSTOMER DISPLAY LABELS
+    customerDisplay: {
+      welcome: 'Welcome',
+      tagline: 'Thank you for shopping with us',
+      items: 'items',
+      total: 'Total',
+      awaitingPayment: 'Processing payment...',
+      thankYou: 'Thank You!',
+      change: 'Change Due',
+      openBtn: 'Customer Screen',
+      closeBtn: 'Close Screen',
+    },
+
     currentBasket: 'Current Basket Queue',
     itemsCount: 'Items',
     basketEmpty: 'Registry tray is empty.',
