@@ -156,15 +156,6 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleGlobalScanStream);
   }, [view, BACKEND_URL]);
 
-  useEffect(() => {
-    fetch(`${BACKEND_URL}/api/settings`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.exchange_rate) setDynamicRate(Number(data.exchange_rate));
-        if (data.locale) setLocale(data.locale);
-      })
-      .catch(err => console.error("Could not sync app settings configuration", err));
-  }, [view]);
 
   const toggleCustomerDisplay = async () => {
     if (customerDisplayOpen) {
@@ -298,6 +289,7 @@ export default function App() {
   }, [activeKhqr, paymentMethod, cart]);
 
   useEffect(() => {
+    if (backendStatus !== 'ready') return;
     fetch(`${BACKEND_URL}/api/settings`)
       .then(res => res.json())
       .then(data => {
@@ -308,7 +300,7 @@ export default function App() {
         if (data.store_icon !== undefined) setStoreIcon(data.store_icon || '');
       })
       .catch(err => console.error("Could not sync app settings configuration", err));
-  }, [view]);
+  }, [backendStatus, view]);
 
   const handleBarcodeSubmit = async (e) => {
     e.preventDefault();
