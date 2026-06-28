@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useBackend } from './BackendContext';
-import { ArrowLeft, Store, Globe, ArrowLeftRight, Wallet, Smartphone, Banknote, CheckCircle2, AlertTriangle, AlertOctagon, HardDrive, RotateCcw, Download, FolderOpen, X } from 'lucide-react';
+import { ArrowLeft, Store, Globe, ArrowLeftRight, Wallet, Smartphone, Banknote, CheckCircle2, AlertTriangle, AlertOctagon, HardDrive, RotateCcw, Download, FolderOpen, X, RefreshCw } from 'lucide-react';
 import { translations as t } from './locales';
 
 export default function SettingsManager({ onBackToRegister, currentLocale, onLocaleChange, mainCurrency, onCurrencyChange }) {
@@ -21,6 +21,9 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showConfirmPopup, setShowConfirmPopup] = useState(false);
   const [appVersion, setAppVersion] = useState('');
+  const [updateCheck, setUpdateCheck] = useState('idle'); // idle | checking | available | uptodate | error
+  const [pendingUpdate, setPendingUpdate] = useState(null);
+  const [updateProgress, setUpdateProgress] = useState(0);
 
   const [backups, setBackups] = useState([]);
   const [backupLoading, setBackupLoading] = useState(false);
@@ -209,6 +212,43 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
 
   const currentTranslations = t[currentLocale] || {};
   const s = currentTranslations.settingsPage || {};
+
+  const handleCheckUpdate = async () => {
+    if (!IS_TAURI || updateCheck === 'checking' || updateCheck === 'downloading') return;
+    setUpdateCheck('checking');
+    setPendingUpdate(null);
+    setUpdateProgress(0);
+    try {
+      const { check } = await import('@tauri-apps/plugin-updater');
+      const update = await check();
+      if (!update) { setUpdateCheck('uptodate'); return; }
+      setPendingUpdate(update);
+      setUpdateCheck('available');
+    } catch {
+      setUpdateCheck('error');
+    }
+  };
+
+  const handleInstallUpdate = async () => {
+    if (!pendingUpdate) return;
+    setUpdateCheck('downloading');
+    setUpdateProgress(0);
+    try {
+      const { relaunch } = await import('@tauri-apps/plugin-process');
+      let downloaded = 0;
+      let total = 0;
+      await pendingUpdate.downloadAndInstall((event) => {
+        if (event.event === 'Started') { total = event.data.contentLength ?? 0; }
+        else if (event.event === 'Progress') {
+          downloaded += event.data.chunkLength;
+          if (total > 0) setUpdateProgress(Math.round((downloaded / total) * 100));
+        } else if (event.event === 'Finished') { setUpdateProgress(100); }
+      });
+      await relaunch();
+    } catch {
+      setUpdateCheck('error');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col font-sans text-slate-900 dark:text-white antialiased relative overflow-hidden">
@@ -605,9 +645,41 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
           )}
         </form>
         {appVersion && (
-          <p className="text-center text-[11px] text-slate-400 dark:text-slate-500 mt-3">
-            SOSO POS v{appVersion}
-          </p>
+          <div className="flex flex-col items-center gap-2 mt-3">
+            <p className="text-[11px] text-slate-400 dark:text-slate-500">SOSO POS v{appVersion}</p>
+            {IS_TAURI && updateCheck !== 'downloading' && (
+              <button
+                onClick={handleCheckUpdate}
+                disabled={updateCheck === 'checking'}
+                className="flex items-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors disabled:opacity-50"
+              >
+                <RefreshCw size={11} className={updateCheck === 'checking' ? 'animate-spin' : ''} />
+                {updateCheck === 'checking' ? 'Checking...' : updateCheck === 'uptodate' ? 'You\'re up to date' : updateCheck === 'error' ? 'Check failed — try again' : 'Check for updates'}
+              </button>
+            )}
+            {updateCheck === 'available' && pendingUpdate && (
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">v{pendingUpdate.version} available</span>
+                <button
+                  onClick={handleInstallUpdate}
+                  className="px-2.5 py-1 text-[11px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+                >
+                  Install & Restart
+                </button>
+              </div>
+            )}
+            {updateCheck === 'downloading' && (
+              <div className="w-40 flex flex-col items-center gap-1">
+                <p className="text-[11px] text-slate-400">{updateProgress > 0 ? `Downloading ${updateProgress}%` : 'Downloading...'}</p>
+                <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1 overflow-hidden">
+                  <div
+                    className="h-1 rounded-full bg-indigo-600 transition-all"
+                    style={{ width: updateProgress > 0 ? `${updateProgress}%` : '30%' }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
 
