@@ -45,7 +45,7 @@ export default function UpdateChecker() {
       let downloaded = 0;
       let total = 0;
 
-      await update.downloadAndInstall((event) => {
+      await update.downloadAndInstall(async (event) => {
         if (event.event === 'Started') {
           total = event.data.contentLength ?? 0;
           setContentLength(total);
@@ -55,6 +55,10 @@ export default function UpdateChecker() {
         } else if (event.event === 'Finished') {
           setProgress(100);
           setStatus('installing');
+          try {
+            const { invoke } = await import('@tauri-apps/api/core');
+            await invoke('kill_backend');
+          } catch (_) {}
         }
       });
 

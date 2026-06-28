@@ -15,6 +15,15 @@ fn read_file_bytes(path: String) -> Result<Vec<u8>, String> {
   std::fs::read(&path).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn kill_backend(state: tauri::State<Mutex<Option<CommandChild>>>) {
+  if let Ok(mut guard) = state.lock() {
+    if let Some(child) = guard.take() {
+      let _ = child.kill();
+    }
+  }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -82,7 +91,7 @@ pub fn run() {
         }
       }
     })
-    .invoke_handler(tauri::generate_handler![get_backend_port, read_file_bytes])
+    .invoke_handler(tauri::generate_handler![get_backend_port, read_file_bytes, kill_backend])
     .plugin(tauri_plugin_shell::init())
     .plugin(tauri_plugin_updater::Builder::new().build())
     .plugin(tauri_plugin_process::init())

@@ -237,12 +237,18 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
       const { relaunch } = await import('@tauri-apps/plugin-process');
       let downloaded = 0;
       let total = 0;
-      await pendingUpdate.downloadAndInstall((event) => {
+      await pendingUpdate.downloadAndInstall(async (event) => {
         if (event.event === 'Started') { total = event.data.contentLength ?? 0; }
         else if (event.event === 'Progress') {
           downloaded += event.data.chunkLength;
           if (total > 0) setUpdateProgress(Math.round((downloaded / total) * 100));
-        } else if (event.event === 'Finished') { setUpdateProgress(100); }
+        } else if (event.event === 'Finished') {
+          setUpdateProgress(100);
+          try {
+            const { invoke } = await import('@tauri-apps/api/core');
+            await invoke('kill_backend');
+          } catch (_) {}
+        }
       });
       await relaunch();
     } catch {
