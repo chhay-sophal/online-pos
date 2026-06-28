@@ -96,7 +96,7 @@ jobs:
           tauriScript: npx @tauri-apps/cli@2
           createUpdaterArtifacts: v2Compatible
           args: >-
-            --bundles ${{ matrix.platform == 'windows-latest' && 'nsis' || 'dmg' }}
+            --bundles ${{ matrix.platform == 'windows-latest' && 'nsis' || 'dmg,app' }}
             ${{ matrix.rust-target != '' && format('--target {0}', matrix.rust-target) || '' }}
 
   publish-release:
