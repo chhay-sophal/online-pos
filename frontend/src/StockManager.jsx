@@ -83,6 +83,7 @@ export default function StockManager({
   const [importRows, setImportRows] = useState([]);
   const [importMapping, setImportMapping] = useState(Object.fromEntries(IMPORT_FIELDS.map(f => [f.key, ''])));
   const [importUpdateExisting, setImportUpdateExisting] = useState(true);
+  const [importDefaultCurrency, setImportDefaultCurrency] = useState(mainCurrency);
   const [importResult, setImportResult] = useState(null);
   const [importLoading, setImportLoading] = useState(false);
   const [importDragOver, setImportDragOver] = useState(false);
@@ -295,6 +296,7 @@ export default function StockManager({
     setImportHeaders([]);
     setImportRows([]);
     setImportMapping(Object.fromEntries(IMPORT_FIELDS.map(f => [f.key, ''])));
+    setImportDefaultCurrency(mainCurrency);
     setImportResult(null);
     setImportLoading(false);
   };
@@ -355,9 +357,11 @@ export default function StockManager({
   const handleImportSubmit = async () => {
     setImportLoading(true);
     try {
-      const products = importRows.map(row =>
-        Object.fromEntries(IMPORT_FIELDS.map(({ key }) => [key, importMapping[key] ? row[importMapping[key]] : '']))
-      );
+      const products = importRows.map(row => {
+        const obj = Object.fromEntries(IMPORT_FIELDS.map(({ key }) => [key, importMapping[key] ? row[importMapping[key]] : '']));
+        if (!obj.currency) obj.currency = importDefaultCurrency;
+        return obj;
+      });
       const res = await fetch(`${BACKEND_URL}/api/products/bulk`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -872,6 +876,24 @@ export default function StockManager({
                         </div>
                       ))}
                     </div>
+
+                    {/* Default currency fallback — shown only when currency column is not mapped */}
+                    {!importMapping.currency && (
+                      <div className="flex items-center gap-3 px-3 py-2.5 mt-2 rounded-xl border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30">
+                        <AlertTriangle size={14} className="text-amber-500 dark:text-amber-400 flex-shrink-0" />
+                        <span className="text-xs font-bold text-amber-700 dark:text-amber-300 flex-1">
+                          {il.noCurrencyColHint || "No currency column — set a default:"}
+                        </span>
+                        <select
+                          value={importDefaultCurrency}
+                          onChange={e => setImportDefaultCurrency(e.target.value)}
+                          className="px-2.5 py-1.5 text-xs font-bold rounded-xl border border-amber-300 dark:border-amber-600 bg-white dark:bg-slate-900 dark:text-slate-100 outline-none focus:border-amber-400"
+                        >
+                          <option value="USD">USD</option>
+                          <option value="KHR">KHR</option>
+                        </select>
+                      </div>
+                    )}
                   </div>
 
                   {/* Preview */}
