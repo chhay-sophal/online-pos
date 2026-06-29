@@ -117,7 +117,6 @@ export default function Invoice({ invoiceData, locale, onClose }) {
 
   <p class="footer">${inv.thankYou}</p>
 
-  <script>window.onload = function () { window.print(); }</script>
 </body>
 </html>`;
   };
@@ -207,19 +206,33 @@ export default function Invoice({ invoiceData, locale, onClose }) {
   const handlePrint = () => {
     setPrinting(true);
     const html = buildInvoiceHTML();
-    const printWindow = window.open('', '_blank');
 
-    if (!printWindow || printWindow.closed) {
-      // Popup blocked — download a jsPDF text invoice instead
-      downloadPDF();
+    // Parse invoice HTML to pull out styles + body content
+    const parsed = new DOMParser().parseFromString(html, 'text/html');
+    const invoiceStyles = parsed.querySelector('style')?.textContent ?? '';
+
+    // Overlay that is invisible normally, visible only during print
+    const styleEl = document.createElement('style');
+    styleEl.textContent = `@media print{body>:not(#__inv_frame){display:none!important}#__inv_frame{display:block!important;position:fixed;inset:0;background:#fff;z-index:99999}}${invoiceStyles}`;
+
+    const frameEl = document.createElement('div');
+    frameEl.id = '__inv_frame';
+    frameEl.style.display = 'none';
+    frameEl.innerHTML = parsed.body.innerHTML;
+
+    document.head.appendChild(styleEl);
+    document.body.appendChild(frameEl);
+
+    const cleanup = () => {
+      document.head.removeChild(styleEl);
+      document.body.removeChild(frameEl);
       setPrinting(false);
-      return;
-    }
+      window.removeEventListener('afterprint', cleanup);
+    };
+    window.addEventListener('afterprint', cleanup);
 
-    printWindow.document.write(html);
-    printWindow.document.close();
-    // window.onload in the HTML triggers window.print() automatically
-    setPrinting(false);
+    // Small delay lets the DOM settle before the dialog opens
+    setTimeout(() => window.print(), 100);
   };
 
   return (
