@@ -9,6 +9,12 @@ const fs = require('fs');
 const EXCHANGE_RATE = 4100;
 const PORT = process.env.PORT ? Number(process.env.PORT) : 0;
 
+const localNow = () => {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+};
+
 // --- DATABASE SETUP ---
 
 const DB_DIR = process.env.POS_DATA_DIR || path.join(os.homedir(), '.soso-babymart-pos');
@@ -223,9 +229,9 @@ app.post('/api/orders/checkout', (req, res) => {
 
     const orderId = run(
       `INSERT INTO orders
-        (customer_id, total_amount, currency, payment_method, bank_name, amount_paid_usd, amount_paid_khr, change_given_khr, status)
-       VALUES (?, ?, 'USD', ?, ?, ?, ?, ?, 'COMPLETED')`,
-      [customer_id || null, total_amount, payment_method, bank_name || null, amount_paid_usd, amount_paid_khr, changeGivenKhr]
+        (customer_id, total_amount, currency, payment_method, bank_name, amount_paid_usd, amount_paid_khr, change_given_khr, status, created_at)
+       VALUES (?, ?, 'USD', ?, ?, ?, ?, ?, 'COMPLETED', ?)`,
+      [customer_id || null, total_amount, payment_method, bank_name || null, amount_paid_usd, amount_paid_khr, changeGivenKhr, localNow()]
     );
 
     for (const item of items) {
