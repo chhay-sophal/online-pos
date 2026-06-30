@@ -53,7 +53,10 @@ const SCHEMA = `
     cost_price REAL NOT NULL DEFAULT 0,
     currency TEXT NOT NULL DEFAULT 'USD',
     stock INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT DEFAULT (datetime('now'))
+    is_deleted INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT,
+    updated_at TEXT,
+    deleted_at TEXT
   );
   CREATE TABLE IF NOT EXISTS orders (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -66,7 +69,10 @@ const SCHEMA = `
     amount_paid_khr REAL DEFAULT 0,
     change_given_khr INTEGER DEFAULT 0,
     status TEXT DEFAULT 'COMPLETED',
-    created_at TEXT DEFAULT (datetime('now'))
+    is_deleted INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT,
+    updated_at TEXT,
+    deleted_at TEXT
   );
   CREATE TABLE IF NOT EXISTS order_items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -74,7 +80,9 @@ const SCHEMA = `
     product_id INTEGER NOT NULL,
     quantity INTEGER NOT NULL,
     price_at_sale REAL NOT NULL,
-    currency TEXT DEFAULT 'USD'
+    currency TEXT DEFAULT 'USD',
+    created_at TEXT,
+    updated_at TEXT
   );
   CREATE TABLE IF NOT EXISTS store_settings (
     key TEXT PRIMARY KEY,
@@ -89,7 +97,9 @@ const SCHEMA = `
     transaction_currency TEXT,
     amount REAL,
     status TEXT,
-    created_at TEXT DEFAULT (datetime('now'))
+    created_at TEXT,
+    updated_at TEXT,
+    deleted_at TEXT
   );
   INSERT OR IGNORE INTO store_settings (key, value) VALUES
     ('exchange_rate', '4100'),
@@ -129,7 +139,7 @@ app.get('/api/products/low-stock', (req, res) => {
 });
 
 app.delete('/api/products/:id', (req, res) => {
-  run('UPDATE products SET is_deleted = 1 WHERE id = ?', [req.params.id]);
+  run('UPDATE products SET is_deleted = 1, deleted_at = ?, updated_at = ? WHERE id = ?', [localNow(), localNow(), req.params.id]);
   saveDb();
   res.json({ message: 'Product removed' });
 });
@@ -138,8 +148,8 @@ app.post('/api/products', (req, res) => {
   const { name, barcode, price, cost_price, currency, stock } = req.body;
   try {
     const id = run(
-      'INSERT INTO products (name, barcode, price, cost_price, currency, stock) VALUES (?, ?, ?, ?, ?, ?)',
-      [name, barcode, parseFloat(price), parseFloat(cost_price || 0), currency || 'USD', parseInt(stock) || 0]
+      'INSERT INTO products (name, barcode, price, cost_price, currency, stock, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [name, barcode, parseFloat(price), parseFloat(cost_price || 0), currency || 'USD', parseInt(stock) || 0, localNow(), localNow()]
     );
     saveDb();
     res.status(201).json(query('SELECT * FROM products WHERE id = ?', [id])[0]);
@@ -171,14 +181,14 @@ app.post('/api/products/bulk', (req, res) => {
       if (barcode && updateExisting) {
         const existing = query('SELECT id FROM products WHERE barcode = ? AND is_deleted = 0', [barcode]);
         if (existing.length) {
-          run('UPDATE products SET name = ?, price = ?, cost_price = ?, currency = ?, stock = ? WHERE id = ?',
-            [name, price, cost_price, currency, stock, existing[0].id]);
+          run('UPDATE products SET name = ?, price = ?, cost_price = ?, currency = ?, stock = ?, updated_at = ? WHERE id = ?',
+            [name, price, cost_price, currency, stock, localNow(), existing[0].id]);
           updated++;
           continue;
         }
       }
-      run('INSERT INTO products (name, barcode, price, cost_price, currency, stock) VALUES (?, ?, ?, ?, ?, ?)',
-        [name, barcode, price, cost_price, currency, stock]);
+      run('INSERT INTO products (name, barcode, price, cost_price, currency, stock, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [name, barcode, price, cost_price, currency, stock, localNow(), localNow()]);
       imported++;
     } catch (err) {
       errorCount++;
@@ -192,8 +202,8 @@ app.post('/api/products/bulk', (req, res) => {
 app.put('/api/products/:id', (req, res) => {
   const { name, barcode, price, cost_price, currency, stock } = req.body;
   run(
-    'UPDATE products SET name = ?, barcode = ?, price = ?, cost_price = ?, currency = ?, stock = ? WHERE id = ?',
-    [name, barcode, parseFloat(price), parseFloat(cost_price || 0), currency || 'USD', parseInt(stock), req.params.id]
+    'UPDATE products SET name = ?, barcode = ?, price = ?, cost_price = ?, currency = ?, stock = ?, updated_at = ? WHERE id = ?',
+    [name, barcode, parseFloat(price), parseFloat(cost_price || 0), currency || 'USD', parseInt(stock), localNow(), req.params.id]
   );
   saveDb();
   const updated = query('SELECT * FROM products WHERE id = ?', [req.params.id])[0];
@@ -236,17 +246,17 @@ app.post('/api/orders/checkout', (req, res) => {
 
     for (const item of items) {
       run(
-        'INSERT INTO order_items (order_id, product_id, quantity, price_at_sale, currency) VALUES (?, ?, ?, ?, ?)',
-        [orderId, item.id, item.quantity, item.price, item.currency || 'USD']
+        'INSERT INTO order_items (order_id, product_id, quantity, price_at_sale, currency, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [orderId, item.id, item.quantity, item.price, item.currency || 'USD', localNow(), localNow()]
       );
-      run('UPDATE products SET stock = stock - ? WHERE id = ?', [item.quantity, item.id]);
+      run('UPDATE products SET stock = stock - ?, updated_at = ? WHERE id = ?', [item.quantity, localNow(), item.id]);
     }
 
     if (payment_method === 'KHQR' && khqr_data) {
       run(
-        `INSERT INTO khqr_transactions (order_id, md5_hash, qr_string, bank_name, transaction_currency, amount, status)
-         VALUES (?, ?, ?, ?, ?, ?, 'SUCCESS')`,
-        [orderId, khqr_data.md5_hash, khqr_data.qr_string, khqr_data.bank_name || 'Bakong Network', khqr_data.currency, total_amount]
+        `INSERT INTO khqr_transactions (order_id, md5_hash, qr_string, bank_name, transaction_currency, amount, status, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, 'SUCCESS', ?, ?)`,
+        [orderId, khqr_data.md5_hash, khqr_data.qr_string, khqr_data.bank_name || 'Bakong Network', khqr_data.currency, total_amount, localNow(), localNow()]
       );
     }
 
@@ -287,7 +297,7 @@ app.get('/api/orders', (req, res) => {
 });
 
 app.delete('/api/orders/:id', (req, res) => {
-  run('UPDATE orders SET is_deleted = 1 WHERE id = ?', [req.params.id]);
+  run('UPDATE orders SET is_deleted = 1, deleted_at = ?, updated_at = ? WHERE id = ?', [localNow(), localNow(), req.params.id]);
   saveDb();
   res.json({ message: 'Order voided' });
 });
@@ -384,17 +394,26 @@ function createBackup() {
 
 function runMigrations() {
   db.run(SCHEMA);
-  const tableInfo = (table) => query(`PRAGMA table_info(${table})`).map(c => c.name);
-  const productCols = tableInfo('products');
-  if (!productCols.includes('cost_price')) {
-    db.run('ALTER TABLE products ADD COLUMN cost_price REAL NOT NULL DEFAULT 0');
-  }
-  if (!productCols.includes('is_deleted')) {
-    db.run('ALTER TABLE products ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0');
-  }
-  if (!tableInfo('orders').includes('is_deleted')) {
-    db.run('ALTER TABLE orders ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0');
-  }
+  const cols = (table) => query(`PRAGMA table_info(${table})`).map(c => c.name);
+
+  const productCols = cols('products');
+  if (!productCols.includes('cost_price'))  db.run('ALTER TABLE products ADD COLUMN cost_price REAL NOT NULL DEFAULT 0');
+  if (!productCols.includes('is_deleted'))  db.run('ALTER TABLE products ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0');
+  if (!productCols.includes('updated_at'))  db.run('ALTER TABLE products ADD COLUMN updated_at TEXT');
+  if (!productCols.includes('deleted_at'))  db.run('ALTER TABLE products ADD COLUMN deleted_at TEXT');
+
+  const orderCols = cols('orders');
+  if (!orderCols.includes('is_deleted'))  db.run('ALTER TABLE orders ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0');
+  if (!orderCols.includes('updated_at'))  db.run('ALTER TABLE orders ADD COLUMN updated_at TEXT');
+  if (!orderCols.includes('deleted_at'))  db.run('ALTER TABLE orders ADD COLUMN deleted_at TEXT');
+
+  const itemCols = cols('order_items');
+  if (!itemCols.includes('created_at'))  db.run('ALTER TABLE order_items ADD COLUMN created_at TEXT');
+  if (!itemCols.includes('updated_at'))  db.run('ALTER TABLE order_items ADD COLUMN updated_at TEXT');
+
+  const khqrCols = cols('khqr_transactions');
+  if (!khqrCols.includes('updated_at'))  db.run('ALTER TABLE khqr_transactions ADD COLUMN updated_at TEXT');
+  if (!khqrCols.includes('deleted_at'))  db.run('ALTER TABLE khqr_transactions ADD COLUMN deleted_at TEXT');
 }
 
 // --- SUMMARY ROUTES ---
