@@ -259,6 +259,7 @@ export const translations = {
         colStock: 'ស្តុក',
         colLowStock: 'ស្តុកទាប',
       },
+      costPrice: 'តម្លៃដើម',
     },
 
     // SETTINGS SPECIFIC LABELS
@@ -594,6 +595,7 @@ export const translations = {
         colStock: 'Stock',
         colLowStock: 'Low Stock',
       },
+      costPrice: 'Cost Price',
     },
 
     // SETTINGS SPECIFIC LABELS
