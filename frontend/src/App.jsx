@@ -525,6 +525,7 @@ export default function App() {
           onBackToRegister={() => setView('REGISTER')}
           currentLocale={locale}
           dynamicRate={dynamicRate}
+          mainCurrency={mainCurrency}
         />
       </BackendContext.Provider>
     );

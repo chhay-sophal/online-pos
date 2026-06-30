@@ -5,7 +5,7 @@ import BackendContext from './BackendContext';
 
 const IS_TAURI = Boolean(window.__TAURI_INTERNALS__ ?? window.__TAURI__);
 
-export default function DailySummary({ onBackToRegister, currentLocale, dynamicRate }) {
+export default function DailySummary({ onBackToRegister, currentLocale, dynamicRate, mainCurrency }) {
   const BACKEND_URL = useContext(BackendContext);
 
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -70,8 +70,13 @@ export default function DailySummary({ onBackToRegister, currentLocale, dynamicR
   const prevDay = () => setSelectedDate(d => { const n = new Date(d); n.setDate(n.getDate() - 1); return n; });
   const nextDay = () => setSelectedDate(d => { const n = new Date(d); n.setDate(n.getDate() + 1); return n; });
 
-  const fmt = (n) => `$${Number(n || 0).toFixed(2)}`;
-  const fmtKhr = (n) => `≈ ${Math.round((n || 0) * (dynamicRate || 4100)).toLocaleString()}៛`;
+  const isKhr = mainCurrency === 'KHR';
+  const fmt = (n) => isKhr
+    ? `${Math.round((n || 0) * (dynamicRate || 4100)).toLocaleString()} ៛`
+    : `$${Number(n || 0).toFixed(2)}`;
+  const fmtSub = (n) => isKhr
+    ? `≈ $${Number(n || 0).toFixed(2)}`
+    : `≈ ${Math.round((n || 0) * (dynamicRate || 4100)).toLocaleString()} ៛`;
 
   const methodLabel = (m) => ({ CASH: s.cash || 'Cash', KHQR: 'KHQR', STATIC_QR: s.staticQr || 'Bank QR' }[m] || m);
   const methodColor = (m) => ({ CASH: 'bg-emerald-500', KHQR: 'bg-indigo-500', STATIC_QR: 'bg-amber-500' }[m] || 'bg-slate-400');
@@ -148,7 +153,7 @@ export default function DailySummary({ onBackToRegister, currentLocale, dynamicR
                 {
                   label: s.revenue || 'Revenue',
                   value: fmt(summary.total_revenue),
-                  sub: fmtKhr(summary.total_revenue),
+                  sub: fmtSub(summary.total_revenue),
                   color: 'text-slate-900 dark:text-white',
                 },
                 {
@@ -160,7 +165,7 @@ export default function DailySummary({ onBackToRegister, currentLocale, dynamicR
                 {
                   label: s.grossProfit || 'Gross Profit',
                   value: fmt(summary.gross_profit),
-                  sub: fmtKhr(summary.gross_profit),
+                  sub: fmtSub(summary.gross_profit),
                   color: summary.gross_profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500',
                 },
                 {

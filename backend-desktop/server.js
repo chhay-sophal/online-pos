@@ -399,6 +399,9 @@ app.get('/api/summary/daily', (req, res) => {
 
   const base = [date_from, date_to];
 
+  const rateRow = query("SELECT value FROM store_settings WHERE key = 'exchange_rate'")[0];
+  const rate = parseFloat(rateRow?.value || '4100');
+
   const stats = query(
     `SELECT COUNT(*) as order_count, COALESCE(SUM(total_amount), 0) as total_revenue
      FROM orders WHERE created_at >= ? AND created_at < ? AND is_deleted = 0`,
@@ -414,7 +417,7 @@ app.get('/api/summary/daily', (req, res) => {
 
   const topProducts = query(
     `SELECT p.name, SUM(oi.quantity) as total_qty,
-            SUM(oi.price_at_sale * oi.quantity) as revenue
+            SUM(CASE WHEN oi.currency = 'KHR' THEN oi.price_at_sale / ${rate} ELSE oi.price_at_sale END * oi.quantity) as revenue
      FROM order_items oi
      JOIN orders o ON o.id = oi.order_id
      JOIN products p ON p.id = oi.product_id
@@ -425,7 +428,11 @@ app.get('/api/summary/daily', (req, res) => {
   );
 
   const profitRow = query(
-    `SELECT COALESCE(SUM((oi.price_at_sale - p.cost_price) * oi.quantity), 0) as gross_profit
+    `SELECT COALESCE(SUM(
+       (CASE WHEN oi.currency = 'KHR' THEN oi.price_at_sale / ${rate} ELSE oi.price_at_sale END
+        - CASE WHEN p.currency = 'KHR' THEN p.cost_price / ${rate} ELSE p.cost_price END)
+       * oi.quantity
+     ), 0) as gross_profit
      FROM order_items oi
      JOIN orders o ON o.id = oi.order_id
      JOIN products p ON p.id = oi.product_id
