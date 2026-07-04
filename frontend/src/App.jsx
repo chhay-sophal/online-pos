@@ -744,13 +744,6 @@ export default function App() {
                             </p>
                           </div>
 
-                          {/* Qty stepper */}
-                          <div className="flex items-center border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-700 rounded-xl p-0.5 shadow-2xs">
-                            <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 flex items-center justify-center font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">&minus;</button>
-                            <span className="w-9 text-center font-bold text-sm text-slate-800 dark:text-slate-100">{item.quantity}</span>
-                            <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 flex items-center justify-center font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">+</button>
-                          </div>
-
                           {/* Discount controls */}
                           <div className="flex items-stretch gap-1">
                             <input
@@ -787,6 +780,13 @@ export default function App() {
                             </div>
                           </div>
                           
+                          {/* Qty stepper */}
+                          <div className="flex items-center border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-700 rounded-xl p-0.5 shadow-2xs">
+                            <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 flex items-center justify-center font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">&minus;</button>
+                            <span className="w-9 text-center font-bold text-sm text-slate-800 dark:text-slate-100">{item.quantity}</span>
+                            <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 flex items-center justify-center font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">+</button>
+                          </div>
+
                           {/* Line total */}
                           <div className="text-right w-24">
                             {item.discount > 0 ? (() => {
@@ -832,10 +832,10 @@ export default function App() {
                 <label className="text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase font-display">
                   {locale === 'km' ? 'បញ្ចុះតម្លៃ' : 'Discount'}
                 </label>
-                <div className="flex ml-auto rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
+                <div className="flex w-16 ml-auto rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
                   <button
                     onClick={() => { setTxDiscountType('pct'); setTxDiscountValue(''); setCheckoutResult(null); setActiveKhqr(null); }}
-                    className={`px-2.5 py-1 text-[10px] font-bold transition-all ${
+                    className={`flex-1 px-0 py-1 text-[10px] font-bold transition-all ${
                       txDiscountType === 'pct'
                         ? 'bg-amber-500 text-white'
                         : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
@@ -843,7 +843,7 @@ export default function App() {
                   >%</button>
                   <button
                     onClick={() => { setTxDiscountType('fixed'); setTxDiscountValue(''); setCheckoutResult(null); setActiveKhqr(null); }}
-                    className={`px-2.5 py-1 text-[10px] font-bold border-l border-slate-200 dark:border-slate-700 transition-all ${
+                    className={`flex-1 px-0 py-1 text-[10px] font-bold border-l border-slate-200 dark:border-slate-700 transition-all ${
                       txDiscountType === 'fixed'
                         ? 'bg-amber-500 text-white border-amber-500'
                         : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
@@ -866,7 +866,7 @@ export default function App() {
                   min="0"
                   max={txDiscountType === 'pct' ? '100' : undefined}
                   placeholder={txDiscountType === 'pct' ? '0' : mainCurrency === 'KHR' ? '0' : '0.00'}
-                  className="w-full h-9 px-3 pr-14 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-800 dark:text-slate-100 text-sm focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-900/30 focus:outline-hidden focus:border-amber-500"
+                  className="w-full h-9 px-3 pr-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-800 dark:text-slate-100 text-sm focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-900/30 focus:outline-hidden focus:border-amber-500"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 dark:text-slate-500 pointer-events-none">
                   {txDiscountType === 'pct' ? '%' : mainCurrency === 'KHR' ? '៛' : 'USD'}
