@@ -117,10 +117,14 @@ app.use(express.json({ limit: '10mb' }));
 // --- ROUTES ---
 
 app.get('/api/products/barcode/:barcode', (req, res) => {
+  const barcodeParam = req.params.barcode.toLowerCase();
+  if (!barcodeParam) return res.status(400).json({ message: 'Barcode is required' });
+
   const rows = query(
-    'SELECT id, name, barcode, price, currency, stock FROM products WHERE barcode = ? AND is_deleted = 0',
-    [req.params.barcode]
+    'SELECT id, name, barcode, price, currency, stock FROM products WHERE LOWER(barcode) = ? AND is_deleted = 0',
+    [barcodeParam]
   );
+  
   if (!rows.length) return res.status(404).json({ message: 'Barcode not registered in system' });
   res.json(rows[0]);
 });
