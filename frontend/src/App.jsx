@@ -726,9 +726,33 @@ export default function App() {
                           <h3 className="font-bold text-sm text-slate-900 dark:text-white truncate">{item.name}</h3>
                           <p className="text-[11px] text-slate-400 dark:text-slate-500 tracking-wider mt-0.5">#{item.barcode}</p>
                         </div>
-                        <div className="flex items-center gap-5">
+                        <div className="flex items-stretch gap-5">
+                          {/* Price Per Unit */}
+                          <div className="text-right w-24">
+                            <p className="text-[11px] text-slate-400 dark:text-slate-500 line-through">
+                              {item.currency === 'KHR' ? `${Math.round(item.price).toLocaleString()} ៛` : `$${Number(item.price).toFixed(2)}`}
+                            </p>
+                            <p className="font-bold text-sm text-slate-900 dark:text-white">
+                              {item.discountType === 'fixed'
+                                ? item.currency === 'KHR'
+                                  ? `${Math.round(Math.max(0, item.price - item.discount)).toLocaleString()} ៛`
+                                  : `$${Math.max(0, Number(item.price) - item.discount).toFixed(2)}`
+                                : item.currency === 'KHR'
+                                  ? `${Math.round(item.price * (1 - (item.discount || 0) / 100)).toLocaleString()} ៛`
+                                  : `$${(Number(item.price) * (1 - (item.discount || 0) / 100)).toFixed(2)}`
+                              }
+                            </p>
+                          </div>
+
+                          {/* Qty stepper */}
+                          <div className="flex items-center border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-700 rounded-xl p-0.5 shadow-2xs">
+                            <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 flex items-center justify-center font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">&minus;</button>
+                            <span className="w-9 text-center font-bold text-sm text-slate-800 dark:text-slate-100">{item.quantity}</span>
+                            <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 flex items-center justify-center font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">+</button>
+                          </div>
+
                           {/* Discount controls */}
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-stretch gap-1">
                             <input
                               type="number"
                               min="0"
@@ -740,13 +764,13 @@ export default function App() {
                                 if ((item.discountType || 'pct') === 'pct' && v > 100) v = 100;
                                 setItemDiscount(item.id, v === 0 && e.target.value === '' ? 0 : v);
                               }}
-                              className="w-30 text-center text-xs font-bold border border-slate-200 dark:border-slate-700 rounded-lg px-1.5 py-1 outline-none bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-900/30 focus:border-amber-400 dark:focus:border-amber-600"
+                              className="w-30 h-full text-center text-xs font-bold border border-slate-200 dark:border-slate-700 rounded-lg px-1.5 py-1 outline-none bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-900/30 focus:border-amber-400 dark:focus:border-amber-600"
                               placeholder="0"
                             />
-                            <div className="flex rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
+                            <div className="flex w-16 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
                               <button
                                 onClick={() => setItemDiscount(item.id, undefined, 'pct')}
-                                className={`px-2 py-1 text-[10px] font-bold transition-all ${
+                                className={`flex-1 px-0 py-1 text-[10px] font-bold transition-all ${
                                   (item.discountType || 'pct') === 'pct'
                                     ? 'bg-amber-500 text-white'
                                     : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700'
@@ -754,7 +778,7 @@ export default function App() {
                               >%</button>
                               <button
                                 onClick={() => setItemDiscount(item.id, undefined, 'fixed')}
-                                className={`px-2 py-1 text-[10px] font-bold border-l border-slate-200 dark:border-slate-700 transition-all ${
+                                className={`flex-1 px-0 py-1 text-[10px] font-bold border-l border-slate-200 dark:border-slate-700 transition-all ${
                                   item.discountType === 'fixed'
                                     ? 'bg-amber-500 text-white border-amber-500'
                                     : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700'
@@ -762,12 +786,7 @@ export default function App() {
                               >{item.currency === 'KHR' ? '៛' : '$'}</button>
                             </div>
                           </div>
-                          {/* Qty stepper */}
-                          <div className="flex items-center border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-700 rounded-xl p-0.5 shadow-2xs">
-                            <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 flex items-center justify-center font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">&minus;</button>
-                            <span className="w-9 text-center font-bold text-sm text-slate-800 dark:text-slate-100">{item.quantity}</span>
-                            <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 flex items-center justify-center font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">+</button>
-                          </div>
+                          
                           {/* Line total */}
                           <div className="text-right w-24">
                             {item.discount > 0 ? (() => {
