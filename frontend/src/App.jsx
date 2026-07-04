@@ -244,6 +244,7 @@ export default function App() {
     emit('customer-display', {
       state: displayState,
       cart,
+      rawSubtotalUsd,
       subtotalUsd,
       txDiscountAmt,
       totalUsd,
@@ -260,7 +261,7 @@ export default function App() {
       qrString: activeKhqr?.qr_string || null,
       isDark,
     });
-  }, [cart, subtotalUsd, txDiscountAmt, checkoutResult, paymentMethod, activeKhqr, customerDisplayOpen, amountPaidUsd, amountPaidKhr, isDark]);
+  }, [cart, rawSubtotalUsd, subtotalUsd, txDiscountAmt, checkoutResult, paymentMethod, activeKhqr, customerDisplayOpen, amountPaidUsd, amountPaidKhr, isDark]);
 
   const focusScanner = () => {
     if (view === 'REGISTER' && barcodeRef.current) barcodeRef.current.focus();

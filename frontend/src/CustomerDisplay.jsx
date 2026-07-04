@@ -40,11 +40,12 @@ export default function CustomerDisplay() {
   const storeName     = payload?.storeName     || (locale === 'km' ? 'សូសូ បេប៊ី ម៉ាត' : 'SOSO Baby Mart');
   const storeIcon     = payload?.storeIcon     || '';
   const cart          = payload?.cart          || [];
-  const subtotalUsd   = payload?.subtotalUsd   || 0;
+  const rawSubtotalUsd = payload?.rawSubtotalUsd || 0;
   const txDiscountAmt = payload?.txDiscountAmt || 0;
   const totalUsd      = payload?.totalUsd      || 0;
   const totalKhr      = payload?.totalKhr      || 0;
   const mainCurrency  = payload?.mainCurrency  || 'USD';
+  const dynamicRate   = payload?.dynamicRate   || 4100;
   const changeDueKhr  = payload?.changeDueKhr  || 0;
   const paymentMethod = payload?.paymentMethod || 'CASH';
   const tenderedUsd   = payload?.tenderedUsd   || 0;
@@ -140,19 +141,48 @@ export default function CustomerDisplay() {
               {cd.welcome}
             </div>
           ) : cart.map((item, idx) => (
-            <div key={item.id} className="text-lg flex items-center gap-4 bg-slate-800 rounded-2xl px-6 py-4 border border-slate-700/40">
-              <p className="text-white font-bold min-w-0 truncate pr-2">{idx + 1}</p>
+            <div key={item.id} className="text-md flex items-center gap-10 bg-slate-800 rounded-2xl px-6 py-4 border border-slate-700/40">
               <div className="flex-1 min-w-0 flex items-center gap-2 truncate">
+                <p className="text-white font-bold min-w-0 truncate pr-2">{idx + 1}</p>
                 <p className="text-white font-bold truncate">{item.name}</p>
-                {item.discount > 0 && (
-                  <span className="flex-shrink-0 text-[11px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-400">
-                    -{item.discount}%
-                  </span>
-                )}
               </div>
-              <p className="text-slate-400 font-semibold flex-shrink-0">{formatUnitPrice(item)}</p>
-              <p className="text-slate-500 font-bold flex-shrink-0 w-12 text-center">×{item.quantity}</p>
-              <p className="text-indigo-300 font-black flex-shrink-0 w-32 text-right">{formatItemTotal(item)}</p>
+              {/* Price Per Unit */}
+              <div className="text-right w-24">
+                <p className="font-bold text-slate-900 dark:text-white">
+                  {item.currency === 'KHR' ? `${Math.round(item.price).toLocaleString()} ៛` : `$${Number(item.price).toFixed(2)}`}
+                </p>
+              </div>
+
+              {/* Per Item Discount */}
+              {item.discount > 0 && (
+                <div className="flex-shrink-0 text-right">
+                  <p className="text-amber-400 font-bold">
+                    {item.discountType === 'fixed'
+                      ? item.currency === 'KHR'
+                        ? `-${Math.round(item.discount).toLocaleString()} ៛`
+                        : `-$${Number(item.discount).toFixed(2)}`
+                      : `-${item.discount}%`
+                    }
+                  </p>
+                </div>
+              )}
+              
+              <p className="text-slate-500 font-bold flex-shrink-0 text-center">×{item.quantity}</p>
+              {/* Amount before discount and amount after discount */}
+              <div className="flex flex-col items-end flex-shrink-0">
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 line-through">
+                  {item.currency === 'KHR'
+                    ? `${Math.round(item.price * item.quantity).toLocaleString()} ៛`
+                    : `$${(Number(item.price) * item.quantity).toFixed(2)}`
+                  }
+                </p>
+                <p className="font-bold text-sm text-slate-900 dark:text-white">
+                  {item.currency === 'KHR'
+                    ? `${Math.round(discountedUnitPrice(item) * item.quantity).toLocaleString()} ៛`
+                    : `$${(discountedUnitPrice(item) * item.quantity).toFixed(2)}`
+                  }
+                </p>
+              </div>
             </div>
           ))}
         </div>
@@ -160,23 +190,25 @@ export default function CustomerDisplay() {
         {/* RIGHT — 30% — total + payment info */}
         <div className="flex-[3] flex flex-col bg-slate-850 border-l border-slate-800 overflow-hidden">
 
+          {/* Per transaction discount */}
+          {txDiscountAmt > 0 && (
+            <div className="flex-0 flex flex-col items-center justify-center px-6 py-3 border-b border-slate-800">
+              <p className="text-amber-400 text-sm font-bold uppercase tracking-widest mb-1">{locale === 'km' ? 'បញ្ចុះតម្លៃ' : 'Discount'}</p>
+              <p className="text-white font-black text-4xl leading-none tracking-tight text-center">
+                −{mainCurrency === 'USD' ? `$${txDiscountAmt.toFixed(2)}` : `${Math.round(txDiscountAmt * dynamicRate).toLocaleString()} ៛`}
+              </p>
+            </div>
+          )}
           {/* Total */}
           <div className="flex-1 flex flex-col items-center justify-center px-6 py-8 border-b border-slate-800">
             <p className="text-slate-500 text-lg font-bold uppercase tracking-widest mb-3">{cd.total}</p>
             {hasDiscount && (
               <p className="text-slate-600 text-2xl font-bold line-through mb-1">
-                {mainCurrency === 'USD' ? `$${subtotalUsd.toFixed(2)}` : `${Math.round(subtotalUsd * (totalKhr / (totalUsd || 1))).toLocaleString()} ៛`}
+                {mainCurrency === 'USD' ? `$${rawSubtotalUsd.toFixed(2)}` : `${Math.round(rawSubtotalUsd * dynamicRate).toLocaleString()} ៛`}
               </p>
             )}
             <p className="text-white font-black text-6xl leading-none tracking-tight text-center">{primaryTotal}</p>
             <p className="text-slate-500 text-2xl font-bold mt-2">{secondaryTotal}</p>
-            {txDiscountAmt > 0 && (
-              <div className="mt-3 px-4 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-xl">
-                <p className="text-amber-400 text-sm font-bold text-center">
-                  {locale === 'km' ? 'បញ្ចុះ' : 'Discount'} −${txDiscountAmt.toFixed(2)}
-                </p>
-              </div>
-            )}
           </div>
 
           {/* Payment detail */}
