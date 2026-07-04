@@ -135,56 +135,60 @@ export default function CustomerDisplay() {
       <div className="flex-1 flex overflow-hidden">
 
         {/* LEFT — 70% — item list */}
-        <div className="flex-[7] overflow-y-auto p-5 space-y-2 border-r border-slate-800">
-          {cart.length === 0 ? (
-            <div className="h-full flex items-center justify-center text-slate-700 text-sm font-bold uppercase tracking-widest">
-              {cd.welcome}
-            </div>
-          ) : cart.map((item, idx) => (
-            <div key={item.id} className="text-md flex items-center gap-10 bg-slate-800 rounded-2xl px-6 py-4 border border-slate-700/40">
-              <div className="flex-1 min-w-0 flex items-center gap-2 truncate">
-                <p className="text-white font-bold min-w-0 truncate pr-2">{idx + 1}</p>
-                <p className="text-white font-bold truncate">{item.name}</p>
-              </div>
-              {/* Price Per Unit */}
-              <div className="text-right w-24">
-                <p className="font-bold text-slate-900 dark:text-white">
-                  {item.currency === 'KHR' ? `${Math.round(item.price).toLocaleString()} ៛` : `$${Number(item.price).toFixed(2)}`}
-                </p>
-              </div>
-
-              {/* Per Item Discount */}
-              {item.discount > 0 && (
-                <div className="flex-shrink-0 text-right">
-                  <p className="text-amber-400 font-bold">
-                    {item.discountType === 'fixed'
-                      ? item.currency === 'KHR'
-                        ? `-${Math.round(item.discount).toLocaleString()} ៛`
-                        : `-$${Number(item.discount).toFixed(2)}`
-                      : `-${item.discount}%`
-                    }
-                  </p>
-                </div>
-              )}
-              
-              <p className="text-slate-500 font-bold flex-shrink-0 text-center">×{item.quantity}</p>
-              {/* Amount before discount and amount after discount */}
-              <div className="flex flex-col items-end flex-shrink-0">
-                <p className="text-[11px] text-slate-400 dark:text-slate-500 line-through">
-                  {item.currency === 'KHR'
-                    ? `${Math.round(item.price * item.quantity).toLocaleString()} ៛`
-                    : `$${(Number(item.price) * item.quantity).toFixed(2)}`
-                  }
-                </p>
-                <p className="font-bold text-sm text-slate-900 dark:text-white">
-                  {item.currency === 'KHR'
-                    ? `${Math.round(discountedUnitPrice(item) * item.quantity).toLocaleString()} ៛`
-                    : `$${(discountedUnitPrice(item) * item.quantity).toFixed(2)}`
-                  }
-                </p>
-              </div>
-            </div>
-          ))}
+        <div className="flex-[7] overflow-y-auto p-5 border-r border-slate-800">
+          <table className="min-w-full border-separate border-spacing-y-2">
+            <thead>
+              <tr className="text-slate-400 text-[11px] font-bold uppercase tracking-widest">
+                <th className="w-6 pr-2 text-right">{cd.no}</th>
+                <th className="text-left">{cd.item}</th>
+                <th className="w-28 text-center">{cd.unitPrice}</th>
+                <th className="w-28 text-center">{cd.discount}</th>
+                <th className="w-14 text-center">{cd.qty}</th>
+                <th className="w-30 text-center">{cd.amount}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cart.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="py-20 text-center text-slate-700 text-sm font-bold uppercase tracking-widest">
+                    {cd.welcome}
+                  </td>
+                </tr>
+              ) : cart.map((item, idx) => (
+                <tr key={item.id} className="bg-slate-800 rounded-2xl border border-slate-700/40 overflow-hidden">
+                  <td className="px-6 py-4 text-right text-white font-bold">{idx + 1}</td>
+                  <td className="px-0 py-4 text-white font-bold truncate">{item.name}</td>
+                  <td className="px-6 py-4 text-right w-24 font-bold text-slate-900 dark:text-white">
+                    {item.currency === 'KHR' ? `${Math.round(item.price).toLocaleString()} ៛` : `$${Number(item.price).toFixed(2)}`}
+                  </td>
+                  <td className="px-4 py-4 text-right w-20 text-amber-400 font-bold">
+                    {item.discount > 0
+                      ? item.discountType === 'fixed'
+                        ? item.currency === 'KHR'
+                          ? `-${Math.round(item.discount).toLocaleString()} ៛`
+                          : `-$${Number(item.discount).toFixed(2)}`
+                        : `-${item.discount}%`
+                      : ''}
+                  </td>
+                  <td className="px-4 py-4 text-center text-slate-500 font-bold w-14">×{item.quantity}</td>
+                  <td className="px-6 py-4 text-right">
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 line-through">
+                      {item.currency === 'KHR'
+                        ? `${Math.round(item.price * item.quantity).toLocaleString()} ៛`
+                        : `$${(Number(item.price) * item.quantity).toFixed(2)}`
+                      }
+                    </p>
+                    <p className="font-bold text-sm text-slate-900 dark:text-white">
+                      {item.currency === 'KHR'
+                        ? `${Math.round(discountedUnitPrice(item) * item.quantity).toLocaleString()} ៛`
+                        : `$${(discountedUnitPrice(item) * item.quantity).toFixed(2)}`
+                      }
+                    </p>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
         {/* RIGHT — 30% — total + payment info */}
