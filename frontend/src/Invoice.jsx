@@ -4,7 +4,7 @@ import { Printer } from 'lucide-react';
 import { translations as t } from './locales';
 
 export default function Invoice({ invoiceData, locale, onClose }) {
-  const { order_id, items, totalUsd, totalKhr, paymentMethod, bankName, amountPaidUsd, amountPaidKhr, changeDueKhr, timestamp } = invoiceData;
+  const { order_id, items, subtotalBeforeDiscountUsd, transactionDiscountUsd, totalDiscountUsd, totalUsd, mainCurrency, dynamicRate, paymentMethod, bankName, amountPaidUsd, amountPaidKhr, changeDueKhr, timestamp } = invoiceData;
 
   const inv = t[locale].invoice;
   const [printing, setPrinting] = useState(false);
@@ -25,15 +25,32 @@ export default function Invoice({ invoiceData, locale, onClose }) {
     const p = Number(price);
     return currency === 'KHR' ? `${Math.round(p * qty).toLocaleString()} ៛` : `$${(p * qty).toFixed(2)}`;
   };
+  const discountedUnitPrice = (item) => {
+    const p = Number(item.price);
+    if (!item.discount) return p;
+    return item.discountType === 'fixed' ? Math.max(0, p - item.discount) : p * (1 - item.discount / 100);
+  };
+  const fmtDiscountedSubtotal = (item) => fmtUnit(discountedUnitPrice(item) * item.quantity, item.currency);
+  const fmtItemDiscountLabel = (item) => item.discountType === 'fixed' ? `−${fmtUnit(item.discount, item.currency)}` : `−${item.discount}%`;
+
+  // Summary amounts (subtotal/discount/total) follow the store's configured main currency.
+  const fmtPrimary = (usd) => mainCurrency === 'KHR'
+    ? `${Math.round(usd * dynamicRate).toLocaleString()} ៛`
+    : `$${usd.toFixed(2)}`;
+  const fmtSecondary = (usd) => mainCurrency === 'KHR'
+    ? `$${usd.toFixed(2)}`
+    : `${Math.round(usd * dynamicRate).toLocaleString()} ៛`;
 
   // Build a self-contained HTML invoice with only rgb() colors — no Tailwind, no oklch.
   const buildInvoiceHTML = () => {
     const itemRows = items.map(item => `
       <tr>
-        <td class="name">${item.name}</td>
+        <td class="name">${item.name}${item.discount > 0 ? `<span class="item-discount">${fmtItemDiscountLabel(item)}</span>` : ''}</td>
         <td class="center">${item.quantity}</td>
         <td class="right unit">${fmtUnit(item.price, item.currency)}</td>
-        <td class="right">${fmtSubtotal(item.price, item.quantity, item.currency)}</td>
+        <td class="right">${item.discount > 0
+          ? `<span class="strike">${fmtSubtotal(item.price, item.quantity, item.currency)}</span><br>${fmtDiscountedSubtotal(item)}`
+          : fmtSubtotal(item.price, item.quantity, item.currency)}</td>
       </tr>`).join('');
 
     const cashRows = paymentMethod === 'CASH' ? `
@@ -73,6 +90,8 @@ export default function Invoice({ invoiceData, locale, onClose }) {
     .right  { text-align: right; }
     .name   { padding-right: 8px; }
     .unit   { color: rgb(100,100,100); }
+    .item-discount { display: block; font-size: 9px; color: rgb(180,120,20); font-weight: bold; }
+    .strike { color: rgb(150,150,150); text-decoration: line-through; font-weight: normal; }
     thead th.center { text-align: center; }
     thead th.right  { text-align: right; }
     .total  { font-size: 13px; font-weight: bold; }
@@ -105,8 +124,11 @@ export default function Invoice({ invoiceData, locale, onClose }) {
 
   <hr class="dash2">
 
-  <div class="row total"><span>${inv.total}</span><span>$${totalUsd.toFixed(2)}</span></div>
-  <div class="row muted"><span></span><span>${Math.round(totalKhr).toLocaleString()} ៛</span></div>
+  ${transactionDiscountUsd > 0 ? `<div class="row"><span class="muted">${inv.txDiscount}</span><span>−${fmtPrimary(transactionDiscountUsd)}</span></div>` : ''}
+  <div class="row"><span class="muted">${inv.subtotal}</span><span>${fmtPrimary(subtotalBeforeDiscountUsd)}</span></div>
+  ${totalDiscountUsd > 0 ? `<div class="row"><span class="muted">${inv.discount}</span><span>−${fmtPrimary(totalDiscountUsd)}</span></div>` : ''}
+  <div class="row total"><span>${inv.total}</span><span>${fmtPrimary(totalUsd)}</span></div>
+  <div class="row muted"><span></span><span>${fmtSecondary(totalUsd)}</span></div>
 
   <hr class="dash">
 
@@ -167,18 +189,49 @@ export default function Invoice({ invoiceData, locale, onClose }) {
     items.forEach(item => {
       const nameLines = pdf.splitTextToSize(item.name, (W - 2 * m) * 0.46);
       pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(0);
+
+      if (item.discount > 0) {
+        pdf.setFontSize(7);
+        pdf.setTextColor(150);
+        pdf.text(fmtSubtotal(item.price, item.quantity, item.currency), W - m, y, { align: 'right' });
+        y += 3;
+        pdf.setFontSize(10);
+        pdf.setTextColor(0);
+      }
+
       pdf.text(nameLines, m, y);
       pdf.text(String(item.quantity), qtyX, y, { align: 'center' });
       pdf.text(fmtUnit(item.price, item.currency), unitX, y, { align: 'right' });
-      pdf.text(fmtSubtotal(item.price, item.quantity, item.currency), W - m, y, { align: 'right' });
+      if (item.discount > 0) {
+        pdf.setTextColor(180, 120, 20);
+        pdf.text(fmtDiscountedSubtotal(item), W - m, y, { align: 'right' });
+        pdf.setTextColor(0);
+      } else {
+        pdf.text(fmtSubtotal(item.price, item.quantity, item.currency), W - m, y, { align: 'right' });
+      }
       y += nameLines.length * 4 + 1;
+
+      if (item.discount > 0) {
+        pdf.setFontSize(8);
+        pdf.setTextColor(180, 120, 20);
+        pdf.text(fmtItemDiscountLabel(item), m, y);
+        pdf.setTextColor(0);
+        pdf.setFontSize(10);
+        y += 3.5;
+      }
     });
     dash(true);
 
-    pdf.setFontSize(12); row(inv.total, `$${totalUsd.toFixed(2)}`, true);
+    pdf.setFontSize(10);
+    if (transactionDiscountUsd > 0) row(inv.txDiscount, `−${fmtPrimary(transactionDiscountUsd)}`);
+    row(inv.subtotal, fmtPrimary(subtotalBeforeDiscountUsd));
+    if (totalDiscountUsd > 0) row(inv.discount, `−${fmtPrimary(totalDiscountUsd)}`);
+
+    pdf.setFontSize(12); row(inv.total, fmtPrimary(totalUsd), true);
     pdf.setFontSize(9);
     pdf.setTextColor(100);
-    pdf.text(`${Math.round(totalKhr).toLocaleString()} ៛`, W - m, y, { align: 'right' });
+    pdf.text(fmtSecondary(totalUsd), W - m, y, { align: 'right' });
     pdf.setTextColor(0); y += 6;
     dash();
 
@@ -295,13 +348,29 @@ export default function Invoice({ invoiceData, locale, onClose }) {
           <div className="space-y-1.5 mb-3">
             {items.map((item) => (
               <div key={item.id} className="flex items-start text-[11px]">
-                <span className="flex-1 leading-tight pr-2 break-words">{item.name}</span>
+                <span className="flex-1 leading-tight pr-2 break-words">
+                  {item.name}
+                  {item.discount > 0 && (
+                    <span className="block text-[9px] font-bold text-amber-600 dark:text-amber-400">
+                      {fmtItemDiscountLabel(item)}
+                    </span>
+                  )}
+                </span>
                 <span className="w-6 text-center font-bold shrink-0">{item.quantity}</span>
                 <span className="w-20 text-right text-slate-400 dark:text-slate-500 shrink-0">
                   {fmtUnit(item.price, item.currency)}
                 </span>
                 <span className="w-20 text-right font-bold shrink-0">
-                  {fmtSubtotal(item.price, item.quantity, item.currency)}
+                  {item.discount > 0 ? (
+                    <>
+                      <span className="block text-[9px] font-normal text-slate-400 dark:text-slate-500 line-through">
+                        {fmtSubtotal(item.price, item.quantity, item.currency)}
+                      </span>
+                      <span className="text-amber-600 dark:text-amber-400">{fmtDiscountedSubtotal(item)}</span>
+                    </>
+                  ) : (
+                    fmtSubtotal(item.price, item.quantity, item.currency)
+                  )}
                 </span>
               </div>
             ))}
@@ -310,13 +379,29 @@ export default function Invoice({ invoiceData, locale, onClose }) {
           <div className="border-t-2 border-dashed border-slate-300 dark:border-slate-600 mb-3" />
 
           <div className="space-y-1 text-[11px] mb-3">
+            {transactionDiscountUsd > 0 && (
+              <div className="flex justify-between text-slate-500 dark:text-slate-400">
+                <span>{inv.txDiscount}</span>
+                <span>−{fmtPrimary(transactionDiscountUsd)}</span>
+              </div>
+            )}
+            <div className="flex justify-between text-slate-500 dark:text-slate-400">
+              <span>{inv.subtotal}</span>
+              <span>{fmtPrimary(subtotalBeforeDiscountUsd)}</span>
+            </div>
+            {totalDiscountUsd > 0 && (
+              <div className="flex justify-between text-slate-500 dark:text-slate-400">
+                <span>{inv.discount}</span>
+                <span>−{fmtPrimary(totalDiscountUsd)}</span>
+              </div>
+            )}
             <div className="flex justify-between font-black text-sm">
               <span>{inv.total}</span>
-              <span>${totalUsd.toFixed(2)}</span>
+              <span>{fmtPrimary(totalUsd)}</span>
             </div>
             <div className="flex justify-between text-slate-500 dark:text-slate-400">
               <span />
-              <span>{Math.round(totalKhr).toLocaleString()} ៛</span>
+              <span>{fmtSecondary(totalUsd)}</span>
             </div>
           </div>
 

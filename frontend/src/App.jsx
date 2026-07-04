@@ -187,6 +187,11 @@ export default function App() {
     }
   };
 
+  const rawSubtotalUsd = cart.reduce((sum, item) => {
+    const base = item.currency === 'KHR' ? item.price / dynamicRate : Number(item.price);
+    return sum + base * item.quantity;
+  }, 0);
+
   const subtotalUsd = cart.reduce((sum, item) => {
     const base = item.currency === 'KHR' ? item.price / dynamicRate : Number(item.price);
     let unitPrice = base;
@@ -201,6 +206,8 @@ export default function App() {
     return sum + unitPrice * item.quantity;
   }, 0);
 
+  const itemDiscountAmt = rawSubtotalUsd - subtotalUsd;
+
   const txDiscountAmt = (() => {
     const val = parseFloat(txDiscountValue || 0);
     if (!val) return 0;
@@ -208,6 +215,8 @@ export default function App() {
     const valUsd = mainCurrency === 'KHR' ? val / dynamicRate : val;
     return Math.min(valUsd, subtotalUsd);
   })();
+
+  const totalDiscountAmt = itemDiscountAmt + txDiscountAmt;
 
   const totalUsd = Math.max(0, subtotalUsd - txDiscountAmt);
   const totalKhr = totalUsd * dynamicRate;
@@ -400,8 +409,12 @@ export default function App() {
         setInvoiceData({
           order_id: data.order_id,
           items: cartSnapshot,
+          subtotalBeforeDiscountUsd: rawSubtotalUsd,
+          transactionDiscountUsd: txDiscountAmt,
+          totalDiscountUsd: totalDiscountAmt,
           totalUsd,
-          totalKhr,
+          mainCurrency,
+          dynamicRate,
           paymentMethod: 'KHQR',
           amountPaidUsd: totalUsd,
           amountPaidKhr: 0,
@@ -448,8 +461,12 @@ export default function App() {
         setInvoiceData({
           order_id: data.order_id,
           items: cartSnapshot,
+          subtotalBeforeDiscountUsd: rawSubtotalUsd,
+          transactionDiscountUsd: txDiscountAmt,
+          totalDiscountUsd: totalDiscountAmt,
           totalUsd,
-          totalKhr,
+          mainCurrency,
+          dynamicRate,
           paymentMethod,
           bankName: paymentMethod === 'STATIC_QR' ? staticQrBank : null,
           amountPaidUsd: paidUsd,
@@ -790,30 +807,7 @@ export default function App() {
         {/* Right Checkout Ledger Panel */}
         <div className="w-96 bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 shadow-xl p-5 flex flex-col justify-between overflow-y-auto flex-shrink-0">
           <div className="space-y-5">
-            <h2 className="text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase font-display">{t[locale].paymentStatement}</h2>
-
-            <div className="bg-slate-900 dark:bg-slate-950 text-white rounded-2xl p-5 relative overflow-hidden shadow-md shadow-slate-900/10">
-              <div className="space-y-3 relative z-10">
-                <div className="flex justify-between items-baseline">
-                  <span className="text-xs font-medium text-slate-400 font-display">
-                    {mainCurrency === 'USD' ? t[locale].totalUsd : t[locale].totalKhr}
-                  </span>
-                  <span className="text-3xl font-black tracking-tight">
-                    {mainCurrency === 'USD' ? `$${totalUsd.toFixed(2)}` : `${Math.round(totalKhr).toLocaleString()} ៛`}
-                  </span>
-                </div>
-                <div className="border-t border-slate-800 dark:border-slate-700/80 pt-2.5 flex justify-between items-baseline">
-                  <span className="text-xs font-medium text-slate-400 font-display">
-                    {mainCurrency === 'USD' ? t[locale].totalKhr : t[locale].totalUsd}
-                  </span>
-                  <span className="text-base font-bold text-emerald-400">
-                    {mainCurrency === 'USD' ? `${Math.round(totalKhr).toLocaleString()} ៛` : `$${totalUsd.toFixed(2)}`}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Transaction Discount */}
+                        {/* Transaction Discount */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <label className="text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase font-display">
@@ -869,6 +863,47 @@ export default function App() {
                   </span>
                 </div>
               )}
+            </div>
+            
+            <h2 className="text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase font-display">{t[locale].paymentStatement}</h2>
+
+            <div className="bg-slate-900 dark:bg-slate-950 text-white rounded-2xl p-5 relative overflow-hidden shadow-md shadow-slate-900/10">
+              <div className="space-y-3 relative z-10">
+                <div className="flex justify-between items-baseline">
+                  <span className="text-xs font-medium text-slate-400 font-display">
+                    {t[locale].subtotalBeforeDiscount}
+                  </span>
+                  <span className="text-sm font-bold text-slate-200">
+                    {mainCurrency === 'USD' ? `$${rawSubtotalUsd.toFixed(2)}` : `${Math.round(rawSubtotalUsd * dynamicRate).toLocaleString()} ៛`}
+                  </span>
+                </div>
+                {totalDiscountAmt > 0 && (
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-xs font-medium text-slate-400 font-display">
+                      {t[locale].totalDiscountAmount}
+                    </span>
+                    <span className="text-sm font-bold text-amber-400">
+                      {mainCurrency === 'USD' ? `−$${totalDiscountAmt.toFixed(2)}` : `−${Math.round(totalDiscountAmt * dynamicRate).toLocaleString()} ៛`}
+                    </span>
+                  </div>
+                )}
+                <div className="border-t border-slate-800 dark:border-slate-700/80 pt-2.5 flex justify-between items-baseline">
+                  <span className="text-xs font-medium text-slate-400 font-display">
+                    {mainCurrency === 'USD' ? t[locale].totalUsd : t[locale].totalKhr}
+                  </span>
+                  <span className="text-3xl font-black tracking-tight">
+                    {mainCurrency === 'USD' ? `$${totalUsd.toFixed(2)}` : `${Math.round(totalKhr).toLocaleString()} ៛`}
+                  </span>
+                </div>
+                <div className="flex justify-between items-baseline">
+                  <span className="text-xs font-medium text-slate-400 font-display">
+                    {mainCurrency === 'USD' ? t[locale].totalKhr : t[locale].totalUsd}
+                  </span>
+                  <span className="text-base font-bold text-emerald-400">
+                    {mainCurrency === 'USD' ? `${Math.round(totalKhr).toLocaleString()} ៛` : `$${totalUsd.toFixed(2)}`}
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div>
