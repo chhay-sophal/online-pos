@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { jsPDF } from 'jspdf';
 import { Printer } from 'lucide-react';
+import { useReactToPrint } from 'react-to-print';
 import { translations as t } from './locales';
 
 export default function Invoice({ invoiceData, locale, onClose }) {
@@ -8,6 +9,58 @@ export default function Invoice({ invoiceData, locale, onClose }) {
 
   const inv = t[locale].invoice;
   const [printing, setPrinting] = useState(false);
+  const componentRef = useRef(null);
+
+  const printPageStyle = `
+    @page {
+      size: 55mm auto;
+      margin: 0;
+    }
+    html, body {
+      width: 55mm;
+      margin: 0;
+      padding: 0;
+      background: #fff;
+    }
+    body {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      font-size: 9pt;
+    }
+    * {
+      box-sizing: border-box;
+    }
+  `;
+
+  const printFallback = () => {
+    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    if (!printWindow) {
+      setPrinting(false);
+      return;
+    }
+
+    printWindow.document.write(buildInvoiceHTML());
+    printWindow.document.close();
+    printWindow.focus();
+
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+      setPrinting(false);
+    }, 250);
+  };
+
+  const handlePrint = useReactToPrint({
+    contentRef: componentRef,
+    documentTitle: `invoice-${String(order_id).padStart(5, '0')}`,
+    pageStyle: printPageStyle,
+    onBeforePrint: () => {
+      setPrinting(true);
+      return Promise.resolve();
+    },
+    onAfterPrint: () => setPrinting(false),
+    onPrintError: () => printFallback(),
+  });
 
   const date = new Date(timestamp);
   const dateStr = date.toLocaleDateString(locale === 'km' ? 'km-KH' : 'en-US', {
@@ -256,38 +309,6 @@ export default function Invoice({ invoiceData, locale, onClose }) {
     pdf.save(`invoice-${String(order_id).padStart(5, '0')}.pdf`);
   };
 
-  const handlePrint = () => {
-    setPrinting(true);
-    const html = buildInvoiceHTML();
-
-    // Parse invoice HTML to pull out styles + body content
-    const parsed = new DOMParser().parseFromString(html, 'text/html');
-    const invoiceStyles = parsed.querySelector('style')?.textContent ?? '';
-
-    // Overlay that is invisible normally, visible only during print
-    const styleEl = document.createElement('style');
-    styleEl.textContent = `@media print{body>:not(#__inv_frame){display:none!important}#__inv_frame{display:block!important;position:fixed;inset:0;background:#fff;z-index:99999}}${invoiceStyles}`;
-
-    const frameEl = document.createElement('div');
-    frameEl.id = '__inv_frame';
-    frameEl.style.display = 'none';
-    frameEl.innerHTML = parsed.body.innerHTML;
-
-    document.head.appendChild(styleEl);
-    document.body.appendChild(frameEl);
-
-    const cleanup = () => {
-      document.head.removeChild(styleEl);
-      document.body.removeChild(frameEl);
-      setPrinting(false);
-      window.removeEventListener('afterprint', cleanup);
-    };
-    window.addEventListener('afterprint', cleanup);
-
-    // Small delay lets the DOM settle before the dialog opens
-    setTimeout(() => window.print(), 100);
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div
@@ -297,7 +318,7 @@ export default function Invoice({ invoiceData, locale, onClose }) {
         {/* Action bar */}
         <div className="flex gap-2 p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
           <button
-            onClick={handlePrint}
+            onClick={() => handlePrint()}
             disabled={printing}
             className="flex-1 py-2.5 bg-indigo-600 text-white font-bold rounded-xl text-xs hover:bg-indigo-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
           >
@@ -313,132 +334,164 @@ export default function Invoice({ invoiceData, locale, onClose }) {
         </div>
 
         {/* Receipt preview */}
-        <div id="invoice-content" className="p-5 text-slate-900 dark:text-white max-h-[70vh] overflow-y-auto">
-          <div className="text-center mb-4">
-            <p className="text-base font-black tracking-tight">{t[locale].shopName}</p>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{inv.receiptTitle}</p>
-          </div>
-
-          <div className="border-t-2 border-dashed border-slate-300 dark:border-slate-600 mb-3" />
-
-          <div className="text-[11px] space-y-1 mb-3">
-            <div className="flex justify-between">
-              <span className="text-slate-500 dark:text-slate-400">{inv.orderId}</span>
-              <span className="font-bold">#{String(order_id).padStart(5, '0')}</span>
+        <div className="max-h-[70vh] overflow-y-auto">
+          <div
+            ref={componentRef}
+            id="invoice-content"
+            className="p-3 bg-white"
+            style={{
+              fontFamily: 'monospace',
+              width: '55mm',
+              maxWidth: '55mm',
+              minWidth: '55mm',
+              margin: '0 auto',
+              padding: '2mm 2mm 3mm',
+              color: '#000',
+              lineHeight: 1.15,
+              fontSize: '9pt',
+              WebkitPrintColorAdjust: 'exact',
+              printColorAdjust: 'exact',
+            }}
+          >
+            <div className="text-center mb-1.5">
+              <p className="text-[10px] font-black leading-none">{t[locale].shopName}</p>
+              <p className="text-[8px] text-black/70 mt-0.5">{inv.receiptTitle}</p>
             </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500 dark:text-slate-400">{inv.date}</span>
-              <span>{dateStr}</span>
+
+            <div className="border-t border-black/70 mb-1.5" />
+
+            <div className="text-[8px] space-y-0.5 mb-1.5">
+              <div className="flex justify-between gap-2">
+                <span className="text-black/70">{inv.orderId}</span>
+                <span className="font-bold">#{String(order_id).padStart(5, '0')}</span>
+              </div>
+              <div className="flex justify-between gap-2">
+                <span className="text-black/70">{inv.date}</span>
+                <span>{dateStr}</span>
+              </div>
+              <div className="flex justify-between gap-2">
+                <span className="text-black/70">{inv.time}</span>
+                <span>{timeStr}</span>
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500 dark:text-slate-400">{inv.time}</span>
-              <span>{timeStr}</span>
+
+            <div className="border-t border-black/70 mb-1.5" />
+
+            <div className="grid grid-cols-[10px_1fr_20px_30px_30px] gap-1 text-[6px] font-bold uppercase tracking-wide mb-1">
+              <span>{inv.no}</span>
+              <span>{inv.item}</span>
+              <span className="text-center">{inv.qty}</span>
+              <span className="text-center">{inv.unitPrice || 'Unit'}</span>
+              {/* <span className="text-center">Disc</span> */}
+              <span className="text-right">{inv.amount}</span>
             </div>
-          </div>
 
-          <div className="border-t border-dashed border-slate-300 dark:border-slate-600 mb-3" />
+            <div className="space-y-1 mb-1.5">
+              {items.map((item, index) => (
+                <div key={item.id} className="grid grid-cols-[10px_1fr_20px_30px_30px] gap-1 items-start text-[6px] leading-[1.15]">
+                  <div className="font-bold shrink-0">{index + 1}</div>
+                  <div className="min-w-0">
+                    <div className="break-words leading-[1.1]">{item.name}</div>
+                    {item.discount > 0 && (
+                      <div className="font-bold text-black">
+                        {fmtItemDiscountLabel(item)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-center font-bold shrink-0">{item.quantity}</div>
+                  <div className="text-center whitespace-nowrap shrink-0">
+                    {item.discount > 0 ? (
+                      <div className="leading-[1.1]">
+                        <div className="font-normal text-black/60 line-through">{fmtUnit(item.price, item.currency)}</div>
+                        <div className="text-black">{fmtUnit(discountedUnitPrice(item), item.currency)}</div>
+                      </div>
+                    ) : (
+                      fmtUnit(item.price, item.currency)
+                    )}
+                  </div>
+                  {/* <div className="text-center whitespace-nowrap shrink-0">
+                    {item.discount > 0 ? fmtItemDiscountLabel(item) : '-'}
+                  </div> */}
+                  <div className="text-right font-bold shrink-0">
+                    {item.discount > 0 ? (
+                      <div className="leading-[1.1]">
+                        <div className="font-normal text-black/60 line-through">
+                          {fmtSubtotal(item.price, item.quantity, item.currency)}
+                        </div>
+                        <div className="text-black">{fmtDiscountedSubtotal(item)}</div>
+                      </div>
+                    ) : (
+                      fmtSubtotal(item.price, item.quantity, item.currency)
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
 
-          <div className="flex text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1.5">
-            <span className="flex-1">{inv.item}</span>
-            <span className="w-6 text-center">{inv.qty}</span>
-            <span className="w-20 text-right">{inv.unitPrice || 'Unit'}</span>
-            <span className="w-20 text-right">{inv.amount}</span>
-          </div>
+            <div className="border-t border-black/70 mb-1.5" />
 
-          <div className="space-y-1.5 mb-3">
-            {items.map((item) => (
-              <div key={item.id} className="flex items-start text-[11px]">
-                <span className="flex-1 leading-tight pr-2 break-words">
-                  {item.name}
-                  {item.discount > 0 && (
-                    <span className="block text-[9px] font-bold text-amber-600 dark:text-amber-400">
-                      {fmtItemDiscountLabel(item)}
-                    </span>
+            <div className="space-y-0.5 text-[8px] mb-1.5">
+              {transactionDiscountUsd > 0 && (
+                <div className="flex justify-between gap-2 text-black/70">
+                  <span>{inv.txDiscount}</span>
+                  <span>−{fmtPrimary(transactionDiscountUsd)}</span>
+                </div>
+              )}
+              <div className="flex justify-between gap-2 text-black/70">
+                <span>{inv.subtotal}</span>
+                <span>{fmtPrimary(subtotalBeforeDiscountUsd)}</span>
+              </div>
+              {totalDiscountUsd > 0 && (
+                <div className="flex justify-between gap-2 text-black/70">
+                  <span>{inv.discount}</span>
+                  <span>−{fmtPrimary(totalDiscountUsd)}</span>
+                </div>
+              )}
+              <div className="flex justify-between gap-2 font-black text-[9px]">
+                <span>{inv.total}</span>
+                <span>{fmtPrimary(totalUsd)}</span>
+              </div>
+              <div className="flex justify-between gap-2 text-black/70">
+                <span />
+                <span>{fmtSecondary(totalUsd)}</span>
+              </div>
+            </div>
+
+            <div className="border-t border-black/70 mb-1.5" />
+
+            <div className="space-y-0.5 text-[8px] mb-1.5">
+              <div className="flex justify-between gap-2">
+                <span className="text-black/70">{inv.payment}</span>
+                <span className="font-bold">{paymentMethod === 'CASH' ? inv.cash : paymentMethod === 'KHQR' ? inv.khqr : bankName ? `${inv.staticQr} — ${bankName}` : inv.staticQr}</span>
+              </div>
+              {paymentMethod === 'CASH' && (
+                <>
+                  {amountPaidUsd > 0 && (
+                    <div className="flex justify-between gap-2">
+                      <span className="text-black/70">{inv.paidUsd}</span>
+                      <span>${Number(amountPaidUsd).toFixed(2)}</span>
+                    </div>
                   )}
-                </span>
-                <span className="w-6 text-center font-bold shrink-0">{item.quantity}</span>
-                <span className="w-20 text-right text-slate-400 dark:text-slate-500 shrink-0">
-                  {fmtUnit(item.price, item.currency)}
-                </span>
-                <span className="w-20 text-right font-bold shrink-0">
-                  {item.discount > 0 ? (
-                    <>
-                      <span className="block text-[9px] font-normal text-slate-400 dark:text-slate-500 line-through">
-                        {fmtSubtotal(item.price, item.quantity, item.currency)}
-                      </span>
-                      <span className="text-amber-600 dark:text-amber-400">{fmtDiscountedSubtotal(item)}</span>
-                    </>
-                  ) : (
-                    fmtSubtotal(item.price, item.quantity, item.currency)
+                  {amountPaidKhr > 0 && (
+                    <div className="flex justify-between gap-2">
+                      <span className="text-black/70">{inv.paidKhr}</span>
+                      <span>{Number(amountPaidKhr).toLocaleString()} ៛</span>
+                    </div>
                   )}
-                </span>
-              </div>
-            ))}
+                  {changeDueKhr > 0 && (
+                    <div className="flex justify-between gap-2 font-bold text-black">
+                      <span>{inv.change}</span>
+                      <span>{changeDueKhr.toLocaleString()} ៛</span>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div className="border-t border-black/70 mb-1.5" />
+
+            <p className="text-center text-[7px] text-black/70 font-semibold">{inv.thankYou}</p>
           </div>
-
-          <div className="border-t-2 border-dashed border-slate-300 dark:border-slate-600 mb-3" />
-
-          <div className="space-y-1 text-[11px] mb-3">
-            {transactionDiscountUsd > 0 && (
-              <div className="flex justify-between text-slate-500 dark:text-slate-400">
-                <span>{inv.txDiscount}</span>
-                <span>−{fmtPrimary(transactionDiscountUsd)}</span>
-              </div>
-            )}
-            <div className="flex justify-between text-slate-500 dark:text-slate-400">
-              <span>{inv.subtotal}</span>
-              <span>{fmtPrimary(subtotalBeforeDiscountUsd)}</span>
-            </div>
-            {totalDiscountUsd > 0 && (
-              <div className="flex justify-between text-slate-500 dark:text-slate-400">
-                <span>{inv.discount}</span>
-                <span>−{fmtPrimary(totalDiscountUsd)}</span>
-              </div>
-            )}
-            <div className="flex justify-between font-black text-sm">
-              <span>{inv.total}</span>
-              <span>{fmtPrimary(totalUsd)}</span>
-            </div>
-            <div className="flex justify-between text-slate-500 dark:text-slate-400">
-              <span />
-              <span>{fmtSecondary(totalUsd)}</span>
-            </div>
-          </div>
-
-          <div className="border-t border-dashed border-slate-300 dark:border-slate-600 mb-3" />
-
-          <div className="space-y-1 text-[11px] mb-3">
-            <div className="flex justify-between">
-              <span className="text-slate-500 dark:text-slate-400">{inv.payment}</span>
-              <span className="font-bold">{paymentMethod === 'CASH' ? inv.cash : paymentMethod === 'KHQR' ? inv.khqr : bankName ? `${inv.staticQr} — ${bankName}` : inv.staticQr}</span>
-            </div>
-            {paymentMethod === 'CASH' && (
-              <>
-                {amountPaidUsd > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 dark:text-slate-400">{inv.paidUsd}</span>
-                    <span>${Number(amountPaidUsd).toFixed(2)}</span>
-                  </div>
-                )}
-                {amountPaidKhr > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 dark:text-slate-400">{inv.paidKhr}</span>
-                    <span>{Number(amountPaidKhr).toLocaleString()} ៛</span>
-                  </div>
-                )}
-                {changeDueKhr > 0 && (
-                  <div className="flex justify-between font-bold text-emerald-700 dark:text-emerald-400">
-                    <span>{inv.change}</span>
-                    <span>{changeDueKhr.toLocaleString()} ៛</span>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-
-          <div className="border-t-2 border-dashed border-slate-300 dark:border-slate-600 mb-4" />
-
-          <p className="text-center text-[11px] text-slate-500 dark:text-slate-400 font-semibold">{inv.thankYou}</p>
         </div>
       </div>
     </div>
