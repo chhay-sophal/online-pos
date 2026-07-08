@@ -349,6 +349,7 @@ export default function Invoice({ invoiceData, locale, onClose }) {
               color: '#000',
               lineHeight: 1.15,
               fontSize: '9pt',
+              fontWeight: 'bold',
               WebkitPrintColorAdjust: 'exact',
               printColorAdjust: 'exact',
             }}
@@ -377,7 +378,7 @@ export default function Invoice({ invoiceData, locale, onClose }) {
 
             <div className="border-t border-black/70 mb-1.5" />
 
-            <div className="grid grid-cols-[10px_1fr_20px_30px_30px] gap-1 text-[6px] font-bold uppercase tracking-wide mb-1">
+            <div className="grid grid-cols-[10px_1fr_20px_30px_30px] gap-1 text-[7px] font-bold uppercase tracking-wide mb-1">
               <span>{inv.no}</span>
               <span>{inv.item}</span>
               <span className="text-center">{inv.qty}</span>
@@ -388,7 +389,7 @@ export default function Invoice({ invoiceData, locale, onClose }) {
 
             <div className="space-y-1 mb-1.5">
               {items.map((item, index) => (
-                <div key={item.id} className="grid grid-cols-[10px_1fr_20px_30px_30px] gap-1 items-start text-[6px] leading-[1.15]">
+                <div key={item.id} className="grid grid-cols-[10px_1fr_20px_30px_30px] gap-1 items-start text-[7px] leading-[1.15]">
                   <div className="font-bold shrink-0">{index + 1}</div>
                   <div className="min-w-0">
                     <div className="break-words leading-[1.1]">{item.name}</div>
@@ -402,7 +403,7 @@ export default function Invoice({ invoiceData, locale, onClose }) {
                   <div className="text-center whitespace-nowrap shrink-0">
                     {item.discount > 0 ? (
                       <div className="leading-[1.1]">
-                        <div className="font-normal text-black/60 line-through">{fmtUnit(item.price, item.currency)}</div>
+                        <div className="text-black/60 line-through">{fmtUnit(item.price, item.currency)}</div>
                         <div className="text-black">{fmtUnit(discountedUnitPrice(item), item.currency)}</div>
                       </div>
                     ) : (
@@ -415,7 +416,7 @@ export default function Invoice({ invoiceData, locale, onClose }) {
                   <div className="text-right font-bold shrink-0">
                     {item.discount > 0 ? (
                       <div className="leading-[1.1]">
-                        <div className="font-normal text-black/60 line-through">
+                        <div className="text-black/60 line-through">
                           {fmtSubtotal(item.price, item.quantity, item.currency)}
                         </div>
                         <div className="text-black">{fmtDiscountedSubtotal(item)}</div>
