@@ -3,7 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { emit } from '@tauri-apps/api/event';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { QRCodeCanvas } from 'qrcode.react';
-import { Store, Package, FolderOpen, Settings, ShoppingCart, X, CheckCircle2, AlertTriangle, Keyboard, Lock, History, Sun, Moon, Monitor, BarChart3 } from 'lucide-react';
+import { Store, Package, FolderOpen, Settings, ShoppingCart, X, CheckCircle2, AlertTriangle, Keyboard, Lock, History, Sun, Moon, Monitor, BarChart3, Printer } from 'lucide-react';
 import { useDarkMode } from './hooks/useDarkMode';
 import StockManager from './StockManager';
 import SettingsManager from './SettingsManager';
@@ -22,6 +22,7 @@ export default function App() {
   const [amountPaidKhr, setAmountPaidKhr] = useState('');
   const [checkoutResult, setCheckoutResult] = useState(null);
   const [invoiceData, setInvoiceData] = useState(null);
+  const [showInvoice, setShowInvoice] = useState(false);
   const [view, setView] = useState('REGISTER');
   const [activeKhqr, setActiveKhqr] = useState(null);
   const [staticQrBank, setStaticQrBank] = useState('');
@@ -1065,6 +1066,14 @@ export default function App() {
                     <p className="text-base font-black text-emerald-600 dark:text-emerald-400 mt-0.5">{checkoutResult.change_due_khr.toLocaleString()} ៛</p>
                   )}
                 </div>
+                {invoiceData && (
+                  <button
+                    onClick={() => setShowInvoice(true)}
+                    className="flex-shrink-0 self-center px-3 py-2 bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-bold rounded-lg text-[11px] hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Printer size={12} /> {t[locale].invoice.printBtn}
+                  </button>
+                )}
               </div>
             )}
 
@@ -1082,11 +1091,12 @@ export default function App() {
       </div>
     </div>
 
-      {invoiceData && (
+      {invoiceData && showInvoice && (
         <Invoice
           invoiceData={invoiceData}
           locale={locale}
-          onClose={() => setInvoiceData(null)}
+          onClose={() => setShowInvoice(false)}
+          autoPrint
         />
       )}
     </>

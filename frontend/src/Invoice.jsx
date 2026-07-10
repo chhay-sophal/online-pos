@@ -1,16 +1,17 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { jsPDF } from 'jspdf';
 import { Printer } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 import { translations as t } from './locales';
 
-export default function Invoice({ invoiceData, locale, onClose }) {
+export default function Invoice({ invoiceData, locale, onClose, autoPrint = false }) {
   const { order_id, items, subtotalBeforeDiscountUsd, transactionDiscountUsd, totalDiscountUsd, totalUsd, mainCurrency, dynamicRate, paymentMethod, bankName, amountPaidUsd, amountPaidKhr, changeDueKhr, timestamp, storeName, storeAddress, storePhone } = invoiceData;
 
   const inv = t[locale].invoice;
   const shopName = storeName || t[locale].shopName;
   const [printing, setPrinting] = useState(false);
   const componentRef = useRef(null);
+  const hasAutoPrinted = useRef(false);
 
   const printPageStyle = `
     @page {
@@ -48,6 +49,7 @@ export default function Invoice({ invoiceData, locale, onClose }) {
       printWindow.print();
       printWindow.close();
       setPrinting(false);
+      if (autoPrint) onClose();
     }, 250);
   };
 
@@ -59,9 +61,22 @@ export default function Invoice({ invoiceData, locale, onClose }) {
       setPrinting(true);
       return Promise.resolve();
     },
-    onAfterPrint: () => setPrinting(false),
+    onAfterPrint: () => {
+      setPrinting(false);
+      if (autoPrint) onClose();
+    },
     onPrintError: () => printFallback(),
   });
+
+  // Auto-print flow (e.g. the register's "Print Receipt" button): skip the
+  // preview modal entirely and send straight to the printer on mount.
+  useEffect(() => {
+    if (autoPrint && !hasAutoPrinted.current) {
+      hasAutoPrinted.current = true;
+      handlePrint();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const date = new Date(timestamp);
   const dateStr = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
@@ -311,32 +326,7 @@ export default function Invoice({ invoiceData, locale, onClose }) {
     pdf.save(`invoice-${String(order_id).padStart(5, '0')}.pdf`);
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div
-        className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-xs mx-4 overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Action bar */}
-        <div className="flex gap-2 p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
-          <button
-            onClick={() => handlePrint()}
-            disabled={printing}
-            className="flex-1 py-2.5 bg-indigo-600 text-white font-bold rounded-xl text-xs hover:bg-indigo-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
-          >
-            {printing ? '...' : <><Printer size={13} /> {inv.printBtn}</>}
-          </button>
-          <button
-            onClick={onClose}
-            disabled={printing}
-            className="px-4 py-2.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl text-xs hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors disabled:opacity-60"
-          >
-            {inv.closeBtn}
-          </button>
-        </div>
-
-        {/* Receipt preview */}
-        <div className="max-h-[70vh] overflow-y-auto">
+  const receiptEl = (
           <div
             ref={componentRef}
             id="invoice-content"
@@ -496,6 +486,45 @@ export default function Invoice({ invoiceData, locale, onClose }) {
 
             <p className="text-center text-[7px]  font-semibold">{inv.thankYou}</p>
           </div>
+  );
+
+  // Auto-print flow (e.g. the register's "Print Receipt" button): skip the
+  // preview modal entirely — mount the receipt off-screen just to print it.
+  if (autoPrint) {
+    return (
+      <div style={{ position: 'fixed', top: '-10000px', left: '-10000px', pointerEvents: 'none' }} aria-hidden="true">
+        {receiptEl}
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div
+        className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-xs mx-4 overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Action bar */}
+        <div className="flex gap-2 p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+          <button
+            onClick={() => handlePrint()}
+            disabled={printing}
+            className="flex-1 py-2.5 bg-indigo-600 text-white font-bold rounded-xl text-xs hover:bg-indigo-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+          >
+            {printing ? '...' : <><Printer size={13} /> {inv.printBtn}</>}
+          </button>
+          <button
+            onClick={onClose}
+            disabled={printing}
+            className="px-4 py-2.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl text-xs hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors disabled:opacity-60"
+          >
+            {inv.closeBtn}
+          </button>
+        </div>
+
+        {/* Receipt preview */}
+        <div className="max-h-[70vh] overflow-y-auto">
+          {receiptEl}
         </div>
       </div>
     </div>
