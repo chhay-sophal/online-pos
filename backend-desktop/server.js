@@ -215,15 +215,20 @@ app.put('/api/products/:id', (req, res) => {
   res.json(updated);
 });
 
+// The Bakong API token is configured via .env/renewal only, cached in store_settings
+// purely as an internal cache, and must never be readable/writable through the settings API.
+const INTERNAL_ONLY_SETTINGS = ['bakong_api_token'];
+
 app.get('/api/settings', (req, res) => {
   const rows = query('SELECT key, value FROM store_settings');
   const obj = {};
-  rows.forEach(r => { obj[r.key] = r.value; });
+  rows.forEach(r => { if (!INTERNAL_ONLY_SETTINGS.includes(r.key)) obj[r.key] = r.value; });
   res.json(obj);
 });
 
 app.put('/api/settings', (req, res) => {
   for (const [key, value] of Object.entries(req.body)) {
+    if (INTERNAL_ONLY_SETTINGS.includes(key)) continue;
     run(
       'INSERT INTO store_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
       [key, String(value)]
@@ -307,9 +312,13 @@ app.delete('/api/orders/:id', (req, res) => {
 });
 
 app.post('/api/payments/khqr', async (req, res) => {
-  const { order_total_usd } = req.body;
-  const amount = parseFloat(order_total_usd);
-  if (!amount || amount <= 0) return res.status(400).json({ error: 'Invalid amount' });
+  // Reference https://bakong.nbc.gov.kh/download/KHQR/integration/KHQR%20SDK%20Document.pdf
+  // The frontend already knows the store's preferred currency, so it sends the
+  // amount pre-converted — this endpoint just formats it per Bakong's rules.
+  const currency = req.body.currency === 'KHR' ? 'KHR' : 'USD';
+  const rawAmount = parseFloat(req.body.amount);
+  if (!rawAmount || rawAmount <= 0) return res.status(400).json({ error: 'Invalid amount' });
+  const amount = currency === 'KHR' ? Math.round(rawAmount) : Math.round(rawAmount * 100) / 100;
 
   try {
     const settings = query('SELECT key, value FROM store_settings');
@@ -318,11 +327,27 @@ app.post('/api/payments/khqr', async (req, res) => {
 
     const { BakongKHQR, khqrData, IndividualInfo } = require('bakong-khqr');
     const now = Date.now();
+
+    // Bakong expects a bare "855..." mobile number — swap a leading 0 for the country code.
+    const toBakongMobile = (phone) => {
+      const digits = String(phone || '').replace(/\D/g, '');
+      if (!digits) return undefined;
+      return digits.startsWith('0') ? `855${digits.slice(1)}` : digits;
+    };
+
+    const optionalData = {
+      currency: currency === 'KHR' ? khqrData.currency.khr : khqrData.currency.usd,
+      amount,
+      expirationTimestamp: now + 5 * 60 * 1000
+    };
+    const mobileNumber = toBakongMobile(cfg.store_phone);
+    if (mobileNumber) optionalData.mobileNumber = mobileNumber;
+
     const individualInfo = new IndividualInfo(
       cfg.bakong_account_id || process.env.BAKONG_ACCOUNT_ID || '',
       cfg.bakong_merchant_name || process.env.BAKONG_MERCHANT_NAME || 'Baby Mart',
       cfg.bakong_merchant_city || process.env.BAKONG_MERCHANT_CITY || 'Phnom Penh',
-      { currency: khqrData.currency.usd, amount, expirationTimestamp: now + 5 * 60 * 1000 }
+      optionalData
     );
 
     const khqrEngine = new BakongKHQR();
@@ -331,26 +356,71 @@ app.post('/api/payments/khqr', async (req, res) => {
       return res.status(500).json({ error: 'Bakong SDK rejection', details: result?.status?.message });
     }
 
-    res.json({ qr_string: result.data.qr, md5_hash: result.data.md5, amount, currency: 'USD' });
+    res.json({ qr_string: result.data.qr, md5_hash: result.data.md5, amount, currency });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
+// Bakong credentials are ops-level secrets. BAKONG_REGISTERED_EMAIL lives only in .env;
+// store_settings caches just the token this process last renewed, so repeated checks
+// and restarts don't need to hit Bakong's renew_token endpoint every time.
+async function renewBakongToken() {
+  // Reference https://bakong.nbc.gov.kh/download/KHQR/integration/Bakong%20Open%20API%20Document.pdf
+  const email = process.env.BAKONG_REGISTERED_EMAIL;
+  if (!email) throw new Error('BAKONG_REGISTERED_EMAIL is not configured in .env');
+
+  const response = await axios.post('https://api-bakong.nbc.gov.kh/v1/renew_token', { email }, {
+    headers: { 'Content-Type': 'application/json' },
+    timeout: 8000
+  });
+  const token = response.data?.data?.token || response.data?.token;
+  if (!token) throw new Error('Bakong did not return a token');
+
+  run(
+    `INSERT INTO store_settings (key, value) VALUES ('bakong_api_token', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+    [token]
+  );
+  saveDb();
+  return token;
+}
+
 app.get('/api/payments/check-status/:md5_hash', async (req, res) => {
   const { md5_hash } = req.params;
-  try {
-    const tokenRow = query("SELECT value FROM store_settings WHERE key = 'bakong_api_token'")[0];
-    const token = tokenRow?.value;
-    const url = 'https://api-bakong.nbc.gov.kh/v1/check_transaction_by_md5';
-    const response = await axios.post(url, { md5: md5_hash }, {
+
+  const readToken = () => query("SELECT value FROM store_settings WHERE key = 'bakong_api_token'")[0]?.value || process.env.BAKONG_API_TOKEN;
+  const callBakong = (rawToken) => {
+    const token = rawToken.startsWith('Bearer ') ? rawToken : `Bearer ${rawToken}`;
+    return axios.post('https://api-bakong.nbc.gov.kh/v1/check_transaction_by_md5', { md5: md5_hash }, {
       headers: { Authorization: token, 'Content-Type': 'application/json' },
       timeout: 4000
     });
+  };
+
+  try {
+    let rawToken = readToken();
+    if (!rawToken) {
+      // No token cached or pre-seeded yet — mint one now from BAKONG_REGISTERED_EMAIL.
+      rawToken = await renewBakongToken();
+    }
+
+    let response;
+    try {
+      response = await callBakong(rawToken);
+    } catch (err) {
+      if (err.response?.status === 401) {
+        // Token expired — renew once and retry the check.
+        const freshToken = await renewBakongToken();
+        response = await callBakong(freshToken);
+      } else {
+        throw err;
+      }
+    }
     if (response.data?.responseCode === 0) return res.json({ status: 'PAID', md5_hash });
     res.json({ status: 'PENDING', md5_hash });
   } catch (err) {
-    res.status(500).json({ error: 'Communication error' });
+    console.error('Bakong check-status failed:', err.response?.status, err.response?.data || err.message);
+    res.status(500).json({ error: 'Communication error', details: err.response?.data?.errorCode || err.message });
   }
 });
 

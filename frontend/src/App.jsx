@@ -25,6 +25,7 @@ export default function App() {
   const [showInvoice, setShowInvoice] = useState(false);
   const [view, setView] = useState('REGISTER');
   const [activeKhqr, setActiveKhqr] = useState(null);
+  const [khqrLoading, setKhqrLoading] = useState(false);
   const [staticQrBank, setStaticQrBank] = useState('');
   const [dynamicRate, setDynamicRate] = useState(4100);
   const [showManualInput, setShowManualInput] = useState(false);
@@ -281,12 +282,6 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (paymentMethod === 'KHQR' && !activeKhqr && totalUsd > 0) {
-      fetchKHQRString(totalUsd);
-    }
-  }, [paymentMethod, activeKhqr, totalUsd]);
-
-  useEffect(() => {
     let pollingInterval = null;
 
     if (paymentMethod === 'KHQR' && activeKhqr?.md5_hash) {
@@ -357,13 +352,15 @@ export default function App() {
     }
   };
 
-  const fetchKHQRString = async (currentTotal) => {
-    if (currentTotal <= 0) return;
+  const fetchKHQRString = async () => {
+    const amount = mainCurrency === 'KHR' ? Math.round(totalKhr) : totalUsd;
+    if (amount <= 0) return;
+    setKhqrLoading(true);
     try {
       const response = await fetch(`${BACKEND_URL}/api/payments/khqr`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order_total_usd: currentTotal }),
+        body: JSON.stringify({ amount, currency: mainCurrency }),
       });
       const data = await response.json();
       if (response.ok) {
@@ -372,6 +369,7 @@ export default function App() {
     } catch (err) {
       console.error("Failed to compile target KHQR string packet", err);
     }
+    setKhqrLoading(false);
   };
 
   const updateQuantity = (id, delta) => {
@@ -940,7 +938,7 @@ export default function App() {
                   {t[locale].cash}
                 </button>
                 <button
-                  onClick={() => { setPaymentMethod('KHQR'); setCheckoutResult(null); fetchKHQRString(totalUsd); }}
+                  onClick={() => { setPaymentMethod('KHQR'); setCheckoutResult(null); }}
                   className={`py-3 px-2 rounded-xl border font-bold text-xs transition-all flex items-center justify-center gap-1 ${paymentMethod === 'KHQR' ? 'bg-rose-600 text-white border-rose-600 shadow-xs' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
                 >
                   {t[locale].khqr}
@@ -1049,8 +1047,16 @@ export default function App() {
                       <p className="text-[9px] text-slate-400 dark:text-slate-500 mt-2 font-display animate-pulse">{t[locale].waitingPayment}</p>
                     </div>
                   </>
-                ) : (
+                ) : khqrLoading ? (
                   <p className="text-xs text-slate-400 dark:text-slate-500 font-bold font-display animate-pulse">{t[locale].assemblingPacket}</p>
+                ) : (
+                  <button
+                    onClick={fetchKHQRString}
+                    disabled={totalUsd <= 0}
+                    className="py-3 px-5 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl text-sm transition-colors cursor-pointer"
+                  >
+                    {t[locale].generateQr}
+                  </button>
                 )}
               </div>
             )}
