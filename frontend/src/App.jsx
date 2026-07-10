@@ -836,13 +836,29 @@ export default function App() {
 
         {/* Right Checkout Ledger Panel */}
         <div className="w-96 bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 shadow-xl p-5 flex flex-col justify-between overflow-y-auto flex-shrink-0">
-          <div className="space-y-5">
-                        {/* Transaction Discount */}
+          <div className="space-y-3">
+            {/* Transaction Discount */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <label className="text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase font-display">
+                <label className="text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase font-display truncate min-w-fit">
                   {locale === 'km' ? 'បញ្ចុះតម្លៃ' : 'Discount'}
                 </label>
+                <input
+                  type="number"
+                  value={txDiscountValue}
+                  onChange={e => {
+                    let v = parseFloat(e.target.value);
+                    if (isNaN(v) || v < 0) v = 0;
+                    if (txDiscountType === 'pct' && v > 100) v = 100;
+                    setTxDiscountValue(v === 0 && e.target.value === '' ? '' : String(v));
+                    setCheckoutResult(null);
+                    setActiveKhqr(null);
+                  }}
+                  min="0"
+                  max={txDiscountType === 'pct' ? '100' : undefined}
+                  placeholder={txDiscountType === 'pct' ? '0' : mainCurrency === 'KHR' ? '0' : '0.00'}
+                  className="flex-1 h-9 px-3 pr-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-800 dark:text-slate-100 text-sm focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-900/30 focus:outline-hidden focus:border-amber-500"
+                />
                 <div className="flex w-16 ml-auto rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
                   <button
                     onClick={() => { setTxDiscountType('pct'); setTxDiscountValue(''); setCheckoutResult(null); setActiveKhqr(null); }}
@@ -862,41 +878,8 @@ export default function App() {
                   >{mainCurrency === 'KHR' ? '៛' : '$'}</button>
                 </div>
               </div>
-              <div className="relative">
-                <input
-                  type="number"
-                  value={txDiscountValue}
-                  onChange={e => {
-                    let v = parseFloat(e.target.value);
-                    if (isNaN(v) || v < 0) v = 0;
-                    if (txDiscountType === 'pct' && v > 100) v = 100;
-                    setTxDiscountValue(v === 0 && e.target.value === '' ? '' : String(v));
-                    setCheckoutResult(null);
-                    setActiveKhqr(null);
-                  }}
-                  min="0"
-                  max={txDiscountType === 'pct' ? '100' : undefined}
-                  placeholder={txDiscountType === 'pct' ? '0' : mainCurrency === 'KHR' ? '0' : '0.00'}
-                  className="w-full h-9 px-3 pr-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-800 dark:text-slate-100 text-sm focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-900/30 focus:outline-hidden focus:border-amber-500"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 dark:text-slate-500 pointer-events-none">
-                  {txDiscountType === 'pct' ? '%' : mainCurrency === 'KHR' ? '៛' : 'USD'}
-                </span>
-              </div>
-              {txDiscountAmt > 0 && (
-                <div className="flex justify-between items-center text-xs font-bold text-amber-600 dark:text-amber-500 px-0.5">
-                  <span>{locale === 'km' ? 'បញ្ចុះ' : 'Discount'}</span>
-                  <span>
-                    {mainCurrency === 'KHR'
-                      ? `−${Math.round(txDiscountAmt * dynamicRate).toLocaleString()} ៛`
-                      : `−$${txDiscountAmt.toFixed(2)}`}
-                  </span>
-                </div>
-              )}
             </div>
             
-            <h2 className="text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase font-display">{t[locale].paymentStatement}</h2>
-
             <div className="bg-slate-900 dark:bg-slate-950 text-white rounded-2xl p-5 relative overflow-hidden shadow-md shadow-slate-900/10">
               <div className="space-y-3 relative z-10">
                 <div className="flex justify-between items-baseline">
@@ -963,8 +946,8 @@ export default function App() {
             {paymentMethod === 'CASH' ? (
               <div className="space-y-4">
                 <div className="space-y-3 bg-slate-50 dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-700/40">
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-display">{t[locale].tenderedKhr}</label>
+                  <div className='flex gap-1'>
+                    <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-display truncate min-w-fit flex items-center justify-center">{t[locale].tenderedKhr}</label>
                     <input
                       type="number"
                       value={amountPaidKhr}
@@ -975,8 +958,8 @@ export default function App() {
                       min="0"
                     />
                   </div>
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-display">{t[locale].tenderedUsd}</label>
+                  <div className='flex gap-1'>
+                    <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-display truncate min-w-fit flex items-center justify-center">{t[locale].tenderedUsd}</label>
                     <input
                       type="number"
                       value={amountPaidUsd}
