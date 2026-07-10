@@ -120,7 +120,7 @@ export default function Invoice({ invoiceData, locale, onClose }) {
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'Courier New', Courier, monospace;
+      font-family: 'Siemreap', 'Courier New', Courier, monospace;
       font-size: 12px;
       color: rgb(0,0,0);
       background: rgb(255,255,255);
@@ -340,7 +340,7 @@ export default function Invoice({ invoiceData, locale, onClose }) {
             id="invoice-content"
             className="p-3 bg-white"
             style={{
-              fontFamily: 'monospace',
+              fontFamily: '"Siemreap", monospace',
               width: '55mm',
               maxWidth: '55mm',
               minWidth: '55mm',
