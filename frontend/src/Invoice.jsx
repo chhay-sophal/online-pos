@@ -5,9 +5,10 @@ import { useReactToPrint } from 'react-to-print';
 import { translations as t } from './locales';
 
 export default function Invoice({ invoiceData, locale, onClose }) {
-  const { order_id, items, subtotalBeforeDiscountUsd, transactionDiscountUsd, totalDiscountUsd, totalUsd, mainCurrency, dynamicRate, paymentMethod, bankName, amountPaidUsd, amountPaidKhr, changeDueKhr, timestamp } = invoiceData;
+  const { order_id, items, subtotalBeforeDiscountUsd, transactionDiscountUsd, totalDiscountUsd, totalUsd, mainCurrency, dynamicRate, paymentMethod, bankName, amountPaidUsd, amountPaidKhr, changeDueKhr, timestamp, storeName, storeAddress, storePhone } = invoiceData;
 
   const inv = t[locale].invoice;
+  const shopName = storeName || t[locale].shopName;
   const [printing, setPrinting] = useState(false);
   const componentRef = useRef(null);
 
@@ -63,12 +64,11 @@ export default function Invoice({ invoiceData, locale, onClose }) {
   });
 
   const date = new Date(timestamp);
-  const dateStr = date.toLocaleDateString(locale === 'km' ? 'km-KH' : 'en-US', {
-    year: 'numeric', month: 'short', day: '2-digit',
-  });
+  const dateStr = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
   const timeStr = date.toLocaleTimeString(locale === 'km' ? 'km-KH' : 'en-US', {
     hour: '2-digit', minute: '2-digit',
   });
+  const dateTimeStr = `${dateStr} ${timeStr}`;
 
   const fmtUnit = (price, currency) => {
     const p = Number(price);
@@ -153,13 +153,14 @@ export default function Invoice({ invoiceData, locale, onClose }) {
   </style>
 </head>
 <body>
-  <h1>${t[locale].shopName}</h1>
+  <h1>${shopName}</h1>
   <p class="subtitle">${inv.receiptTitle}</p>
+  ${storeAddress ? `<p class="subtitle">${storeAddress}</p>` : ''}
+  ${storePhone ? `<p class="subtitle">${storePhone}</p>` : ''}
   <hr class="dash2">
 
   <div class="row"><span class="muted">${inv.orderId}</span><span><strong>#${String(order_id).padStart(5, '0')}</strong></span></div>
-  <div class="row"><span class="muted">${inv.date}</span><span>${dateStr}</span></div>
-  <div class="row"><span class="muted">${inv.time}</span><span>${timeStr}</span></div>
+  <div class="row"><span class="muted">${inv.date}</span><span>${dateTimeStr}</span></div>
 
   <hr class="dash">
 
@@ -217,14 +218,15 @@ export default function Invoice({ invoiceData, locale, onClose }) {
       y += 4;
     };
 
-    pdf.setFontSize(14); row(t[locale].shopName, undefined, true);
+    pdf.setFontSize(14); row(shopName, undefined, true);
     pdf.setFontSize(9);  row(inv.receiptTitle);
+    if (storeAddress) row(storeAddress);
+    if (storePhone) row(storePhone);
     dash(true);
 
     pdf.setFontSize(10);
     row(inv.orderId, `#${String(order_id).padStart(5, '0')}`);
-    row(inv.date, dateStr);
-    row(inv.time, timeStr);
+    row(inv.date, dateTimeStr);
     dash();
 
     const qtyX  = m + (W - 2 * m) * 0.50;
@@ -347,36 +349,37 @@ export default function Invoice({ invoiceData, locale, onClose }) {
               margin: '0 auto',
               padding: '2mm 2mm 3mm',
               color: '#000',
-              lineHeight: 1.15,
+              lineHeight: 1.5,
               fontSize: '9pt',
               fontWeight: 'bold',
               WebkitPrintColorAdjust: 'exact',
               printColorAdjust: 'exact',
             }}
           >
-            <div className="text-center mb-1.5">
-              <p className="text-[10px] font-black leading-none">{t[locale].shopName}</p>
-              <p className="text-[8px] text-black/70 mt-0.5">{inv.receiptTitle}</p>
+            <div className="text-center mb-2 flex flex-col gap-1">
+              <p className="text-[13px] leading-none">{shopName}</p>
+              {storeAddress && <p className="text-[8px]">{storeAddress}</p>}
+              {storePhone && <p className="text-[8px]">{inv.tel} {storePhone}</p>}
             </div>
 
-            <div className="border-t border-black/70 mb-1.5" />
+            <div className="border-t mb-1.5" />
+
+            <div className="text-center mb-1.5">
+              <p className="text-[9px]">{inv.receiptTitle}</p>
+            </div>
 
             <div className="text-[8px] space-y-0.5 mb-1.5">
               <div className="flex justify-between gap-2">
-                <span className="text-black/70">{inv.orderId}</span>
+                <span className="">{inv.orderId}</span>
                 <span className="font-bold">#{String(order_id).padStart(5, '0')}</span>
               </div>
               <div className="flex justify-between gap-2">
-                <span className="text-black/70">{inv.date}</span>
-                <span>{dateStr}</span>
-              </div>
-              <div className="flex justify-between gap-2">
-                <span className="text-black/70">{inv.time}</span>
-                <span>{timeStr}</span>
+                <span className="">{inv.date}</span>
+                <span>{dateTimeStr}</span>
               </div>
             </div>
 
-            <div className="border-t border-black/70 mb-1.5" />
+            <div className="border-t mb-1.5" />
 
             <div className="grid grid-cols-[10px_1fr_20px_30px_30px] gap-1 text-[7px] font-bold uppercase tracking-wide mb-1">
               <span>{inv.no}</span>
@@ -403,7 +406,7 @@ export default function Invoice({ invoiceData, locale, onClose }) {
                   <div className="text-center whitespace-nowrap shrink-0">
                     {item.discount > 0 ? (
                       <div className="leading-[1.1]">
-                        <div className="text-black/60 line-through">{fmtUnit(item.price, item.currency)}</div>
+                        <div className="line-through">{fmtUnit(item.price, item.currency)}</div>
                         <div className="text-black">{fmtUnit(discountedUnitPrice(item), item.currency)}</div>
                       </div>
                     ) : (
@@ -416,7 +419,7 @@ export default function Invoice({ invoiceData, locale, onClose }) {
                   <div className="text-right font-bold shrink-0">
                     {item.discount > 0 ? (
                       <div className="leading-[1.1]">
-                        <div className="text-black/60 line-through">
+                        <div className="line-through">
                           {fmtSubtotal(item.price, item.quantity, item.currency)}
                         </div>
                         <div className="text-black">{fmtDiscountedSubtotal(item)}</div>
@@ -429,21 +432,21 @@ export default function Invoice({ invoiceData, locale, onClose }) {
               ))}
             </div>
 
-            <div className="border-t border-black/70 mb-1.5" />
+            <div className="border-t mb-1.5" />
 
             <div className="space-y-0.5 text-[8px] mb-1.5">
+              <div className="flex justify-between gap-2 ">
+                <span>{inv.subtotal}</span>
+                <span>{fmtPrimary(subtotalBeforeDiscountUsd)}</span>
+              </div>
               {transactionDiscountUsd > 0 && (
-                <div className="flex justify-between gap-2 text-black/70">
+                <div className="flex justify-between gap-2 ">
                   <span>{inv.txDiscount}</span>
                   <span>−{fmtPrimary(transactionDiscountUsd)}</span>
                 </div>
               )}
-              <div className="flex justify-between gap-2 text-black/70">
-                <span>{inv.subtotal}</span>
-                <span>{fmtPrimary(subtotalBeforeDiscountUsd)}</span>
-              </div>
               {totalDiscountUsd > 0 && (
-                <div className="flex justify-between gap-2 text-black/70">
+                <div className="flex justify-between gap-2 ">
                   <span>{inv.discount}</span>
                   <span>−{fmtPrimary(totalDiscountUsd)}</span>
                 </div>
@@ -452,30 +455,30 @@ export default function Invoice({ invoiceData, locale, onClose }) {
                 <span>{inv.total}</span>
                 <span>{fmtPrimary(totalUsd)}</span>
               </div>
-              <div className="flex justify-between gap-2 text-black/70">
+              <div className="flex justify-between gap-2 ">
                 <span />
                 <span>{fmtSecondary(totalUsd)}</span>
               </div>
             </div>
 
-            <div className="border-t border-black/70 mb-1.5" />
+            <div className="border-t mb-1.5" />
 
             <div className="space-y-0.5 text-[8px] mb-1.5">
               <div className="flex justify-between gap-2">
-                <span className="text-black/70">{inv.payment}</span>
+                <span className="">{inv.payment}</span>
                 <span className="font-bold">{paymentMethod === 'CASH' ? inv.cash : paymentMethod === 'KHQR' ? inv.khqr : bankName ? `${inv.staticQr} — ${bankName}` : inv.staticQr}</span>
               </div>
               {paymentMethod === 'CASH' && (
                 <>
                   {amountPaidUsd > 0 && (
                     <div className="flex justify-between gap-2">
-                      <span className="text-black/70">{inv.paidUsd}</span>
+                      <span className="">{inv.paidUsd}</span>
                       <span>${Number(amountPaidUsd).toFixed(2)}</span>
                     </div>
                   )}
                   {amountPaidKhr > 0 && (
                     <div className="flex justify-between gap-2">
-                      <span className="text-black/70">{inv.paidKhr}</span>
+                      <span className="">{inv.paidKhr}</span>
                       <span>{Number(amountPaidKhr).toLocaleString()} ៛</span>
                     </div>
                   )}
@@ -489,9 +492,9 @@ export default function Invoice({ invoiceData, locale, onClose }) {
               )}
             </div>
 
-            <div className="border-t border-black/70 mb-1.5" />
+            <div className="border-t mb-1.5" />
 
-            <p className="text-center text-[7px] text-black/70 font-semibold">{inv.thankYou}</p>
+            <p className="text-center text-[7px]  font-semibold">{inv.thankYou}</p>
           </div>
         </div>
       </div>

@@ -31,6 +31,8 @@ export default function App() {
   const [mainCurrency, setMainCurrency] = useState('USD');
   const [storeName, setStoreName] = useState('');
   const [storeIcon, setStoreIcon] = useState('');
+  const [storeAddress, setStoreAddress] = useState('');
+  const [storePhone, setStorePhone] = useState('');
   const [backendStatus, setBackendStatus] = useState('loading'); // 'loading' | 'ready' | 'error'
   const [isDark, toggleDark] = useDarkMode();
 
@@ -308,6 +310,8 @@ export default function App() {
         if (data.main_currency) setMainCurrency(data.main_currency);
         if (data.store_name) setStoreName(data.store_name);
         if (data.store_icon !== undefined) setStoreIcon(data.store_icon || '');
+        if (data.store_address !== undefined) setStoreAddress(data.store_address || '');
+        if (data.store_phone !== undefined) setStorePhone(data.store_phone || '');
       })
       .catch(err => console.error("Could not sync app settings configuration", err));
   }, [backendStatus, view]);
@@ -416,6 +420,9 @@ export default function App() {
           totalUsd,
           mainCurrency,
           dynamicRate,
+          storeName,
+          storeAddress,
+          storePhone,
           paymentMethod: 'KHQR',
           amountPaidUsd: totalUsd,
           amountPaidKhr: 0,
@@ -468,6 +475,9 @@ export default function App() {
           totalUsd,
           mainCurrency,
           dynamicRate,
+          storeName,
+          storeAddress,
+          storePhone,
           paymentMethod,
           bankName: paymentMethod === 'STATIC_QR' ? staticQrBank : null,
           amountPaidUsd: paidUsd,

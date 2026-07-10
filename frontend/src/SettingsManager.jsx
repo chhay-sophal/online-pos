@@ -8,6 +8,8 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
   const DEFAULT_SETTINGS = {
     store_name: '',
     store_icon: '',
+    store_address: '',
+    store_phone: '',
     exchange_rate: '4100',
     bakong_account_id: '',
     bakong_merchant_name: '',
@@ -355,6 +357,18 @@ export default function SettingsManager({ onBackToRegister, currentLocale, onLoc
                             className={inputNormal} placeholder={s.storeNamePlaceholder || 'My Store'} />
                           <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">{s.storeNameHelp || 'Shown in the top-left corner of the register.'}</p>
                         </div>
+                      </div>
+                      <div className="mt-4">
+                        <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">{s.storeAddressLabel || 'Store Address'}</label>
+                        <input type="text" value={settings.store_address}
+                          onChange={(e) => setSettings({ ...settings, store_address: e.target.value })}
+                          className={inputNormal} placeholder={s.storeAddressPlaceholder || 'Village, Commune, District, Province'} />
+                      </div>
+                      <div className="mt-4">
+                        <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">{s.storePhoneLabel || 'Phone Number'}</label>
+                        <input type="text" value={settings.store_phone}
+                          onChange={(e) => setSettings({ ...settings, store_phone: e.target.value })}
+                          className={inputNormal} placeholder={s.storePhonePlaceholder || '012 345 678'} />
                       </div>
                     </div>
                   </div>
