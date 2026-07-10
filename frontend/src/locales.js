@@ -149,8 +149,8 @@ export const translations = {
 
     // INVOICE LABELS
     invoice: {
-      receiptTitle: 'វិក្កយបត្រ',
-      orderId: 'លេខវិក្កយបត្រ',
+      receiptTitle: 'សម្រង់តម្លៃទំនិញ',
+      orderId: 'លេខកុម្ម៉ង់',
       date: 'កាលបរិច្ឆេទ',
       time: 'ម៉ោង',
       tel: 'លេខទូរស័ព្ទ',
@@ -160,7 +160,7 @@ export const translations = {
       unitPrice: 'តម្លៃឯកតា',
       amount: 'សរុបរង',
       txDiscount: 'បញ្ចុះតម្លៃលើប្រតិបត្តិការ',
-      subtotal: 'សរុប(បូករួមទាំងអាករ)',
+      subtotal: 'សរុប',
       discount: 'បញ្ចុះតម្លៃសរុប',
       total: 'សរុបចុងក្រោយ',
       payment: 'ការទូទាត់',
