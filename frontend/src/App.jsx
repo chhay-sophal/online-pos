@@ -159,6 +159,16 @@ export default function App() {
   }, [view, BACKEND_URL]);
 
 
+  // Formats a raw numeric string (no commas) for display as "1,000,000.12";
+  // stripMoneyInput reverses it back to a plain numeric string for state/parseFloat.
+  const formatMoneyInput = (raw) => {
+    if (!raw) return '';
+    const [intPart, decPart] = String(raw).split('.');
+    const withCommas = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return decPart !== undefined ? `${withCommas}.${decPart}` : withCommas;
+  };
+  const stripMoneyInput = (formatted) => formatted.replace(/,/g, '');
+
   const toggleCustomerDisplay = async () => {
     if (customerDisplayOpen) {
       customerWindowRef.current?.close();
@@ -949,25 +959,33 @@ export default function App() {
                   <div className='flex gap-1'>
                     <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-display truncate min-w-fit flex items-center justify-center">{t[locale].tenderedKhr}</label>
                     <input
-                      type="number"
-                      value={amountPaidKhr}
-                      onChange={(e) => { setAmountPaidKhr(e.target.value); setCheckoutResult(null); }}
+                      type="text"
+                      inputMode="decimal"
+                      value={formatMoneyInput(amountPaidKhr)}
+                      onChange={(e) => {
+                        const raw = stripMoneyInput(e.target.value);
+                        if (!/^\d*\.?\d*$/.test(raw)) return;
+                        setAmountPaidKhr(raw);
+                        setCheckoutResult(null);
+                      }}
                       className="w-full mt-1.5 h-10 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-800 dark:text-slate-100 text-sm focus:ring-2 focus:ring-indigo-50 dark:focus:ring-indigo-900/30 focus:outline-hidden focus:border-indigo-500"
                       placeholder="0"
-                      step="100"
-                      min="0"
                     />
                   </div>
                   <div className='flex gap-1'>
                     <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide font-display truncate min-w-fit flex items-center justify-center">{t[locale].tenderedUsd}</label>
                     <input
-                      type="number"
-                      value={amountPaidUsd}
-                      onChange={(e) => { setAmountPaidUsd(e.target.value); setCheckoutResult(null); }}
+                      type="text"
+                      inputMode="decimal"
+                      value={formatMoneyInput(amountPaidUsd)}
+                      onChange={(e) => {
+                        const raw = stripMoneyInput(e.target.value);
+                        if (!/^\d*\.?\d*$/.test(raw)) return;
+                        setAmountPaidUsd(raw);
+                        setCheckoutResult(null);
+                      }}
                       className="w-full mt-1.5 h-10 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-800 dark:text-slate-100 text-sm focus:ring-2 focus:ring-indigo-50 dark:focus:ring-indigo-900/30 focus:outline-hidden focus:border-indigo-500"
                       placeholder="0.00"
-                      step="0.01"
-                      min="0.00"
                     />
                   </div>
                 </div>
