@@ -238,8 +238,13 @@ export default function App() {
   const tenderedUsd = parseFloat(amountPaidUsd || 0);
   const tenderedKhr = parseFloat(amountPaidKhr || 0);
   const totalTenderedInUsd = tenderedUsd + (tenderedKhr / dynamicRate);
-  const changeDueUsd = totalTenderedInUsd - totalUsd;
+  // Half a cent tolerance absorbs USD/KHR conversion rounding noise (e.g. 5000 KHR tendered
+  // against a total converted from KHR won't land on the exact same float as totalUsd).
+  const PAYMENT_TOLERANCE_USD = 0.005;
+  const changeDueUsdRaw = totalTenderedInUsd - totalUsd;
+  const changeDueUsd = Math.abs(changeDueUsdRaw) < PAYMENT_TOLERANCE_USD ? 0 : changeDueUsdRaw;
   const changeDueKhr = changeDueUsd > 0 ? Math.round(changeDueUsd * dynamicRate) : 0;
+  const isCashPaymentSufficient = changeDueUsd >= 0;
 
   useEffect(() => {
     if (!IS_TAURI || !customerDisplayOpen) return;
@@ -1086,8 +1091,8 @@ export default function App() {
             {paymentMethod === 'CASH' && (
               <button
                 onClick={handleCheckout}
-                disabled={cart.length === 0 || totalTenderedInUsd < totalUsd}
-                className={`w-full h-12 rounded-xl font-bold transition-all text-sm font-display shadow-xs ${cart.length === 0 || totalTenderedInUsd < totalUsd ? 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed' : 'bg-indigo-600 text-white cursor-pointer hover:bg-indigo-700 active:scale-[0.99]'}`}
+                disabled={cart.length === 0 || !isCashPaymentSufficient}
+                className={`w-full h-12 rounded-xl font-bold transition-all text-sm font-display shadow-xs ${cart.length === 0 || !isCashPaymentSufficient ? 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed' : 'bg-indigo-600 text-white cursor-pointer hover:bg-indigo-700 active:scale-[0.99]'}`}
               >
                 {t[locale].finalizeOrder}
               </button>
