@@ -15,11 +15,11 @@ export default function Invoice({ invoiceData, locale, onClose, autoPrint = fals
 
   const printPageStyle = `
     @page {
-      size: 55mm auto;
+      size: 58mm auto;
       margin: 0;
     }
     html, body {
-      width: 55mm;
+      width: 58mm;
       margin: 0;
       padding: 0;
       background: #fff;
@@ -333,11 +333,11 @@ export default function Invoice({ invoiceData, locale, onClose, autoPrint = fals
             className="p-3 bg-white"
             style={{
               fontFamily: '"Siemreap", monospace',
-              width: '55mm',
-              maxWidth: '55mm',
-              minWidth: '55mm',
+              width: '58mm',
+              maxWidth: '58mm',
+              minWidth: '58mm',
               margin: '0 auto',
-              padding: '2mm 2mm 3mm',
+              padding: '1.5mm 1.5mm 2mm',
               color: '#000',
               lineHeight: 1.5,
               fontSize: '9pt',
